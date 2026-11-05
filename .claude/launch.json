@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "page",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["-e", "const h=require('http'),f=require('fs');h.createServer((q,r)=>{f.readFile('ordre-contenu-200.html',(e,d)=>{r.writeHead(e?404:200,{'content-type':'text/html; charset=utf-8'});r.end(d)})}).listen(8765)"],
+      "port": 8765
+    },
+    {
+      "name": "maquette",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["-e", "const h=require('http'),f=require('fs');h.createServer((q,r)=>{f.readFile('maquette-style.html',(e,d)=>{r.writeHead(e?404:200,{'content-type':'text/html; charset=utf-8'});r.end(d)})}).listen(8766)"],
+      "port": 8766
+    }
+  ]
+}

@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maquette style</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#121317; --win:#1b1d22; --win2:#202329; --row:#1e2126; --rowh:#262a31; --sec:#272a30;
+  --line:#2e3239; --text:#e6e3dc; --muted:#8d9098; --dim:#5e626b;
+  --title1:#4a2333; --title2:#2d1820; --gold:#f0c53a; --gold2:#c99a1c; --green:#8ccf4d; --orange:#d9772b; --red:#d9534f;
+  --parch:#2a2722;
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 600px at 20% -10%,#1f2a1c 0,transparent 60%),var(--bg);color:var(--text);font:14px/1.45 Nunito,system-ui,sans-serif}
+.app{max-width:1280px;margin:0 auto;padding:16px}
+/* fenêtre façon jeu */
+.win{background:var(--win);border:1px solid #0a0b0d;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.03);overflow:hidden}
+.win-t{display:flex;align-items:center;gap:10px;padding:9px 14px;background:linear-gradient(180deg,var(--title1),var(--title2));border-bottom:1px solid #0a0b0d}
+.win-t h1,.win-t h2{margin:0;font-size:1.05rem;font-weight:800;letter-spacing:.01em}
+.win-t .ic{width:22px;height:22px;display:grid;place-items:center;color:var(--gold);font-weight:900}
+.key{font-size:.68rem;border:1px solid rgba(255,255,255,.5);border-radius:3px;padding:0 4px;opacity:.8}
+.sp{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:4px 12px;font-weight:700;font-size:.85rem;color:var(--text)}
+.btn{font:700 .72rem Nunito,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--text);background:#2f333a;border:1px solid #3a3f47;border-radius:5px;padding:6px 11px;cursor:pointer}
+.btn:hover{background:#383d45}
+.btn.pri{background:linear-gradient(180deg,#e0832f,#b85d1c);border-color:#8c4513;color:#fff}
+/* résumé */
+.sum{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:22px;align-items:center;padding:14px 16px}
+.lvl{display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#3b3f47,#202329);border:2px solid var(--gold2);font-weight:800;font-size:1.15rem;color:var(--gold)}
+.lvl small{display:block;font-size:.6rem;color:var(--muted);letter-spacing:.08em;margin-top:-6px}
+.prog .l{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);margin-bottom:5px}
+.prog .l b{color:var(--text);font-size:.95rem}
+.bar{height:8px;border-radius:99px;background:#0e0f12;border:1px solid #2a2d33;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#6fb33a,var(--green));box-shadow:0 0 10px rgba(140,207,77,.45)}
+.bar.gold i{background:linear-gradient(90deg,var(--gold2),var(--gold));box-shadow:0 0 10px rgba(240,197,58,.35)}
+.toggles{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.tg{font-size:.78rem;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--win2);cursor:pointer}
+.tg.on{color:#1b1d22;background:var(--gold);border-color:var(--gold);font-weight:700}
+/* Dofus */
+.dz{display:flex;gap:8px;padding:0 16px 14px;overflow:auto}
+.dzi{flex:none;width:62px;text-align:center;font-size:.66rem;color:var(--muted)}
+.dzi .o{width:50px;height:50px;margin:0 auto 3px;border-radius:10px;background:#15161a;border:1px solid var(--line);display:grid;place-items:center;font-size:1.5rem}
+.dzi.own .o{border-color:var(--gold2);background:radial-gradient(circle,#3a3220,#15161a 70%)}
+.dzi.miss .o{filter:grayscale(1);opacity:.45}
+/* corps */
+.body{display:grid;grid-template-columns:240px 1fr 380px;gap:0;margin-top:14px}
+.tabs{display:flex;gap:4px;justify-content:center;padding:10px 10px 0;border-bottom:1px solid var(--line)}
+.tab{padding:8px 14px;color:var(--muted);font-weight:700;font-size:.88rem;border-bottom:2px solid transparent;cursor:pointer}
+.tab.on{color:var(--gold);border-color:var(--gold)}
+.search{margin:10px;display:flex;align-items:center;gap:8px;background:#121317;border:1px solid var(--line);border-radius:6px;padding:7px 10px;color:var(--dim);font-size:.85rem}
+.cats .c{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;font-size:.88rem;color:#c9c6bf;cursor:pointer;border-left:3px solid transparent}
+.cats .c:hover{background:var(--rowh)}
+.cats .c.on{background:linear-gradient(90deg,rgba(240,197,58,.12),transparent);border-left-color:var(--gold);color:var(--text);font-weight:700}
+.cats .c .p{font-size:.75rem;color:var(--muted)}
+.cats .c .p.full{color:var(--green)}
+.list{border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.lh{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.lh h3{margin:0;font-size:.98rem}
+.lh .n{color:var(--muted);font-size:.8rem}
+.sec{display:flex;justify-content:space-between;padding:6px 14px;background:var(--sec);color:var(--muted);font-size:.82rem;border-bottom:1px solid var(--line)}
+.r{display:grid;grid-template-columns:22px 1fr auto auto;gap:10px;align-items:center;padding:7px 14px;border-bottom:1px solid #24272d;cursor:pointer}
+.r:hover{background:var(--rowh)}
+.r.sel{background:linear-gradient(90deg,rgba(240,197,58,.10),rgba(240,197,58,.02))}
+.r.done .t{color:var(--dim);text-decoration:line-through}
+.st{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:.7rem;font-weight:900}
+.st.av{color:var(--green);border:1.5px solid var(--green)}
+.st.lock{color:var(--dim);border:1.5px solid var(--dim)}
+.st.ok{background:var(--green);color:#152010}
+.t{font-size:.9rem}
+.meta{color:var(--muted);font-size:.75rem}
+.lv{color:var(--gold);font-size:.8rem;font-weight:700;white-space:nowrap}
+.grp{color:var(--muted);font-size:.8rem}
+.rew{width:20px;height:20px}
+/* détail */
+.det{background:linear-gradient(180deg,#24221e,#1d1c19);display:flex;flex-direction:column}
+.det .hd{text-align:center;padding:20px 18px 6px}
+.det .hd h3{margin:0;font-size:1.15rem;font-weight:800}
+.orn{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--green);margin:10px 0 4px}
+.orn:before,.orn:after{content:"";height:1px;width:70px;background:linear-gradient(90deg,transparent,#8b8270,transparent)}
+.quote{margin:8px 16px;padding:12px 14px;border:1px solid #3a362e;border-radius:6px;background:rgba(0,0,0,.18);font-style:italic;color:#d6d0c2;font-size:.88rem}
+.lab{font-weight:800;font-size:.72rem;letter-spacing:.12em;color:#cfc8b6;padding:14px 16px 6px;text-transform:uppercase}
+.ob{display:flex;align-items:center;gap:10px;padding:6px 16px;font-size:.88rem}
+.ck{width:16px;height:16px;border-radius:4px;border:1.5px solid #6b6556;display:grid;place-items:center;font-size:.7rem}
+.ck.on{background:var(--green);border-color:var(--green);color:#152010;font-weight:900}
+.ob.on span{color:var(--muted);text-decoration:line-through}
+.rwd{margin-top:auto;border-top:1px solid #3a362e;padding:12px 16px;text-align:center}
+.rwd .lab{padding:0 0 8px;display:flex;align-items:center;justify-content:center;gap:8px}
+.rwd .lab:before,.rwd .lab:after{content:"•";color:#8b8270}
+.dofus-rew{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:8px;border:1px solid var(--gold2);background:radial-gradient(circle at 30% 50%,rgba(240,197,58,.15),transparent 70%);font-weight:700}
+.det .acts{display:flex;gap:8px;padding:12px 16px}
+/* plaque dorée du total (fenêtre Succès du jeu) */
+.plaque-wrap{display:flex;justify-content:center;padding:16px 16px 0;position:relative}
+.plaque-wrap:before{content:"";position:absolute;left:16px;right:16px;top:50%;margin-top:8px;height:2px;background:linear-gradient(90deg,transparent,#a07b22 25%,#e9c25a 50%,#a07b22 75%,transparent)}
+.plaque{position:relative;display:flex;align-items:baseline;gap:8px;padding:6px 34px;background:linear-gradient(180deg,#f7dc7a,#d9a92e 55%,#b9861a);color:#3a2808;border-radius:6px;clip-path:polygon(14px 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,14px 100%,0 50%);box-shadow:0 2px 0 #6b4c0e}
+.pl-n{font-weight:900;font-size:1.4rem}
+.pl-s{font-weight:700;font-size:.85rem;opacity:.8}
+/* interrupteur Compte / Personnage */
+.sw{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted);cursor:pointer}
+.sw .on{color:var(--gold);font-weight:700}
+.sw-t{width:34px;height:18px;border-radius:99px;background:#0e0f12;border:1px solid #3a3f47;position:relative}
+.sw-t:after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:#e6e3dc;transition:left .15s}
+.sw-t.on:after{left:18px;background:var(--gold)}
+.cats .c .p{color:var(--gold)}
+/* carte de succès façon jeu */
+.acard{display:flex;gap:12px;margin:4px 16px;padding:10px;border-radius:6px;background:#3a3b3e;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.aic{flex:none;width:52px;height:52px;border-radius:6px;display:grid;place-items:center;font-size:1.6rem;background:linear-gradient(180deg,#f2cf55,#c28d1b);border:2px solid #6b4c0e}
+.an{font-weight:800}
+.ad{font-size:.85rem;color:#d4d0c8}
+.apr{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:.75rem;color:var(--muted)}
+.apr .bar{flex:1;height:6px}
+/* barre de pied avec cases façon jeu */
+.foot{grid-column:1 / -1;display:flex;gap:22px;flex-wrap:wrap;padding:10px 16px;border-top:1px solid var(--line);background:#16171b}
+.gck{display:flex;align-items:center;gap:8px;font-size:.88rem;color:#e8c46a;cursor:pointer}
+.gck i{width:16px;height:16px;border:1.5px solid #8f8a7c;border-radius:3px;display:grid;place-items:center;font-style:normal;font-size:.7rem;font-weight:900}
+.gck.on i{background:var(--gold);border-color:var(--gold);color:#1b1d22}
+.note{max-width:1280px;margin:14px auto 0;color:var(--muted);font-size:.8rem}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="win">
+    <div class="win-t"><span class="ic">★</span><h1>Succès &amp; quêtes</h1><span class="key">S</span><span class="sp"></span>
+      <span class="chip">👤 Maza-Steam</span><button class="btn">Thème</button></div>
+    <div class="plaque-wrap"><div class="plaque"><span class="pl-n">744</span><span class="pl-s">/ 918 quêtes</span></div></div>
+    <div class="sum">
+      <div class="lvl">200<small>NIVEAU</small></div>
+      <div class="prog"><div class="l"><span>Quêtes</span><span><b>744</b> / 918 · 81 %</span></div><div class="bar"><i style="width:81%"></i></div></div>
+      <div class="prog"><div class="l"><span>Succès de quêtes</span><span><b>208</b> / 271 · 77 %</span></div><div class="bar gold"><i style="width:77%"></i></div></div>
+      <label class="sw"><span>Succès</span><i class="sw-t on"></i><span class="on">Quêtes</span></label>
+    </div>
+    <div class="dz">
+      <div class="dzi own"><div class="o">🥚</div>Émeraude</div><div class="dzi own"><div class="o">🥚</div>Pourpre</div><div class="dzi own"><div class="o">🥚</div>Turquoise</div><div class="dzi own"><div class="o">🥚</div>Ocre</div><div class="dzi miss"><div class="o">🥚</div>Abyssal</div><div class="dzi own"><div class="o">🥚</div>Ivoire</div><div class="dzi miss"><div class="o">🥚</div>Ébène</div><div class="dzi own"><div class="o">🥚</div>Cawotte</div><div class="dzi miss"><div class="o">🥚</div>Vulbis</div><div class="dzi own"><div class="o">🥚</div>Sylvestre</div><div class="dzi miss"><div class="o">🥚</div>Dokoko</div><div class="dzi own"><div class="o">🥚</div>Argenté</div>
+    </div>
+  </div>
+
+  <div class="win body">
+    <aside>
+      <div class="tabs"><span class="tab">Succès</span><span class="tab on">Quêtes</span></div>
+      <div class="search">⌕ Rechercher une quête</div>
+      <div class="cats">
+        <div class="c on">Toutes les quêtes <span class="p">81 %</span></div>
+        <div class="c">Quêtes mondiales <span class="p">85 %</span></div>
+        <div class="c">Eliocalypse <span class="p">30 %</span></div>
+        <div class="c">Justiciers <span class="p">85 %</span></div>
+        <div class="c">Tours de la Fratrie <span class="p">5 %</span></div>
+        <div class="c">Dimensions Divines <span class="p">88 %</span></div>
+        <div class="c">Archipel de Valonia <span class="p">56 %</span></div>
+        <div class="c">Île de Frigost <span class="p">88 %</span></div>
+        <div class="c">Île de Pandala <span class="p">74 %</span></div>
+        <div class="c">Royaume d'Amakna <span class="p full">100 %</span></div>
+      </div>
+    </aside>
+    <section class="list">
+      <div class="lh"><h3>Toutes les quêtes</h3><span class="n">82 affichées · triées par niveau</span><span class="sp"></span><button class="btn">Tout cocher</button></div>
+      <div class="sec"><span>Niveau 130 – 170</span><span>4</span></div>
+      <div class="r"><span class="st av">!</span><div><div class="t">Jusqu'au bout du rêve</div><div class="meta">Rêves de dragons</div></div><span class="grp">👥</span><span class="lv">Niv. 130</span></div>
+      <div class="r"><span class="st av">!</span><div><div class="t">Maîtrise en flanquage de rouste</div><div class="meta">Les Justiciers</div></div><span></span><span class="lv">Niv. 140</span></div>
+      <div class="r done"><span class="st ok">✓</span><div><div class="t">Inferno</div><div class="meta">Dimensions divines</div></div><span></span><span class="lv">Niv. 160</span></div>
+      <div class="r"><span class="st av">!</span><div><div class="t">Ça barde là-haut</div><div class="meta">Osavora · débloque 4 quêtes</div></div><span class="grp">👥</span><span class="lv">Niv. 170</span></div>
+      <div class="sec"><span>Niveau 200</span><span>78</span></div>
+      <div class="r sel"><span class="st av">!</span><div><div class="t">Le silence est d'Aure</div><div class="meta">Quête de prérequis</div></div><span></span><span class="lv">Niv. 200</span></div>
+      <div class="r"><span class="st av">!</span><div><div class="t">Le dernier rempart</div><div class="meta">Après la pluie · Eliocalypse : Résilience</div></div><span></span><span class="lv">Niv. 200</span></div>
+      <div class="r"><span class="st lock">🔒</span><div><div class="t">Le poids de son regard</div><div class="meta">Démons et merveilles · nécessite Le réveil de Pandala</div></div><span></span><span class="lv">Niv. 200</span></div>
+      <div class="r"><span class="st av">!</span><div><div class="t">Le jour le plus long</div><div class="meta">La guerre éternelle</div></div><span class="grp">👥</span><span class="lv">Niv. 200</span></div>
+    </section>
+    <aside class="det">
+      <div class="hd"><h3>Le silence est d'Aure</h3><div class="orn">!</div><div class="meta">Quête · niveau 200</div></div>
+      <div class="quote">Disponible : tous les prérequis sont remplis.</div>
+      <div class="lab">Prérequis</div>
+      <div class="ob on"><span class="ck on">✓</span><span>Dans la gueule du Dragon</span></div>
+      <div class="ob on"><span class="ck on">✓</span><span>Succès « D'Incarnam à Astrub »</span></div>
+      <div class="ob on"><span class="ck on">✓</span><span>Posséder le Dofus Argenté</span></div>
+      <div class="lab">Exemple de carte de succès</div>
+      <div class="acard"><div class="aic">📜</div><div><div class="an">Larmes de crocodaille</div><div class="ad">Terminer les quêtes suivantes.</div><div class="apr"><div class="bar"><i style="width:0%"></i></div><span>0 / 6</span></div></div></div>
+      <div class="acts"><button class="btn pri">Marquer faite</button><button class="btn">Voir le succès</button></div>
+      <div class="rwd"><div class="lab">Récompense</div><span class="dofus-rew">🥚 Dofus (si la quête en donne un)</span></div>
+    </aside>
+    <footer class="foot">
+      <label class="gck"><i></i>Afficher les obtenus</label>
+      <label class="gck"><i></i>Afficher les indisponibles</label>
+      <label class="gck on"><i>✓</i>Afficher les contenus saisonniers</label>
+    </footer>
+  </div>
+  <p class="note">Maquette statique : seulement pour valider la direction visuelle. Les emojis remplacent les icônes officielles, qui seront chargées depuis DofusDB.</p>
+</div>
+</body>
+</html>

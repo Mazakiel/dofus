@@ -1,0 +1,4 @@
+# Cache des réponses DofusDB (≈ 200 Mo, régénérable avec scripts/achievements.js)
+cache/
+node_modules/
+.claude/settings.local.json

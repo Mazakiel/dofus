@@ -1,0 +1,282 @@
+<title>Maquettes mobile Dofus</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* Deux navigations mobile pour Succès & quêtes : A = pile (liste → détail plein écran), B = onglets en bas + feuille de détail.
+   Palette reprise de la page existante (bordeaux, or, vert, crème / sombre). */
+:root{
+  --bg:#ece6da; --win:#fbf8f2; --win2:#f3eee4; --row:#efe8da; --line:#ddd3c1;
+  --text:#2a2620; --muted:#756d60; --dim:#a39a8b;
+  --title1:#7a3550; --title2:#5a2338; --title-text:#fff6ea;
+  --gold:#b8860b; --gold-txt:#8a6408; --gold-soft:#f3e4bd; --green:#4f9a2a; --green-soft:#e3f0d6; --red:#c0392b; --orange:#d9772b;
+  --frame:#2a2620; --shadow:0 10px 30px rgba(60,40,10,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111215; --win:#1b1d22; --win2:#202329; --row:#262a31; --line:#2e3239;
+    --text:#e6e3dc; --muted:#8d9098; --dim:#5e626b;
+    --title1:#4a2333; --title2:#2d1820; --title-text:#fff;
+    --gold:#f0c53a; --gold-txt:#f0c53a; --gold-soft:rgba(240,197,58,.14); --green:#8ccf4d; --green-soft:rgba(140,207,77,.14); --red:#e0605a; --orange:#e0832f;
+    --frame:#000; --shadow:0 10px 30px rgba(0,0,0,.5); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111215; --win:#1b1d22; --win2:#202329; --row:#262a31; --line:#2e3239;
+  --text:#e6e3dc; --muted:#8d9098; --dim:#5e626b;
+  --title1:#4a2333; --title2:#2d1820; --title-text:#fff;
+  --gold:#f0c53a; --gold-txt:#f0c53a; --gold-soft:rgba(240,197,58,.14); --green:#8ccf4d; --green-soft:rgba(140,207,77,.14); --red:#e0605a; --orange:#e0832f;
+  --frame:#000; --shadow:0 10px 30px rgba(0,0,0,.5); color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:14px/1.4 Nunito,system-ui,-apple-system,"Segoe UI",sans-serif;
+  padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.page{max-width:900px;margin:0 auto}
+h1{margin:0 0 4px;font-size:1.5rem;font-weight:900}
+.lead{margin:0 0 24px;color:var(--muted);max-width:60ch}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:32px 24px;align-items:start}
+.opt h2{margin:0 0 2px;font-size:1rem;font-weight:800;letter-spacing:.02em}
+.opt p{margin:0 0 12px;color:var(--muted);font-size:.85rem;min-height:2.6em}
+.pros{margin:14px 0 0;padding-left:18px;font-size:.82rem;color:var(--muted)}
+.pros b{color:var(--text)}
+
+/* téléphone */
+.phone{width:100%;max-width:340px;height:640px;margin:0 auto;border:8px solid var(--frame);border-radius:34px;background:var(--win);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;position:relative}
+.bar{flex:none;display:flex;align-items:center;gap:8px;padding:12px 12px 10px;background:linear-gradient(180deg,var(--title1),var(--title2));color:var(--title-text);min-height:48px}
+.bar h3{margin:0;font-size:1rem;font-weight:800;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .ic{color:#f0c53a;font-weight:900}
+.back{min-width:36px;height:36px;border-radius:8px;background:rgba(0,0,0,.25);font-size:1.1rem;font-weight:800;color:var(--title-text)}
+.screen{flex:1;overflow-y:auto;min-height:0}
+.screen[hidden]{display:none}
+
+/* progression */
+.sum{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--win2)}
+.lvl{flex:none;width:44px;height:44px;border-radius:50%;border:2px solid var(--gold);display:grid;place-items:center;font-weight:900;color:var(--gold-txt);font-size:.95rem}
+.prog{flex:1;min-width:0}
+.prog .t{display:flex;justify-content:space-between;font-size:.74rem;color:var(--muted)}
+.prog .t b{color:var(--text);font-size:.85rem}
+.track{height:6px;border-radius:3px;background:var(--line);margin:3px 0 6px;overflow:hidden}
+.track i{display:block;height:100%;background:var(--gold)}
+.track.g i{background:var(--green)}
+
+/* lignes */
+.li{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:8px 14px;border-bottom:1px solid var(--line);text-align:left}
+.li:hover{background:var(--row)}
+.li .n{flex:1;min-width:0;font-weight:700}
+.li .n small{display:block;font-weight:600;color:var(--muted);font-size:.74rem}
+.pct{font-weight:800;color:var(--gold-txt);font-size:.85rem}
+.pct.full{color:var(--green)}
+.chev{color:var(--dim);font-weight:800}
+.chk{flex:none;width:28px;height:28px;border-radius:8px;border:2px solid var(--dim);display:grid;place-items:center;color:transparent;font-weight:900}
+.chk.on{background:var(--green);border-color:var(--green);color:#fff}
+.chk.av{border-color:var(--gold)}
+.grp{display:flex;align-items:center;justify-content:space-between;width:100%;padding:8px 14px;background:var(--row);font-weight:800;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.lv{flex:none;font-size:.74rem;font-weight:700;color:var(--muted)}
+
+/* étiquettes */
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.tag{font-size:.62rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:4px;border:1px solid currentColor}
+.tag.dj{color:var(--red)} .tag.cb{color:var(--orange)} .tag.fa{color:var(--green)} .tag.cr{color:var(--gold-txt)} .tag.gr{color:var(--muted)}
+.chips{display:flex;gap:6px;padding:8px 14px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
+.chip{flex:none;min-height:34px;padding:0 12px;border-radius:17px;border:1px solid var(--line);background:var(--win2);font-weight:700;font-size:.78rem}
+.chip[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:var(--gold-txt)}
+
+/* détail */
+.det{padding:16px 14px 24px}
+.det h4{margin:0;text-align:center;font-size:1.15rem;font-weight:900}
+.orn{height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:10px 24px}
+.quote{padding:10px 12px;border-radius:8px;background:var(--win2);font-style:italic;color:var(--muted);text-align:center;font-size:.85rem}
+.det h5{margin:16px 0 6px;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.ob{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:.86rem}
+.ob.done{color:var(--muted);text-decoration:line-through}
+.rew{display:flex;gap:8px;flex-wrap:wrap}
+.rew span{padding:6px 10px;border-radius:8px;background:var(--win2);font-weight:800;font-size:.85rem}
+.acts{display:flex;gap:8px;margin-top:16px}
+.btn{flex:1;min-height:44px;border-radius:8px;border:1px solid var(--line);background:var(--win2);font-weight:800;font-size:.78rem;letter-spacing:.07em;text-transform:uppercase}
+.btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+
+/* onglets bas */
+.tabs{flex:none;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--win)}
+.tabs button{min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.68rem;font-weight:800;color:var(--muted)}
+.tabs button span{font-size:1.15rem;line-height:1}
+.tabs button[aria-selected="true"]{color:var(--gold-txt);box-shadow:inset 0 3px 0 var(--gold)}
+.sheet{position:absolute;inset:auto 0 0 0;max-height:78%;overflow-y:auto;background:var(--win);border-radius:18px 18px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.35);z-index:3;transform:translateY(0)}
+.sheet[hidden]{display:none}
+.scrim{position:absolute;inset:0;background:rgba(8,6,4,.55);z-index:2}
+.scrim[hidden]{display:none}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--dim);margin:8px auto 0}
+.dz{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 14px}
+.dz div{padding:10px 4px;border-radius:10px;border:1px solid var(--line);background:var(--win2);text-align:center;font-size:.72rem;font-weight:700}
+.dz div b{display:block;font-size:1.6rem;filter:grayscale(1);opacity:.5}
+.dz div.ok b{filter:none;opacity:1}
+.dz small{display:block;color:var(--gold-txt);font-weight:800}
+@media (prefers-reduced-motion:no-preference){.screen{animation:in .15s ease-out}@keyframes in{from{opacity:.4}to{opacity:1}}}
+</style>
+
+<div class="page">
+  <h1>Navigation mobile : deux propositions</h1>
+  <p class="lead">Les deux écrans sont cliquables. Les données sont des exemples tirés de tes captures. Les étiquettes (Donjon, Combat, Farm, Craft) viennent de l'analyse des objectifs DofusDB.</p>
+
+  <div class="cols">
+    <!-- ========== A : PILE ========== -->
+    <section class="opt" id="optA">
+      <h2>A · Par pile</h2>
+      <p>On descend d'un niveau à chaque tape : catégories, quêtes, fiche. Le bouton retour remonte.</p>
+      <div class="phone" aria-label="Maquette A">
+        <header class="bar"><button class="back" id="aBack" aria-label="Retour" hidden>←</button><h3 id="aTitle"><span class="ic">★</span> Succès &amp; quêtes</h3></header>
+
+        <div class="screen" id="a1">
+          <div class="sum">
+            <div class="lvl">200</div>
+            <div class="prog">
+              <div class="t"><span>Quêtes</span><span><b>412</b> / 918</span></div><div class="track"><i style="width:45%"></i></div>
+              <div class="t"><span>Succès de quêtes</span><span><b>96</b> / 271</span></div><div class="track g"><i style="width:35%"></i></div>
+            </div>
+          </div>
+          <button class="li" data-a="a2"><span class="n">Archipel des Écailles<small>3 / 12 quêtes</small></span><span class="pct">25%</span><span class="chev">›</span></button>
+          <button class="li" data-a="a2"><span class="n">Tours de la Fratrie<small>7 / 7 quêtes</small></span><span class="pct full">100%</span><span class="chev">›</span></button>
+          <button class="li" data-a="a2"><span class="n">Quêtes mondiales<small>2 / 9 quêtes</small></span><span class="pct">22%</span><span class="chev">›</span></button>
+          <button class="li" data-a="a2"><span class="n">Eliocalypse<small>1 / 6 quêtes</small></span><span class="pct">17%</span><span class="chev">›</span></button>
+          <button class="li" data-a="a2"><span class="n">Justiciers<small>0 / 4 quêtes</small></span><span class="pct">0%</span><span class="chev">›</span></button>
+          <button class="li" data-a="a2"><span class="n">Dofus<small>9 / 28 obtenus</small></span><span class="pct">32%</span><span class="chev">›</span></button>
+        </div>
+
+        <div class="screen" id="a2" hidden>
+          <div class="chips" role="group" aria-label="Filtres">
+            <button class="chip" aria-pressed="true">Toutes</button><button class="chip" aria-pressed="false">Donjon</button><button class="chip" aria-pressed="false">Combat</button><button class="chip" aria-pressed="false">Farm</button><button class="chip" aria-pressed="false">Craft</button>
+          </div>
+          <button class="li" data-a="a3"><span class="chk on">✓</span><span class="n">Perdu dans le temps<span class="tags"><span class="tag cb">Combat</span></span></span><span class="lv">Niv. 200</span></button>
+          <button class="li" data-a="a3"><span class="chk av"></span><span class="n">Plongée dans un bain de sang<span class="tags"><span class="tag dj">Donjon</span><span class="tag cb">Combat</span></span></span><span class="lv">Niv. 200</span></button>
+          <button class="li" data-a="a3"><span class="chk av"></span><span class="n">Le sens du sacrifice<span class="tags"><span class="tag fa">Farm</span></span></span><span class="lv">Niv. 190</span></button>
+          <button class="li" data-a="a3"><span class="chk"></span><span class="n">Le tort tue<span class="tags"><span class="tag gr">Groupe</span><span class="tag cb">Combat</span></span></span><span class="lv">Niv. 200</span></button>
+          <button class="li" data-a="a3"><span class="chk"></span><span class="n">Œufs dans l'eau<span class="tags"><span class="tag cr">Craft</span><span class="tag fa">Farm</span></span></span><span class="lv">Niv. 200</span></button>
+        </div>
+
+        <div class="screen" id="a3" hidden>
+          <div class="det">
+            <h4>Plongée dans un bain de sang</h4><div class="orn"></div>
+            <div class="tags" style="justify-content:center;margin-bottom:10px"><span class="tag dj">Donjon</span><span class="tag cb">Combat</span></div>
+            <div class="quote">Vous devez vaincre le Comte Harebourg et sortir vivant de son donjon.</div>
+            <h5>Objectifs</h5>
+            <div class="ob done"><span class="chk on">✓</span>Parler à Sylvanus</div>
+            <div class="ob"><span class="chk av"></span>Donjon du Comte Harebourg : Sortie</div>
+            <h5>Récompenses</h5>
+            <div class="rew"><span>8 796 ✹</span><span>525 000 XP</span></div>
+            <div class="acts"><button class="btn">Masquer</button><button class="btn primary">Marquer faite</button></div>
+          </div>
+        </div>
+      </div>
+      <ul class="pros">
+        <li><b>Simple et lisible</b> : un seul écran à la fois, texte et cibles larges.</li>
+        <li><b>Retour clair</b> vers la liste, y compris avec le bouton retour du téléphone.</li>
+        <li><b>Contre</b> : plusieurs taps pour passer d'une zone à l'autre, pas de vue d'ensemble permanente.</li>
+      </ul>
+    </section>
+
+    <!-- ========== B : ONGLETS ========== -->
+    <section class="opt" id="optB">
+      <h2>B · Onglets en bas</h2>
+      <p>Quatre sections toujours à portée du pouce. La fiche s'ouvre en feuille par-dessus la liste.</p>
+      <div class="phone" aria-label="Maquette B">
+        <header class="bar"><h3 id="bTitle"><span class="ic">★</span> Quêtes</h3></header>
+
+        <div class="screen" id="bq" role="tabpanel">
+          <div class="chips" role="group" aria-label="Statut">
+            <button class="chip" aria-pressed="true">À faire 38</button><button class="chip" aria-pressed="false">Faites 1151</button><button class="chip" aria-pressed="false">Masquées 41</button><button class="chip" aria-pressed="false">Niv. 1–200</button>
+          </div>
+          <button class="grp"><span>Quêtes mondiales (3)</span><span>–</span></button>
+          <button class="li" data-sheet><span class="chk av"></span><span class="n">Jusqu'au bout du rêve<span class="tags"><span class="tag gr">Groupe</span><span class="tag dj">Donjon</span></span></span><span class="lv">130–200</span></button>
+          <button class="li" data-sheet><span class="chk av"></span><span class="n">Question d'évolution<span class="tags"><span class="tag cb">Combat</span></span></span><span class="lv">200</span></button>
+          <button class="grp"><span>Tours de la Fratrie (7)</span><span>–</span></button>
+          <button class="li" data-sheet><span class="chk on">✓</span><span class="n">L'arme fatale<span class="tags"><span class="tag cr">Craft</span></span></span><span class="lv">200</span></button>
+          <button class="li" data-sheet><span class="chk"></span><span class="n">Battre le fer<span class="tags"><span class="tag fa">Farm</span><span class="tag cr">Craft</span></span></span><span class="lv">200</span></button>
+        </div>
+
+        <div class="screen" id="bs" role="tabpanel" hidden>
+          <div class="sum"><div class="lvl">200</div><div class="prog"><div class="t"><span>Succès de quêtes</span><span><b>96</b> / 271</span></div><div class="track g"><i style="width:35%"></i></div></div></div>
+          <button class="li"><span class="n">Archipel des Écailles</span><span class="pct">0%</span></button>
+          <button class="li"><span class="n">Archipel de Valonia</span><span class="pct">40%</span></button>
+          <button class="li"><span class="n">Astrub</span><span class="pct full">100%</span></button>
+          <button class="li"><span class="n">Bonta et Brâkmar</span><span class="pct full">100%</span></button>
+          <button class="li"><span class="n">Île de Frigost</span><span class="pct">82%</span></button>
+        </div>
+
+        <div class="screen" id="bd" role="tabpanel" hidden>
+          <div class="dz">
+            <div class="ok"><b>◆</b>Dofawa<small>15</small></div><div class="ok"><b>◆</b>Dolmanax<small>20</small></div><div><b>◆</b>Cawotte<small>60</small></div>
+            <div class="ok"><b>◆</b>Dokoko<small>50–100</small></div><div><b>◆</b>Émeraude<small>45–120</small></div><div><b>◆</b>Pourpre<small>110–130</small></div>
+          </div>
+        </div>
+
+        <div class="screen" id="bp" role="tabpanel" hidden>
+          <button class="li"><span class="n">Profil actif<small>Maza-Steam</small></span><span class="chev">›</span></button>
+          <button class="li"><span class="n">Exporter / importer</span><span class="chev">›</span></button>
+          <button class="li"><span class="n">Thème</span><span class="lv">Auto</span></button>
+        </div>
+
+        <div class="scrim" id="bScrim" hidden></div>
+        <div class="sheet" id="bSheet" hidden>
+          <div class="grab"></div>
+          <div class="det">
+            <h4>Question d'évolution</h4><div class="orn"></div>
+            <div class="tags" style="justify-content:center;margin-bottom:10px"><span class="tag cb">Combat</span></div>
+            <h5>Objectifs</h5>
+            <div class="ob"><span class="chk av"></span>Vaincre 5 Dragoeufs</div>
+            <h5>Récompenses</h5>
+            <div class="rew"><span>12 400 ✹</span><span>310 000 XP</span></div>
+            <div class="acts"><button class="btn" id="bClose">Fermer</button><button class="btn primary">Marquer faite</button></div>
+          </div>
+        </div>
+
+        <nav class="tabs" role="tablist" aria-label="Sections">
+          <button role="tab" aria-selected="false" data-b="bs"><span>★</span>Succès</button>
+          <button role="tab" aria-selected="true" data-b="bq"><span>!</span>Quêtes</button>
+          <button role="tab" aria-selected="false" data-b="bd"><span>◆</span>Dofus</button>
+          <button role="tab" aria-selected="false" data-b="bp"><span>●</span>Profil</button>
+        </nav>
+      </div>
+      <ul class="pros">
+        <li><b>Navigation directe</b> entre sections, état visible en permanence.</li>
+        <li><b>La liste reste en place</b> quand on ouvre une fiche : on enchaîne les coches sans perdre sa position.</li>
+        <li><b>Contre</b> : l'écran est plus chargé, et la fiche en feuille masque une partie de la liste.</li>
+      </ul>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+  // A : pile
+  var stack=['a1'], titles={a1:'<span class="ic">★</span> Succès &amp; quêtes',a2:'Archipel des Écailles',a3:'Quête'};
+  function showA(id){
+    ['a1','a2','a3'].forEach(function(s){document.getElementById(s).hidden=(s!==id)});
+    document.getElementById('aBack').hidden=(id==='a1');
+    document.getElementById('aTitle').innerHTML=titles[id];
+  }
+  document.querySelectorAll('[data-a]').forEach(function(b){b.addEventListener('click',function(){stack.push(b.dataset.a);showA(b.dataset.a)})});
+  document.getElementById('aBack').addEventListener('click',function(){stack.pop();showA(stack[stack.length-1])});
+
+  // A : filtres
+  document.querySelectorAll('.chips').forEach(function(g){g.addEventListener('click',function(e){
+    var c=e.target.closest('.chip');if(!c)return;
+    g.querySelectorAll('.chip').forEach(function(x){x.setAttribute('aria-pressed',String(x===c))});
+  })});
+
+  // B : onglets + feuille
+  var bt={bs:'Succès',bq:'Quêtes',bd:'Dofus',bp:'Profil'};
+  document.querySelectorAll('[data-b]').forEach(function(t){t.addEventListener('click',function(){
+    document.querySelectorAll('[data-b]').forEach(function(x){x.setAttribute('aria-selected',String(x===t))});
+    Object.keys(bt).forEach(function(k){document.getElementById(k).hidden=(k!==t.dataset.b)});
+    document.getElementById('bTitle').innerHTML='<span class="ic">★</span> '+bt[t.dataset.b];
+    closeSheet();
+  })});
+  function openSheet(){document.getElementById('bSheet').hidden=false;document.getElementById('bScrim').hidden=false}
+  function closeSheet(){document.getElementById('bSheet').hidden=true;document.getElementById('bScrim').hidden=true}
+  document.querySelectorAll('[data-sheet]').forEach(function(r){r.addEventListener('click',openSheet)});
+  document.getElementById('bScrim').addEventListener('click',closeSheet);
+  document.getElementById('bClose').addEventListener('click',closeSheet);
+})();
+</script>

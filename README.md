@@ -27,3 +27,17 @@ Les deux premières commandes ne servent qu'à rafraîchir les données DofusDB 
 ## Mobile
 
 Sous 700 px de large, la page passe en navigation par onglets en bas (Succès, Quêtes, Dofus, Réglages) : le choix de catégorie se fait par un menu sous la recherche, et la fiche d'une quête ou d'un succès s'ouvre en feuille par-dessus la liste.
+
+## Synchronisation entre appareils (optionnelle)
+
+Connexion Google (Firebase Auth) et stockage Firestore, projet `dofus-fc9d3`. La page marche sans : les coches restent dans le navigateur, la synchro n'est qu'une copie.
+
+- Un document par utilisateur, `users/{uid}`, avec un champ par profil (coches, niveau, Dofus). Rien d'autre n'est stocké.
+- Chaque profil garde la valeur de `savedAt` de la dernière synchro. Seul le local a changé : envoi. Seul le cloud : réception. Les deux : fusion des coches après confirmation (une coche retirée d'un côté peut revenir).
+- La clé de `FIREBASE_CONFIG` est publique par conception. L'accès est protégé par `firestore.rules` et par les domaines autorisés de Firebase.
+
+À faire une fois dans la console Firebase :
+
+1. Authentication › Commencer › Google : activer, choisir l'e-mail d'assistance.
+2. Authentication › Paramètres › Domaines autorisés : ajouter `mazakiel.github.io`.
+3. Firestore Database › Créer une base (mode production), puis onglet Règles : coller `firestore.rules` et publier.

@@ -267,6 +267,7 @@ input.gc:focus-visible{outline-offset:3px}
 .plus-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line)}
 .plus-row small{display:block;color:var(--muted);font-weight:600}
 .plus-note{padding:14px 16px;font-size:.8rem;color:var(--muted)}
+.plus-btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 
 /* ---------- petits écrans ---------- */
 @media (max-width:1100px){
@@ -383,6 +384,7 @@ input[type=checkbox]:not(.gc){accent-color:var(--gold)}
   <dialog id="pfDialog" aria-labelledby="pfTitle">
     <div class="dl-bar"><span id="pfTitle">Profils</span></div>
     <p class="muted" style="margin:10px 16px 0;font-size:.84rem">Un profil par personnage : coches, niveau et Dofus propres à chacun. L'affichage est commun.</p>
+    <div class="plus-row" id="syncDlg" style="border-bottom:0;padding-bottom:4px"></div>
     <div class="dl-body" id="pfList" style="border-top:0;margin-top:4px"></div>
     <form class="pf-new" id="pfNewForm">
       <input type="text" id="pfNewName" maxlength="40" placeholder="Nom du nouveau personnage" autocomplete="off">
@@ -416,8 +418,9 @@ input[type=checkbox]:not(.gc){accent-color:var(--gold)}
 
   <section class="win plus" id="viewPlus">
     <div class="plus-row"><div><b>Personnage</b><small id="mProfName"></small></div><button class="btn" id="mProf">Gérer</button></div>
+    <div class="plus-row" id="syncPlus"></div>
     <div class="plus-row"><div><b>Thème</b><small>Clair, sombre ou selon ton appareil</small></div><button class="btn" id="mTheme"></button></div>
-    <div class="plus-note">Tes coches sont enregistrées dans ce navigateur, par personnage. Pour en garder une copie ou les passer sur un autre appareil, utilise « Gérer » puis Exporter / Importer.</div>
+    <div class="plus-note">Tes coches sont enregistrées dans ce navigateur, par personnage. Connecté, elles sont aussi copiées chez Google (Firebase) pour passer d’un appareil à l’autre : rien d’autre que tes coches et ton niveau. L’export / import reste disponible dans « Gérer ».</div>
   </section>
 
   <dialog id="cfDialog" aria-labelledby="cfMsg">
@@ -481,7 +484,7 @@ if (!profiles.some(p => p.id === profile)) profile = profiles[0].id;
 const pkey = k => PKEYS.includes(k) ? `p:${profile}:${k}` : k;
 const store = {
   get(k, d){ return raw.get(pkey(k), d); },
-  set(k, v){ raw.set(pkey(k), v); if (TRACKED.includes(k)) raw.set(pkey('savedAt'), new Date().toISOString()); }
+  set(k, v){ raw.set(pkey(k), v); if (PKEYS.includes(k) && k !== 'savedAt') { raw.set(pkey('savedAt'), new Date().toISOString()); if (typeof syncSoon === 'function') syncSoon(); } }
 };
 // Restauration depuis IndexedDB si le localStorage a perdu toutes les coches ; sinon on complète le miroir.
 (async () => {
@@ -1329,6 +1332,132 @@ document.getElementById('catBtn').addEventListener('click', () => {
 });
 document.getElementById('mProf').onclick = () => document.getElementById('profBtn').click();
 
+// ---- Synchronisation entre appareils (Firebase : connexion Google + Firestore) ----
+// Les coches restent d'abord dans le navigateur ; la synchro est un plus et la page marche sans elle.
+// Un document par utilisateur : users/{uid} = { profiles: { <id>: { n, sdone, sq, sodone, sLevel, sdzState (JSON), sdzGoals, savedAt } } }.
+// Par profil : « syncBase » est la valeur de savedAt sur laquelle les deux côtés étaient d'accord à la dernière synchro.
+// Seul le local a changé → envoi ; seul le cloud → réception ; les deux → fusion (union des coches, après confirmation).
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDKocCOiSELHAmqLldebqBoYtJIwOrjO6c", authDomain: "dofus-fc9d3.firebaseapp.com", projectId: "dofus-fc9d3",
+  storageBucket: "dofus-fc9d3.firebasestorage.app", messagingSenderId: "983982346718", appId: "1:983982346718:web:0020d7637b4e22ca5e0d4f"
+};   // clé publique par conception : l'accès est protégé par les règles Firestore (firestore.rules) et les domaines autorisés
+const FB_URL = n => `https://www.gstatic.com/firebasejs/13.2.0/firebase-${n}.js`;
+var fb = null, fbLoading = null, syncBusy = false, syncAgain = false, syncTimer = null, syncMsg = '', syncLast = null, syncSeen = 0;
+const pget = (id, k, d) => raw.get(`p:${id}:${k}`, d);
+const pset = (id, k, v) => raw.set(`p:${id}:${k}`, v);
+function localPayload(id){
+  const p = profiles.find(x => x.id === id);
+  return { n: p ? p.n : id, sdone: pget(id, 'sdone', []), sq: pget(id, 'sq', []), sodone: pget(id, 'sodone', []), sLevel: pget(id, 'sLevel', 200),
+    sdzState: JSON.stringify(pget(id, 'sdzState', {})), sdzGoals: pget(id, 'sdzGoals', []), savedAt: pget(id, 'savedAt', '') || '' };
+}
+function applyPayload(id, pl){
+  const p = profiles.find(x => x.id === id);
+  if (p) p.n = pl.n || p.n; else profiles.push({ id, n: pl.n || id });
+  raw.set('profiles', profiles);
+  for (const k of ['sdone', 'sq', 'sodone', 'sdzGoals']) pset(id, k, pl[k] || []);
+  pset(id, 'sLevel', pl.sLevel || 200); pset(id, 'sdzState', JSON.parse(pl.sdzState || '{}')); pset(id, 'savedAt', pl.savedAt || '');
+}
+const sortedJson = pl => JSON.stringify([pl.n, [...(pl.sdone || [])].sort(), [...(pl.sq || [])].sort(), [...(pl.sodone || [])].sort(), pl.sLevel, [...(pl.sdzGoals || [])].sort(), pl.sdzState]);
+function mergePayload(a, b){
+  const u = (x, y) => [...new Set([...(x || []), ...(y || [])])];
+  return { n: a.n, sdone: u(a.sdone, b.sdone), sq: u(a.sq, b.sq), sodone: u(a.sodone, b.sodone), sdzGoals: u(a.sdzGoals, b.sdzGoals),
+    sLevel: Math.max(a.sLevel || 1, b.sLevel || 1), sdzState: JSON.stringify({ ...JSON.parse(b.sdzState || '{}'), ...JSON.parse(a.sdzState || '{}') }), savedAt: new Date().toISOString() };
+}
+function fbLoad(){
+  if (fbLoading) return fbLoading;
+  fbLoading = (async () => {
+    const [app, au, fs] = await Promise.all([import(FB_URL('app')), import(FB_URL('auth')), import(FB_URL('firestore'))]);
+    const a = app.initializeApp(FIREBASE_CONFIG);
+    fb = { au, fs, auth: au.getAuth(a), db: fs.getFirestore(a), user: null };
+    au.onAuthStateChanged(fb.auth, u => { fb.user = u; renderSync(); if (u) syncNow(false); });
+    return fb;
+  })().catch(e => { fbLoading = null; syncMsg = 'Impossible de charger la synchronisation (connexion ?)'; renderSync(); throw e; });
+  return fbLoading;
+}
+function syncSoon(){ if (!fb || !fb.user) return; clearTimeout(syncTimer); syncTimer = setTimeout(() => syncNow(false), 2500); }
+const syncErr = e => {
+  const c = (e && e.code) || '';
+  if (c === 'permission-denied') return 'Accès refusé : les règles Firestore ne sont pas en place';
+  if (c === 'auth/unauthorized-domain') return 'Domaine non autorisé dans Firebase (Authentication › Paramètres)';
+  if (c === 'auth/operation-not-allowed') return 'Connexion Google non activée dans Firebase';
+  if (c === 'auth/popup-blocked') return 'Fenêtre de connexion bloquée par le navigateur : réessaie';
+  if (c === 'unavailable' || !navigator.onLine) return 'Hors ligne : la synchro reprendra dès que possible';
+  return 'Erreur de synchro : ' + ((e && e.message) || c || 'inconnue');
+};
+async function syncNow(manual){
+  if (!fb || !fb.user) return;
+  if (syncBusy) { syncAgain = true; return; }
+  syncBusy = true; syncMsg = 'Synchronisation…'; renderSync();
+  let refresh = false;
+  try {
+    const ref = fb.fs.doc(fb.db, 'users', fb.user.uid);
+    const snap = await fb.fs.getDoc(ref), rp = (snap.exists() && snap.data().profiles) || {};
+    const push = {}; let conflicts = 0;
+    for (const id of new Set([...profiles.map(p => p.id), ...Object.keys(rp)])) {
+      const hasL = profiles.some(p => p.id === id), r = rp[id];
+      if (hasL && !r) { push[id] = localPayload(id); continue; }                                        // profil seulement ici : on l'envoie
+      if (!hasL && r) { applyPayload(id, r); pset(id, 'syncBase', r.savedAt || ''); refresh = true; continue; }   // profil seulement dans le cloud : on le reçoit
+      const l = localPayload(id), base = pget(id, 'syncBase', '') || '';
+      const lc = l.savedAt !== base, rc = (r.savedAt || '') !== base;
+      if (lc && !rc) push[id] = l;
+      else if (!lc && rc) { applyPayload(id, r); pset(id, 'syncBase', r.savedAt || ''); refresh = true; }
+      else if (lc && rc) {
+        if (sortedJson(l) === sortedJson(r)) { pset(id, 'syncBase', l.savedAt); pset(id, 'savedAt', r.savedAt || l.savedAt); }
+        else if (manual && await askConfirm(`Le profil « ${l.n} » a changé sur cet appareil et dans le cloud. Fusionner ? Les coches des deux côtés sont gardées (une coche retirée d’un côté peut revenir).`, 'Fusionner', 'Plus tard')) {
+          const m = mergePayload(l, r); applyPayload(id, m); push[id] = m; refresh = true;
+        } else conflicts++;
+      }
+    }
+    if (Object.keys(push).length) {
+      await fb.fs.setDoc(ref, { profiles: push, updatedAt: fb.fs.serverTimestamp() }, { merge: true });
+      for (const [id, pl] of Object.entries(push)) pset(id, 'syncBase', pl.savedAt || '');
+    }
+    syncLast = new Date(); syncMsg = conflicts ? 'Conflit : appuie sur « Synchroniser » pour fusionner' : '';
+  } catch (e) { syncMsg = syncErr(e); }
+  syncBusy = false;
+  if (refresh) {   // le profil actif a pu changer : on recharge l'état en mémoire
+    sdone = new Set(store.get('sdone', [])); sq = new Set(store.get('sq', [])); sodone = new Set(store.get('sodone', []));
+    sLevel = store.get('sLevel', 200); sdzState = store.get('sdzState', {}); sdzGoals = new Set(store.get('sdzGoals', []));
+    SMEMO = new Map(); renderProfiles(); renderSucces();
+  }
+  renderSync();
+  if (syncAgain) { syncAgain = false; syncNow(false); }
+}
+async function syncDelete(id){
+  if (!fb || !fb.user) return;
+  try { await fb.fs.updateDoc(fb.fs.doc(fb.db, 'users', fb.user.uid), { ['profiles.' + id]: fb.fs.deleteField() }); } catch (e) { syncMsg = syncErr(e); renderSync(); }
+}
+function renderSync(){
+  const t = syncLast ? syncLast.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+  const out = fb && fb.user
+    ? `<div><b>Synchronisation</b><small>${esc(fb.user.email || 'Connecté')} · ${esc(syncMsg || (t ? 'à jour à ' + t : 'connecté'))}</small></div>
+       <div class="plus-btns"><button class="btn" data-sync="now">Synchroniser</button><button class="btn" data-sync="logout">Se déconnecter</button></div>`
+    : `<div><b>Synchronisation</b><small>${esc(syncMsg || 'Retrouve tes coches sur tous tes appareils')}</small></div>
+       <button class="btn primary" data-sync="login">Se connecter avec Google</button>`;
+  for (const id of ['syncPlus', 'syncDlg']) { const el = document.getElementById(id); if (el) el.innerHTML = out; }
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-sync]'); if (!b) return;
+  const act = b.dataset.sync;
+  try {
+    if (act === 'login') {
+      await fbLoad();   // normalement déjà préchargé : la fenêtre de connexion doit s'ouvrir dans le geste de l'utilisateur
+      await fb.au.signInWithPopup(fb.auth, new fb.au.GoogleAuthProvider());
+      raw.set('sync:on', true); await syncNow(true);
+    } else if (act === 'now') { await syncNow(true); }
+    else if (act === 'logout') { await fb.au.signOut(fb.auth); raw.set('sync:on', false); syncMsg = ''; syncLast = null; renderSync(); }
+  } catch (err) { if (err && err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') { syncMsg = syncErr(err); renderSync(); } }
+});
+// préchargement du SDK dès qu'on voit le bouton (sinon le navigateur peut bloquer la fenêtre de connexion), puis reprises automatiques
+const preloadSync = () => { fbLoad().catch(() => {}); };
+document.getElementById('profBtn').addEventListener('click', preloadSync);
+document.getElementById('mProf').addEventListener('click', preloadSync);
+document.getElementById('tabbar').addEventListener('click', e => { if (e.target.closest('[data-tab="plus"]')) preloadSync(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && fb && fb.user && Date.now() - syncSeen > 30000) { syncSeen = Date.now(); syncNow(false); } });
+window.addEventListener('online', () => syncNow(false));
+renderSync();
+if (raw.get('sync:on', false)) preloadSync();   // déjà connecté : on reprend la session et on récupère les changements
+
 // ---- Export / import des coches ----
 document.getElementById('exportBtn').onclick = () => {
   const payload = { format: 'succes-dofus-coches', version: 2, exporteLe: new Date().toISOString(), profil: profName(profile), niveau: sLevel,
@@ -1396,7 +1525,7 @@ pfDlg.addEventListener('click', async e => {
     const id = b.dataset.pfdel; if (profiles.length < 2) return;
     if (!(await askConfirm(`Supprimer le profil « ${profName(id)} » et toutes ses coches ? Exporte-le avant si tu veux garder une copie.`, 'Supprimer'))) return;
     for (const k of PKEYS) raw.del(`p:${id}:${k}`);
-    profiles = profiles.filter(p => p.id !== id); raw.set('profiles', profiles);
+    profiles = profiles.filter(p => p.id !== id); raw.set('profiles', profiles); syncDelete(id);
     if (id === profile) switchProfile(profiles[0].id); else renderProfiles();
   }
 });

@@ -3,7 +3,7 @@
   "private": true,
   "description": "Suivi de la progression Dofus : succès, quêtes, donjons et Dofus (données DofusDB)",
   "scripts": {
-    "data": "node scripts/fetch-dofusdb.js data/dofusdb.json && node scripts/enrich-dofusdb.js data/dofusdb.json",
+    "data": "node scripts/update-data.js data/dofusdb.json",
     "build": "node scripts/build.js data/dofusdb.json dist/index.html",
     "test": "node --test tests/*.test.js",
     "test:e2e": "node --test tests/browser/*.test.js"

@@ -1,56 +1,16 @@
 // Enrichit data/dofusdb.json avec, pour chaque quête : étiquettes (donjon, combat, farm, craft, exploration),
 // donjons concernés et liste lisible de ce qu'il y a à faire. Source : DofusDB uniquement.
 // Usage : node scripts/enrich-dofusdb.js data/dofusdb.json   (réécrit le fichier ; à relancer après fetch-dofusdb.js)
-const fs = require('fs'), path = require('path');
-const FILE = process.argv[2] || 'data/dofusdb.json';
-const CACHE = path.join(__dirname, '..', 'cache');
-const API = 'https://api.dofusdb.fr/';
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-fs.mkdirSync(CACHE, { recursive: true });
-
-async function getJson(url) {
-  for (let t = 0; t < 4; t++) {
-    try { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return await r.json(); }
-    catch (e) { if (t === 3) throw e; await sleep(800 * (t + 1)); }
-  }
-}
-function cached(name, build) {
-  const p = path.join(CACHE, name);
-  if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8'));
-  return build().then(v => { fs.writeFileSync(p, JSON.stringify(v)); return v; });
-}
-async function byIds(endpoint, ids, select) {
-  const out = {};
-  const sel = select.map(s => `$select[]=${s}`).join('&');
-  for (let i = 0; i < ids.length; i += 40) {
-    const chunk = ids.slice(i, i + 40);
-    const j = await getJson(`${API}${endpoint}?${chunk.map(id => `id[$in][]=${id}`).join('&')}&$limit=50&${sel}`);
-    for (const d of j.data) out[d.id] = d;
-    process.stderr.write(`\r${endpoint} ${Math.min(i + 40, ids.length)}/${ids.length}`);
-    await sleep(120);
-  }
-  process.stderr.write('\n');
-  return out;
-}
+const fs = require('fs');
+const { createClient } = require('./lib/dofusdb.js');
 const fr = n => (n && (n.fr || n.en)) || '';
 
-(async () => {
+async function run(client, FILE) {
   const data = JSON.parse(fs.readFileSync(FILE, 'utf8'));
   const qids = Object.keys(data.quetes);
 
   // 1. quêtes complètes (étapes + objectifs)
-  const full = await cached('quetes-full.json', async () => {
-    const out = {};
-    for (let i = 0; i < qids.length; i += 20) {
-      const chunk = qids.slice(i, i + 20);
-      const j = await getJson(`${API}quests?${chunk.map(id => `id[$in][]=${id}`).join('&')}&$limit=50`);
-      for (const q of j.data) out[q.id] = q;
-      process.stderr.write(`\rquêtes ${Math.min(i + 20, qids.length)}/${qids.length}`);
-      await sleep(120);
-    }
-    process.stderr.write('\n');
-    return out;
-  });
+  const full = await client.cached('quetes-full.json', () => client.byIds('quests', qids, [], { chunk: 20 }));
 
   // 2. identifiants à résoudre : objets, monstres, zones
   const want = { item: new Set(), monster: new Set(), subarea: new Set() };
@@ -59,24 +19,18 @@ const fr = n => (n && (n.fr || n.en)) || '';
     for (const m of fr(o.text).matchAll(TOK)) if (want[m[1]]) want[m[1]].add(+m[2]);
     (o.need && o.need.generated && o.need.generated.items || []).forEach(id => want.item.add(id));
   }
-  const items = await cached('items-min.json', () => byIds('items', [...want.item], ['id', 'name', 'dropMonsterIds', 'hasRecipe']));
-  const monsters = await cached('monsters-min.json', () => byIds('monsters', [...want.monster], ['id', 'name']));
-  const subareas = await cached('subareas-min.json', () => byIds('subareas', [...want.subarea], ['id', 'name']));
-  const dungeons = await cached('dungeons-v2.json', async () => {
-    const out = {};   // l'API plafonne à 50 résultats par page
-    for (let skip = 0, total = 1; skip < total; skip += 50) {
-      const j = await getJson(`${API}dungeons?$skip=${skip}&$limit=50&$select[]=id&$select[]=name&$select[]=optimalPlayerLevel&$select[]=bosses`);
-      total = j.total; for (const d of j.data) out[d.id] = d;
-    }
-    return out;
-  });
+  const items = await client.cached('items-min.json', () => client.byIds('items', [...want.item], ['id', 'name', 'dropMonsterIds', 'hasRecipe']));
+  const monsters = await client.cached('monsters-min.json', () => client.byIds('monsters', [...want.monster], ['id', 'name']));
+  const subareas = await client.cached('subareas-min.json', () => client.byIds('subareas', [...want.subarea], ['id', 'name']));
+  // donjons : toutes les pages (l'API plafonne à 50 par page, géré par le client)
+  const dungeons = Object.fromEntries((await client.all('dungeons', ['id', 'name', 'optimalPlayerLevel', 'bosses'])).map(d => [d.id, d]));
   // noms des boss de donjon
   const bossIds = [...new Set(Object.values(dungeons).flatMap(d => d.bosses || []))].filter(id => !monsters[id]);
-  if (bossIds.length) Object.assign(monsters, await byIds('monsters', bossIds, ['id', 'name']));
+  if (bossIds.length) Object.assign(monsters, await client.byIds('monsters', bossIds, ['id', 'name']));
   // des ids peuvent manquer si le cache est plus ancien que les données : on complète
   for (const [kind, store, sel] of [['item', items, ['id', 'name', 'dropMonsterIds', 'hasRecipe']], ['monster', monsters, ['id', 'name']]]) {
     const miss = [...want[kind]].filter(id => !store[id]);
-    if (miss.length) Object.assign(store, await byIds(kind + 's', miss, sel));
+    if (miss.length) Object.assign(store, await client.byIds(kind + 's', miss, sel));
   }
 
   const nameOf = { item: id => fr((items[id] || {}).name), monster: id => fr((monsters[id] || {}).name), subarea: id => fr((subareas[id] || {}).name) };
@@ -142,4 +96,7 @@ const fr = n => (n && (n.fr || n.en)) || '';
   const cnt = {};
   for (const d of Object.values(data.quetes)) for (const t of d.tg || []) cnt[t] = (cnt[t] || 0) + 1;
   console.log(`${nTag} / ${qids.length} quêtes étiquetées`, cnt, `· ${used.size} donjons`, `· ${(fs.statSync(FILE).size / 1024).toFixed(0)} Ko`);
-})().catch(e => { console.error(e); process.exit(1); });
+}
+
+module.exports = { run };
+if (require.main === module) run(createClient(), process.argv[2] || 'data/dofusdb.json').catch(e => { console.error(e); process.exit(1); });

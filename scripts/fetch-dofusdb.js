@@ -1,66 +1,25 @@
 // Télécharge les données de progression depuis DofusDB (succès, objectifs, quêtes, Dofus) et écrit le JSON.
-// Usage : node scripts/fetch-dofusdb.js data/dofusdb.json   (cache dans cache/ ; à suivre de scripts/enrich-dofusdb.js)
-// Télécharge (avec cache) catégories, succès, objectifs et niveaux des quêtes, et écrit succes.json (format compact).
-const fs = require('fs'), path = require('path');
-const S = path.resolve(__dirname, '..');
-const CACHE = path.join(S, 'cache'); fs.mkdirSync(CACHE, { recursive: true });
-const [OUT] = process.argv.slice(2);
-const API = 'https://api.dofusdb.fr/';
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+// Usage : node scripts/fetch-dofusdb.js data/dofusdb.json   (cache dans cache/ ; à suivre de scripts/enrich-dofusdb.js, ou voir scripts/update-data.js)
+// Télécharge (avec cache) catégories, succès, objectifs et niveaux des quêtes, et écrit le JSON (format compact).
+const fs = require('fs');
+const { createClient } = require('./lib/dofusdb.js');
+const { parseObjective, parseStart } = require('./lib/criteria.js');
 
-async function getJson(url) {
-  for (let t = 0; t < 4; t++) {
-    try { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return await r.json(); }
-    catch (e) { process.stderr.write(`\nretry ${url.slice(0, 80)} ${e.message}`); await sleep(1500 * (t + 1)); }
+async function run(client, OUT) {
+  // quêtes d'un coup, avec un cache par quête (y compris « absente »)
+  async function fetchQuests(ids) {
+    const out = {}, todo = [];
+    for (const id of ids) { const n = `qsc-${id}.json`; if (client.cache.has(n)) out[id] = client.cache.read(n); else todo.push(id); }
+    await client.byIds('quests', todo, ['id', 'name', 'levelMin', 'isPartyQuest', 'isEvent', 'categoryId', 'startCriterion'], {
+      wait: 150, onChunk: (got, part) => { for (const id of part) { out[id] = got[id] || null; client.cache.write(`qsc-${id}.json`, out[id]); } } });
+    return out;
   }
-  throw new Error('échec ' + url);
-}
-// Télécharge tout un point d'accès, page par page (50 max), avec cache disque
-async function fetchAll(endpoint, select) {
-  const file = path.join(CACHE, `all-${endpoint}.json`);
-  if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, 'utf8'));
-  const sel = select.map(s => `&$select[]=${s}`).join('');
-  const first = await getJson(`${API}${endpoint}?$limit=50&$skip=0&$sort[id]=1${sel}`);
-  const out = [...first.data];
-  for (let skip = 50; skip < first.total; skip += 50) {
-    const j = await getJson(`${API}${endpoint}?$limit=50&$skip=${skip}&$sort[id]=1${sel}`);
-    out.push(...j.data);
-    process.stderr.write(`\r${endpoint} ${out.length}/${first.total}`);
-    await sleep(150);
-  }
-  process.stderr.write('\n');
-  fs.writeFileSync(file, JSON.stringify(out));
-  return out;
-}
-async function fetchQuests(ids) {
-  const out = {}, todo = [];
-  for (const id of ids) { const p = path.join(CACHE, `qsc-${id}.json`); if (fs.existsSync(p)) out[id] = JSON.parse(fs.readFileSync(p, 'utf8')); else todo.push(id); }
-  for (let i = 0; i < todo.length; i += 40) {
-    const chunk = todo.slice(i, i + 40);
-    const j = await getJson(`${API}quests?${chunk.map(id => `id[$in][]=${id}`).join('&')}&$limit=50&$select[]=id&$select[]=name&$select[]=levelMin&$select[]=isPartyQuest&$select[]=isEvent&$select[]=categoryId&$select[]=startCriterion`);
-    for (const q of j.data) { out[q.id] = q; fs.writeFileSync(path.join(CACHE, `qsc-${q.id}.json`), JSON.stringify(q)); }
-    for (const id of chunk) if (!out[id]) { out[id] = null; fs.writeFileSync(path.join(CACHE, `qsc-${id}.json`), 'null'); }
-    process.stderr.write(`\rquêtes ${Math.min(i + 40, todo.length)}/${todo.length}`);
-    await sleep(150);
-  }
-  return out;
-}
+  const cats = await client.all('achievement-categories', ['id', 'parentId', 'order', 'name', 'achievementIds', 'visibilityCriterion']);
+  const achs = await client.all('achievements', ['id', 'categoryId', 'iconId', 'points', 'level', 'order', 'accountLinked', 'objectiveIds', 'name', 'description']);
+  const objs = await client.all('achievement-objectives', ['id', 'achievementId', 'order', 'criterion', 'name']);
 
-(async () => {
-  const cats = await fetchAll('achievement-categories', ['id', 'parentId', 'order', 'name', 'achievementIds', 'visibilityCriterion']);
-  const achs = await fetchAll('achievements', ['id', 'categoryId', 'iconId', 'points', 'level', 'order', 'accountLinked', 'objectiveIds', 'name', 'description']);
-  const objs = await fetchAll('achievement-objectives', ['id', 'achievementId', 'order', 'criterion', 'name']);
-
-  // Critère d'objectif : Qf=ID → quête terminée, OA=ID → succès obtenu, sinon autre (monstre, donjon, niveau…)
-  const parse = c => {
-    c = c || '';
-    let m;
-    if ((m = c.match(/Qf=(\d+)/))) return { t: 'q', r: +m[1] };
-    if ((m = c.match(/OA=(\d+)/))) return { t: 'a', r: +m[1] };
-    return { t: 'x' };
-  };
   const objOut = {};
-  for (const o of objs) { const p = parse(o.criterion); objOut[o.id] = { a: o.achievementId, n: (o.name && o.name.fr) || '', t: p.t, ...(p.r ? { r: p.r } : {}) }; }
+  for (const o of objs) { const p = parseObjective(o.criterion); objOut[o.id] = { a: o.achievementId, n: (o.name && o.name.fr) || '', t: p.t, ...(p.r ? { r: p.r } : {}) }; }
 
   // Objectifs que DofusDB ne publie pas (succès de niveau, etc.) : objectif unique tiré de la description du succès.
   // « Atteindre le niveau N » devient un objectif de niveau, validé d'après le niveau saisi dans la page.
@@ -73,64 +32,36 @@ async function fetchQuests(ids) {
   }
   console.log('objectifs reconstitués depuis la description :', virtuels);
   // « Terminer la quête : X » reconstitué → vraie quête X (recherchée par son nom exact dans DofusDB)
-  const qByNameFile = path.join(CACHE, 'quetes-par-nom.json');
-  const qByName = fs.existsSync(qByNameFile) ? JSON.parse(fs.readFileSync(qByNameFile, 'utf8')) : {};
+  const qByName = client.cache.has('quetes-par-nom.json') ? client.cache.read('quetes-par-nom.json') : {};
   let relies = 0;
   for (const o of Object.values(objOut)) {
     if (!o.v) continue;
     const m = o.n.match(/^Terminer la quête\s*:\s*(.+?)\s*\.?$/i); if (!m) continue;
     const nom = m[1];
     if (!(nom in qByName)) {
-      const j = await getJson(`${API}quests?name.fr=${encodeURIComponent(nom)}&$limit=2&$select[]=id`);
+      const j = await client.get(`quests?name.fr=${encodeURIComponent(nom)}&$limit=2&$select[]=id`);
       qByName[nom] = j.data.length === 1 ? j.data[0].id : null;
-      await sleep(120);
+      await client.pause(120);
     }
     if (qByName[nom]) { o.t = 'q'; o.r = qByName[nom]; delete o.v; relies++; }
   }
-  fs.writeFileSync(qByNameFile, JSON.stringify(qByName));
+  client.cache.write('quetes-par-nom.json', qByName);
   console.log('objectifs « Terminer la quête : X » reliés à leur quête :', relies);
 
   // Quêtes : celles des succès, puis, de proche en proche, celles exigées par leurs conditions de départ (startCriterion).
   // Qf=X → la quête X doit être terminée ; OA=Y → le succès Y doit être obtenu. Les alternatives « a|b » sont ignorées.
-  const parseStart = c => {
-    const pre = new Set(), preA = new Set(), po = new Set();
-    // découpe au niveau 0 des parenthèses : a&(b|c)&d → [a, (b|c), d]
-    const split = (s, sep) => { const out = []; let depth = 0, cur = '';
-      for (const ch of s) { if (ch === '(') depth++; else if (ch === ')') depth--; if (ch === sep && !depth) { out.push(cur); cur = ''; } else cur += ch; }
-      out.push(cur); return out; };
-    const wrapped = s => { if (!s.startsWith('(') || !s.endsWith(')')) return false; let d = 0;
-      for (let i = 0; i < s.length - 1; i++) { if (s[i] === '(') d++; else if (s[i] === ')') d--; if (!d) return false; } return true; };
-    const unwrap = s => { s = s.trim(); while (wrapped(s)) s = s.slice(1, -1).trim(); return s; };
-    for (let part of split(String(c || ''), '&')) {
-      part = unwrap(part);
-      const alts = split(part, '|');
-      if (alts.length > 1) {
-        // « (quête X en cours, assez avancée) OU (quête X terminée) » : on exige la quête X terminée
-        const ids = alts.map(a => new Set([...a.matchAll(/Q[fa]=(\d+)/g)].map(m => +m[1])));
-        for (const id of ids[0]) if (ids.every(s => s.has(id))) pre.add(id);
-        continue;
-      }
-      let m; if ((m = part.match(/Qf=(\d+)/))) pre.add(+m[1]); if ((m = part.match(/OA=(\d+)/))) preA.add(+m[1]);
-      if ((m = part.match(/PO=(\d+)/))) po.add(+m[1]);   // posséder un objet (filtré plus bas sur les Dofus)
-    }
-    return { pre: [...pre], preA: [...preA], po: [...po] };
-  };
   // ---- Dofus (objets de type 23) et ce qui les donne, d'après DofusDB uniquement ----
   // 1) récompense d'un succès (achievement-rewards), 2) succès dont la description cite le Dofus, 3) récompense d'une étape de quête
-  const dzFile = path.join(CACHE, 'dofus-map-v2.json');
-  let dz;
-  if (fs.existsSync(dzFile)) dz = JSON.parse(fs.readFileSync(dzFile, 'utf8'));
-  else {
-    const items = (await getJson(`${API}items?typeId=23&$limit=50&$select[]=id&$select[]=name&$select[]=iconId&$select[]=level&$select[]=description&$select[]=criterions`)).data;
+  const dz = await client.cached('dofus-map-v2.json', async () => {
+    const items = (await client.get(`items?typeId=23&$limit=50&$select[]=id&$select[]=name&$select[]=iconId&$select[]=level&$select[]=description&$select[]=criterions`)).data;
     const ids = items.map(i => i.id);
-    const ar = (await getJson(`${API}achievement-rewards?${ids.map(i => `itemsReward[$in][]=${i}`).join('&')}&$limit=50&$select[]=achievementId&$select[]=itemsReward`)).data;
-    const qr = (await getJson(`${API}quest-step-rewards?${ids.map(i => `itemsRewardIds[$in][]=${i}`).join('&')}&$limit=50&$select[]=stepId&$select[]=itemsRewardIds`)).data;
+    const ar = (await client.get(`achievement-rewards?${ids.map(i => `itemsReward[$in][]=${i}`).join('&')}&$limit=50&$select[]=achievementId&$select[]=itemsReward`)).data;
+    const qr = (await client.get(`quest-step-rewards?${ids.map(i => `itemsRewardIds[$in][]=${i}`).join('&')}&$limit=50&$select[]=stepId&$select[]=itemsRewardIds`)).data;
     const stepIds = [...new Set(qr.map(r => r.stepId))];
-    const steps = stepIds.length ? (await getJson(`${API}quest-steps?${stepIds.map(i => `id[$in][]=${i}`).join('&')}&$limit=50&$select[]=id&$select[]=questId`)).data : [];
+    const steps = stepIds.length ? (await client.get(`quest-steps?${stepIds.map(i => `id[$in][]=${i}`).join('&')}&$limit=50&$select[]=id&$select[]=questId`)).data : [];
     const stepQuest = Object.fromEntries(steps.map(s => [s.id, s.questId]));
-    dz = { items, ar, qr: qr.map(r => ({ q: stepQuest[r.stepId], items: r.itemsRewardIds })) };
-    fs.writeFileSync(dzFile, JSON.stringify(dz));
-  }
+    return { items, ar, qr: qr.map(r => ({ q: stepQuest[r.stepId], items: r.itemsRewardIds })) };
+  });
   const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   const dofus = [];
   for (const it of dz.items) {
@@ -182,10 +113,10 @@ async function fetchQuests(ids) {
   const qIds = Object.keys(qOut);
   // Tranche de niveau d'un Dofus donné par une quête : niveau des étapes (optimalLevel), ex. « L'éternelle moisson » 40 → 180
   for (const d of dofusOut) if (d.q) {
-    const f = path.join(CACHE, `steps-lv-${d.q}.json`);
-    let lvs;
-    if (fs.existsSync(f)) lvs = JSON.parse(fs.readFileSync(f, 'utf8'));
-    else { lvs = (await getJson(`${API}quest-steps?questId=${d.q}&$limit=50&$select[]=optimalLevel`)).data.map(s => s.optimalLevel).filter(x => x > 0); fs.writeFileSync(f, JSON.stringify(lvs)); await sleep(120); }
+    const lvs = await client.cached(`steps-lv-${d.q}.json`, async () => {
+      const r = (await client.get(`quest-steps?questId=${d.q}&$limit=50&$select[]=optimalLevel`)).data.map(s => s.optimalLevel).filter(x => x > 0);
+      await client.pause(120); return r;
+    });
     if (lvs.length) d.lvq = [Math.min(...lvs), Math.max(...lvs)];
   }
   // Quêtes qui exigent de posséder un Dofus (PO=id dans leurs conditions de départ) : donne au moins sa place dans l'ordre
@@ -207,4 +138,7 @@ async function fetchQuests(ids) {
   const types = Object.values(objOut).reduce((m, o) => (m[o.t] = (m[o.t] || 0) + 1, m), {});
   console.log(`catégories ${cats.length} · succès ${achs.length} · objectifs ${objs.length}`, types,
     `· quêtes ${qIds.length} · ${(fs.statSync(OUT).size / 1024).toFixed(0)} Ko`);
-})();
+}
+
+module.exports = { run };
+if (require.main === module) run(createClient(), process.argv[2]).catch(e => { console.error(e); process.exit(1); });

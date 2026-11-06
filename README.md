@@ -11,9 +11,13 @@ Etats d'une quête : faite (cochée), commencée ou bloquée (à indiquer dans l
 
 - `dist/index.html` : la page finale, données incluses, générée par `npm run build` (non versionnée : la CI la reconstruit à chaque publication). S'ouvre directement dans un navigateur.
 - `data/dofusdb.json` : les données DofusDB préparées (catégories, succès, objectifs, quêtes, donjons, Dofus).
-- `scripts/fetch-dofusdb.js` : télécharge les données DofusDB (avec cache dans `cache/`) et écrit le JSON.
-- `scripts/enrich-dofusdb.js` : complète le JSON avec, pour chaque quête, les étiquettes (donjon, combat, farm, craft, exploration), le type (icône), la tranche de niveau, les donjons concernés et ce qu'il y a à faire ; ajoute aussi la fiche des donjons (niveau optimal, boss). Mêmes données DofusDB, avec cache dans `cache/`.
-- `scripts/build.js` : assemble la page (`dist/index.html`) depuis le modèle `src/page.html`, le module `src/progression.js` et le JSON.
+- `scripts/update-data.js` : met à jour ces données en une commande (`npm run data`) : télécharge puis enrichit, dans l'ordre, avec un même client et un même cache dans `cache/`.
+- `scripts/fetch-dofusdb.js` : télécharge succès, objectifs, quêtes et Dofus depuis DofusDB et écrit le JSON.
+- `scripts/enrich-dofusdb.js` : complète le JSON avec, pour chaque quête, les étiquettes (donjon, combat, farm, craft, exploration), le type (icône), la tranche de niveau, les donjons concernés et ce qu'il y a à faire ; ajoute aussi la fiche des donjons (niveau optimal, boss).
+- `scripts/lib/dofusdb.js` : le client de l'API (pages de 50 maximum, reprises, cache disque). L'accès réseau est injectable : les tests utilisent une fausse API.
+- `scripts/lib/criteria.js` : lecture des critères DofusDB (objectifs de succès, conditions de départ des quêtes).
+- `scripts/lib/tracked-content.js` : la règle « ce qui est suivi » (succès de quêtes, contenu saisonnier, entrées du menu), appliquée au build ; la page lit les drapeaux qu'elle pose.
+- `scripts/build.js` : assemble la page (`dist/index.html`) depuis le modèle `src/page.html`, les modules de `src/` et le JSON.
 - `src/page.html` : le modèle de la page (style, vues, profils, synchro).
 - `src/progression.js` : le module de règles de progression (statuts, disponibilité, cascade, objectifs). Il possède l'état suivi et ses caches ; le build l'insère dans la page, et les tests le chargent directement.
 - `src/progress-store.js` : le module de progression persistée (profils, sauvegarde par profil, synchro entre appareils, export et import). Il parle à un stockage et à un distant interchangeables : le navigateur et Firestore dans la page, une mémoire et un faux distant dans les tests.
@@ -27,11 +31,11 @@ Etats d'une quête : faite (cochée), commencée ou bloquée (à indiquer dans l
 ## Régénérer
 
 ```bash
-npm run data    # rafraîchit les données DofusDB (fetch-dofusdb.js puis enrich-dofusdb.js)
+npm run data    # rafraîchit les données DofusDB (télécharge puis enrichit, dans l'ordre)
 npm run build   # assemble dist/index.html depuis le modèle et le JSON
 ```
 
-`npm run data` ne sert qu'à rafraîchir les données DofusDB (sans le dossier `cache/`, elles retéléchargent tout). `enrich-dofusdb.js` doit être relancé après `fetch-dofusdb.js`, qui réécrit le JSON.
+`npm run data` ne sert qu'à rafraîchir les données DofusDB (sans le dossier `cache/`, tout est retéléchargé ; `DOFUSDB_CACHE` change l'emplacement du cache). Les deux étapes s'enchaînent toujours dans le même ordre, car l'enrichissement complète le JSON que le téléchargement réécrit.
 
 ## Tests
 

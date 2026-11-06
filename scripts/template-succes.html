@@ -326,6 +326,7 @@ input.gc:focus-visible{outline-offset:3px}
   .side{min-height:0;overflow:hidden}
   #scTree{flex:1;min-height:0;max-height:none;position:static}
   .sc-main,.det{min-height:0;overflow:auto}
+  .sc-main > *{flex:none}   /* sans ça, la rangée de filtres (overflow) est écrasée par la liste */
   .det-in{position:static;max-height:none;overflow:visible}
   /* en-tête resserré pour laisser la place à la liste */
   .win-t{padding:7px 14px}

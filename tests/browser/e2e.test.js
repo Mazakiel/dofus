@@ -43,6 +43,15 @@ const PHOTO = `(()=>{
   o.objectifs=h(Object.keys(GOALQ).sort().map(k=>k+':'+GOALQ[k].map(d=>d.id).join(',')).join(';')+'#'+Object.keys(GOALA).sort().map(k=>k+':'+GOALA[k].map(d=>d.id).join(',')).join(';'));
   o.visibilite=h(qids.map(id=>id+':'+(qShown(id)?1:0)).join(';')+'#'+aids.map(id=>id+':'+(aShown(SACH[id])?1:0)).join(';'));
   o.compte=[qids.filter(qDoneS).length, aids.filter(id=>achDone(id)).length, SC.dofus.filter(sdzOwned).length].join('/');
+  // contenu suivi : quels succès, quêtes et Dofus sont visibles (saisonniers inclus ou non), et comment les catégories se regroupent
+  const parts=[]; const keep=sSeasonal;
+  for (const seas of [false,true]) { sSeasonal=seas;
+    parts.push(SC.succes.filter(sVisible).map(a=>a.id).join(','), qids.filter(qVisible).join(','), SC.dofus.filter(sdzVisible).map(d=>d.id).join(','),
+      ['succes','quetes'].map(m=>{ sMode=m; return scCatList().map(c=>c.id+':'+c.n).join('|'); }).join('#')); }
+  sSeasonal=keep; sMode='succes';
+  parts.push(SC.succes.map(a=>a.id+':'+groupOf(a.c)+':'+(catAllowed(a.c)?1:0)).join(','), scCatList().filter(c=>c.id>0).map(c=>c.id+'='+catIds(c.id).join('+')).join(';'));
+  o.suivi=h(parts.join('§'));
+  o.suiviNombres=[SC.succes.length, SC.succes.filter(a=>catAllowed(a.c)).length, qids.length].join('/');
   return o;
 })()`;
 

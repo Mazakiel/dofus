@@ -630,40 +630,29 @@ const { sdone, sq, sodone, sdzState, sdzGoals, qState } = P.state;   // états s
 const { achDone, objDone, achProg, collectPrereqs, collectDependents, lockReasons } = P;
 const { questDone: qDoneS, questAvailable: qAvailNow, achAvailable: achAvailNow, questStatus: qStatus, dofusAuto: sdzAuto, dofusOwned: sdzOwned } = P;
 const SCAT = Object.fromEntries(SC.categories.map(c => [c.id, c]));
-const SKIDS = {}; for (const c of SC.categories) (SKIDS[c.p] = SKIDS[c.p] || []).push(c);
-for (const k in SKIDS) SKIDS[k].sort((a, b) => a.o - b.o);
 const SBYCAT = {}; for (const a of SC.succes) (SBYCAT[a.c] = SBYCAT[a.c] || []).push(a);
 for (const k in SBYCAT) SBYCAT[k].sort((a, b) => a.o - b.o || a.id - b.id);
 const QOWN_PRE = {};  // quête → succès qui la demandent en objectif (calculé tôt, pour ranger les quêtes)
 for (const o of Object.values(SC.objectifs)) if (o.t === 'q') (QOWN_PRE[o.r] = QOWN_PRE[o.r] || []).push(o.a);
-const EVENTS = 9;
-const topOf = cid => { let c = SCAT[cid]; while (c && c.p && SCAT[c.p]) c = SCAT[c.p]; return c ? c.id : null; };
 const catPath = cid => { const c = SCAT[cid]; if (!c) return ''; const p = SCAT[c.p]; return p ? `${p.n} › ${c.n}` : c.n; };
 const achImg = a => `https://api.dofusdb.fr/img/achievements/${a.ic}.png`;
 let sCat = store.get('sCat', null);
 // « Afficher les obtenus » (ancien « Masquer les obtenus », repris dans l'autre sens) et « Afficher les indisponibles »
 let sShowDone = store.get('sShowDone', !store.get('sHideDone', false)), sShowLocked = store.get('sShowLocked', false);
 let sSearch = '';
-// Succès « liés aux quêtes » : catégorie Quêtes, au moins une quête en objectif, ou un sous-succès lié aux quêtes
-const QREL = new Set();
-for (const a of SC.succes) if (topOf(a.c) === 8 || a.ob.some(oid => SC.objectifs[oid] && SC.objectifs[oid].t === 'q')) QREL.add(a.id);
-for (let changed = true; changed;) { changed = false;
-  for (const a of SC.succes) if (!QREL.has(a.id) && a.ob.some(oid => { const o = SC.objectifs[oid]; return o && o.t === 'a' && QREL.has(o.r); })) { QREL.add(a.id); changed = true; } }
-const sQuestOnly = true;   // seuls les succès liés aux quêtes sont gérés dans cet onglet
 let sMode = store.get('sMode', 'succes');   // 'succes' | 'quetes'
-// Catégories gérées : les sous-catégories de Quêtes (sauf « Général » : compteurs « terminer N quêtes » et tutoriel),
-// puis Événements, regroupé en une seule catégorie en fin de liste. (« Général » racine est retiré.)
-const QUETES = 8, QGEN = 118, GEN = 15;
-const catAllowed = cid => { const t = topOf(cid); return cid !== QGEN && cid !== GEN && (t === QUETES || t === EVENTS); };
-const catIds = cid => cid === EVENTS ? [cid, ...(SKIDS[cid] || []).map(c => c.id)] : [cid];
-const groupOf = cid => topOf(cid) === EVENTS ? EVENTS : cid;   // catégorie affichée
-// Contenus saisonniers : Archipel de Vulkania (60), Île de Nowel (23), Île de Pwâk / Pâques (89), Halouine (68)
-const SEASONAL = new Set([60, 23, 89, 68]);
+// Ce qui est suivi n'est plus décidé ici : le build (scripts/lib/tracked-content.js) marque les succès suivis (`t`), le contenu
+// saisonnier (`s`) et fournit les entrées du menu. Les sous-catégories de Quêtes (sauf « Général ») puis Événements, regroupé en une seule entrée.
+const MENU_BY_ID = Object.fromEntries((SC.menu || []).map(m => [m.id, m]));
+const CAT_GROUP = {}; for (const m of SC.menu || []) for (const c of m.cats) CAT_GROUP[c] = m.id;   // catégorie → entrée du menu qui l'affiche
+const catAllowed = cid => cid in CAT_GROUP;
+const catIds = id => (MENU_BY_ID[id] || { cats: [id] }).cats;
+const groupOf = cid => (cid in CAT_GROUP ? CAT_GROUP[cid] : cid);   // une catégorie non suivie reste elle-même
 let sSeasonal = store.get("sSeasonal", false);
-const sVisible = a => catAllowed(a.c) && (sSeasonal || !SEASONAL.has(a.c)) && (!sQuestOnly || QREL.has(a.id));
+const sVisible = a => !!a.t && (sSeasonal || !(SCAT[a.c] || {}).s);   // succès de quêtes suivis ; les saisonniers seulement si on les affiche
 function catStats(cid){
   if (cid === SALL) { const all = SC.succes.filter(sVisible); return { n: all.length, d: all.filter(a => achDone(a.id)).length }; }
-  const ids = [cid, ...(SKIDS[cid] || []).map(c => c.id)];
+  const ids = catIds(cid);
   const list = ids.flatMap(id => SBYCAT[id] || []).filter(sVisible);
   const d = list.filter(a => achDone(a.id));
   return { n: list.length, d: d.length };
@@ -671,9 +660,7 @@ function catStats(cid){
 const qName = qid => (SC.quetes[qid] && SC.quetes[qid].n) || `quête ${qid}`;
 // ---- Dofus (DofusDB : objets de type Dofus, reliés au succès qui les donne, ou à la quête) ----
 const SDZL = (SC.dofus || []).filter(d => !d.cadeau);   // Jyfus : cadeau d'Ankama, ne s'obtient pas en jeu
-const DZ_SEASONAL_SANS_LIEN = new Set([20833]);   // Dofus Cacao : événement de l'île de Pwâk
-const sdzSeasonal = d => DZ_SEASONAL_SANS_LIEN.has(d.id) || [d.a, ...(d.pa || []), ...(d.q ? (QOWN_PRE[d.q] || []) : [])].some(a => a && SACH[a] && SEASONAL.has(SACH[a].c));
-const sdzVisible = d => sSeasonal || !sdzSeasonal(d);
+const sdzVisible = d => sSeasonal || !d.s;
 let sdzShowOwned = store.get('sdzShowOwned', !store.get('sdzHide', false));
 const itemImg = d => `https://api.dofusdb.fr/img/items/${d.ic}.png`;
 const setSdzOwned = (d, on) => P.setDofusOwned(d, on);
@@ -926,8 +913,7 @@ for (const qid of Object.keys(SC.quetes)) {
   QCAT[qid] = best ? groupOf(best.c) : QOTHER;
 }
 const QBYCAT = {}; for (const [qid, c] of Object.entries(QCAT)) (QBYCAT[c] = QBYCAT[c] || []).push(+qid);
-const QSEAS = new Set(Object.keys(SC.quetes).map(Number).filter(q => { const own = (QOWN_PRE[q] || []).map(a => SACH[a]).filter(Boolean); return own.length ? own.every(a => SEASONAL.has(a.c)) : !!SC.quetes[q].ev; }));
-const qVisible = qid => sSeasonal || !QSEAS.has(qid);
+const qVisible = qid => sSeasonal || !(SC.quetes[qid] || {}).s;
 const QALL = -2;     // entrée « Toutes les quêtes » (mode Quêtes), triée par niveau
 const ALLQ = Object.keys(SC.quetes).map(Number);
 const qIdsOf = cid => (cid === QALL ? ALLQ : (QBYCAT[cid] || [])).filter(qVisible);
@@ -946,8 +932,7 @@ const catHasShown = cid => cid === QGOAL || cid === SALL || (sMode === 'quetes' 
 function scCatList(){
   const l = GOALD.length ? [{ id: QGOAL, n: 'Mes objectifs' }] : [];
   l.push(sMode === 'quetes' ? { id: QALL, n: 'Toutes les quêtes' } : { id: SALL, n: 'Tous les succès' });
-  l.push(...(SKIDS[QUETES] || []).filter(c => catAllowed(c.id)).map(c => ({ id: c.id, n: c.n })));
-  l.push({ id: EVENTS, n: (SCAT[EVENTS] || {}).n || 'Événements' });
+  l.push(...(SC.menu || []).map(m => ({ id: m.id, n: m.n })));
   if (sMode === 'quetes') l.push({ id: QOTHER, n: 'Autres quêtes (prérequis)' });
   return l;
 }
@@ -1280,7 +1265,7 @@ function renderSucces(){
 }
 function goToAch(id){
   const a = SACH[id]; if (!a) return;
-  if (!catAllowed(a.c) || !QREL.has(a.id)) return;   // succès hors quêtes : non géré dans cet onglet
+  if (!a.t) return;   // succès hors quêtes : non géré dans cet onglet
   sSearch = ''; document.getElementById('scSearch').value = ''; mTab = 'succes';
   if (sMode !== 'succes') { sMode = 'succes'; store.set('sMode', sMode); }
   sCat = groupOf(a.c); store.set('sCat', sCat);

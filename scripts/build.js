@@ -1,4 +1,4 @@
-// Construit la page finale (dist/index.html) : modèle src/page.html + module src/progression.js + données DofusDB.
+// Construit la page finale (dist/index.html) : coquille src/page.html + src/style.css + src/page/*.js + modules src/ + données DofusDB.
 // Usage : node scripts/build.js data/dofusdb.json dist/index.html
 // Les données sont allégées : seuls les succès de quêtes suivis (Quêtes hors « Général », Événements) et ceux qu'ils
 // référencent (sous-succès, succès exigés par une quête, succès liés à un Dofus) sont gardés ; le reste est retiré.
@@ -7,7 +7,10 @@ const [succes, out] = process.argv.slice(2);
 const { trackedContent } = require('./lib/tracked-content.js');
 const D = JSON.parse(fs.readFileSync(succes, 'utf8'));
 const light = trackedContent(D);   // la règle « ce qui est suivi » vit dans scripts/lib/tracked-content.js
-const tpl = fs.readFileSync(path.join(__dirname, '..', 'src', 'page.html'), 'utf8');
+// La page est assemblée : coquille HTML + feuille de style + fichiers de src/page/ concaténés dans l'ordre de leur nom (un même script).
+const src = f => fs.readFileSync(path.join(__dirname, '..', 'src', f), 'utf8');
+const pageJs = fs.readdirSync(path.join(__dirname, '..', 'src', 'page')).filter(f => f.endsWith('.js')).sort().map(f => src('page/' + f)).join('');
+const tpl = src('page.html').replace('/*__STYLE__*/', () => src('style.css')).replace('/*__PAGE_JS__*/', () => pageJs);
 const sc = JSON.stringify(light).replace(/</g, '\\u003c');
 fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
 // les modules src/progression.js et src/progress-store.js sont insérés tels quels : mêmes fichiers dans la page et dans les tests

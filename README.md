@@ -17,8 +17,8 @@ Etats d'une quête : faite (cochée), commencée ou bloquée (à indiquer dans l
 - `scripts/lib/dofusdb.js` : le client de l'API (pages de 50 maximum, reprises, cache disque). L'accès réseau est injectable : les tests utilisent une fausse API.
 - `scripts/lib/criteria.js` : lecture des critères DofusDB (objectifs de succès, conditions de départ des quêtes).
 - `scripts/lib/tracked-content.js` : la règle « ce qui est suivi » (succès de quêtes, contenu saisonnier, entrées du menu), appliquée au build ; la page lit les drapeaux qu'elle pose.
-- `scripts/build.js` : assemble la page (`dist/index.html`) depuis le modèle `src/page.html`, les modules de `src/` et le JSON.
-- `src/page.html` : le modèle de la page (style, vues, profils, synchro).
+- `scripts/build.js` : assemble la page (`dist/index.html`) depuis la coquille, la feuille de style, les fichiers de `src/page/`, les modules de `src/` et le JSON.
+- `src/page.html`, `src/style.css` et `src/page/*.js` : la page. La coquille HTML, la feuille de style et une douzaine de fichiers de script (un par partie : stockage, modèle, Dofus, cascade, listes, fiche, événements, mobile, synchro, profils), assemblés dans l'ordre de leur nom en un seul script.
 - `src/progression.js` : le module de règles de progression (statuts, disponibilité, cascade, objectifs). Il possède l'état suivi et ses caches ; le build l'insère dans la page, et les tests le chargent directement.
 - `src/progress-store.js` : le module de progression persistée (profils, sauvegarde par profil, synchro entre appareils, export et import). Il parle à un stockage et à un distant interchangeables : le navigateur et Firestore dans la page, une mémoire et un faux distant dans les tests.
 - `tests/` : tests des deux modules (`npm test`) et contrôles de bout en bout dans Chrome (`npm run test:e2e`).

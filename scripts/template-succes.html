@@ -226,6 +226,7 @@ input.gc:disabled{opacity:.6;cursor:default}
 .badge.bl{color:var(--red);border:1px solid var(--red)}
 .acts.prog{align-items:center;padding-top:8px}
 .acts.prog .btn[aria-pressed="true"][data-qst="s"]{border-color:var(--yel);background:color-mix(in srgb,var(--yel) 22%,var(--win2))}
+.acts.prog .btn[aria-pressed="true"][data-qdone]{border-color:var(--green);background:color-mix(in srgb,var(--green) 22%,var(--win2))}
 .acts.prog .btn[aria-pressed="true"][data-qst="b"]{border-color:var(--red);background:color-mix(in srgb,var(--red) 18%,var(--win2))}
 .chip[class*="p-"]:before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
 .chip.p-av:before{background:var(--green)} .chip.p-st:before{background:var(--yel)} .chip.p-bl:before{background:var(--red)}
@@ -1375,14 +1376,13 @@ function questDetailHtml(qid){
   return `<div class="hd"><h3>${qIcon(q, qid)}${esc(qName(qid))}</h3><div class="k">${(QTYPE[q.ty || 0] || QTYPE[0])[2]}${q.lv ? ` · niveau ${q.lv}${q.lx ? ' à ' + q.lx : ''}` : ''}${q.ev ? ' · événement' : ''}</div><div class="tags" style="justify-content:center;margin-top:6px">${qTags(q).map(c => `<span class="tag ${c}">${TAGS[c]}</span>`).join('')}</div></div>
     <div class="orn">!</div>
     <div class="stat"><span class="badge ${qStatus(qid)}">${QSTAT_LBL[qStatus(qid)]}</span>${qStatus(qid) === 'lock' ? `<span class="muted">${esc(why.slice(0, 2).join(' · '))}${why.length > 2 ? ` (+${why.length - 2})` : ''}</span>` : ''}</div>
-    ${dn ? '' : `<div class="acts prog"><span class="muted">Avancement</span><button class="btn" data-qst="s" aria-pressed="${qState[qid] === 's'}">Commencée</button><button class="btn" data-qst="b" aria-pressed="${qState[qid] === 'b'}">Bloquée</button></div>`}
+    <div class="acts prog">${dn ? '' : `<button class="btn" data-qst="s" aria-pressed="${qState[qid] === 's'}">Commencée</button><button class="btn" data-qst="b" aria-pressed="${qState[qid] === 'b'}">Bloquée</button>`}<button class="btn" data-qdone aria-pressed="${dn}">Faite</button></div>
     ${goalBox(GOALQ[qid], DZ_REW_Q[qid])}
     ${(q.dj || []).length ? `<div class="lab">${(q.dj || []).length > 1 ? 'Donjons' : 'Donjon'}</div>${q.dj.map(id => `<div class="ob"><span class="tag dj">DJ</span><span>${esc((DJN[id] || {}).n || 'Donjon ' + id)}${(DJN[id] || {}).lv ? ` <span class="muted">· niveau ${DJN[id].lv}</span>` : ''}</span></div>`).join('')}` : ''}
     ${(q.ft || []).length ? `<div class="lab">À faire</div>${q.ft.map(l => `<div class="ob"><span class="x">•</span><span>${esc(l)}</span></div>`).join('')}` : ''}
     ${pre.length ? `<div class="lab">Prérequis</div>${pre.join('')}` : ''}
     ${owners.length ? `<div class="lab">Succès</div>${owners.map(a => `<div class="ob${achDone(a.id) ? ' done' : ''}">${okx(achDone(a.id))}<span><span class="sgo" data-pick="a:${a.id}">${esc(a.n)}</span></span></div>`).join('')}` : ''}
     ${next.length ? `<div class="lab">Débloque</div>${next.map(n => `<div class="ob${qDoneS(n) ? ' done' : ''}">${okx(qDoneS(n))}<span>${qLink(n)}</span><span class="lv">${SC.quetes[n] && SC.quetes[n].lv ? 'Niv. ' + SC.quetes[n].lv : ''}</span></div>`).join('')}` : ''}
-    <div class="acts"><label class="chk"><input type="checkbox" class="gc round" data-sq="${qid}" ${dn ? 'checked' : ''}> Quête faite</label></div>
     ${DZ_REW_Q[qid] ? `<div class="rwd"><div class="lab">Récompense</div>${DZ_REW_Q[qid].map(d => dzChip(d, (GOALQ[qid] || []).includes(d))).join('')}</div>` : ''}`;
 }
 function renderDetail(){
@@ -1469,6 +1469,8 @@ document.getElementById('scTree').addEventListener('click', e => {
   if (isMobile()) window.scrollTo({ top: 0 });
 });
 function onScClick(e){
+  const qd = e.target.closest('[data-qdone]');
+  if (qd && sPick && sPick.k === 'q') { setQuestDone(sPick.id, !qDoneS(sPick.id)); return; }
   const qs = e.target.closest('[data-qst]');
   if (qs && sPick && sPick.k === 'q') {   // Commencée / Bloquée : un second clic retire l'état
     const id = sPick.id, v = qs.dataset.qst;
@@ -1533,6 +1535,16 @@ document.getElementById('scList').addEventListener('click', onScClick);
 document.getElementById('scList').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.row[data-pick]')) { e.preventDefault(); e.target.click(); } });
 document.getElementById('scHelp').addEventListener('click', onScClick);
 document.getElementById('scDetail').addEventListener('click', onScClick);
+// Cocher : confirmation (avec la cascade des prérequis s'il y en a) ; décocher : confirmation si d'autres éléments en dépendent
+function setQuestDone(id, on){
+  if (on) {
+    SMEMO = new Map();
+    const acc = collectPrereqs('q', id);
+    if (acc.a.size + acc.q.size + acc.o.size + acc.d.size) { openDlg('q', id); return; }   // ses prérequis
+    confirmCheck(`Marquer la quête « ${qName(id)} » comme faite ?`, () => sq.add(id)); return;
+  }
+  uncheck('q', id);
+}
 function onScChange(e){
   const t = e.target;
   if (t.dataset.sdzgoal) { const id = +t.dataset.sdzgoal; t.checked ? sdzGoals.add(id) : sdzGoals.delete(id); store.set('sdzGoals', [...sdzGoals]); renderSucces(); return; }
@@ -1549,14 +1561,7 @@ function onScChange(e){
     uncheck('a', id);
   }
   else if (t.dataset.sq) {
-    const id = +t.dataset.sq;
-    if (t.checked) {
-      SMEMO = new Map();
-      const acc = collectPrereqs('q', id);
-      if (acc.a.size + acc.q.size + acc.o.size + acc.d.size) { openDlg('q', id); return; }   // ses prérequis
-      confirmCheck(`Marquer la quête « ${qName(id)} » comme faite ?`, () => sq.add(id)); return;
-    }
-    uncheck('q', id);
+    setQuestDone(+t.dataset.sq, t.checked);
   }
   else if (t.dataset.so) { const id = +t.dataset.so; if (t.checked) { sodone.add(id); saveSc(); } else uncheck('o', id); }
 }

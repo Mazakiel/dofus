@@ -113,6 +113,17 @@ button,select,input{font:inherit;color:inherit}
 .dz-tg:hover{border-color:var(--gold);color:var(--text)}
 .goalchips{display:inline-flex;gap:2px;vertical-align:middle;margin-left:4px}
 .goalchips img{width:18px;height:18px;object-fit:contain}
+.goalchips b{font-size:.68rem;color:var(--tg-cb);margin-left:2px;align-self:center}
+.row.goal{box-shadow:inset 3px 0 0 var(--orange)}
+.row.goal.sel{box-shadow:inset 3px 0 0 var(--gold)}
+.sc-cat .rt{display:flex;align-items:center;gap:8px}
+.gdot{display:inline-flex;align-items:center;gap:3px;font-size:.72rem;font-weight:800;color:var(--tg-cb);border:1px solid currentColor;border-radius:9px;padding:0 6px;line-height:1.5}
+.chip.goal[aria-pressed="false"]{border-color:var(--tg-cb);color:var(--tg-cb)}
+.chip.goal[aria-pressed="true"]{background:color-mix(in srgb,var(--orange) 18%,transparent);border-color:var(--orange);color:var(--tg-cb)}
+.sec.dzsec{background:color-mix(in srgb,var(--orange) 14%,var(--sec));color:var(--text)}
+.sec.dzsec img{width:26px;height:26px}
+.goalbox{margin:8px 16px;padding:10px 14px;border:1px solid var(--orange);border-radius:6px;background:color-mix(in srgb,var(--orange) 10%,transparent);font-size:.86rem}
+.goalbox .rew{margin:4px 4px 0 0}
 .dz-next{margin-top:8px}
 .sugg{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
 .sugg:last-child{border-bottom:0}
@@ -706,7 +717,7 @@ function renderScDofus(el){
     const forQ = {};
     for (const d of goals) for (const q of collectPrereqs('d', d.id).q) (forQ[q] = forQ[q] || []).push(d);
     const avail = Object.keys(forQ).map(Number).filter(q => !qDoneS(q) && qAvail(q)).sort((x, y) => (SC.quetes[x].lv || 0) - (SC.quetes[y].lv || 0));
-    next = `<div class="lab" style="padding:12px 0 4px">Prochaines quêtes pour tes objectifs (${avail.length} disponible${avail.length > 1 ? 's' : ''} sur ${Object.keys(forQ).length} restantes)</div>`
+    next = `<div class="lab" style="padding:12px 0 4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">Prochaines quêtes pour tes objectifs (${avail.length} disponible${avail.length > 1 ? 's' : ''} sur ${Object.keys(forQ).length} restantes) <span class="sp"></span><button class="btn" data-goalview>Tout voir dans la liste</button></div>`
       + (avail.length ? avail.slice(0, 15).map(q => { const x = SC.quetes[q];
         return `<div class="sugg"><input type="checkbox" class="gc round av" data-sq="${q}" aria-label="Quête faite"><div><span class="sgo" data-pick="q:${q}">${esc(qName(q))}</span> <span class="muted" style="font-size:.8rem">niv. ${x.lv ?? '?'}${x.grp ? ' · groupe' : ''}</span>
           <div class="left">Pour ${forQ[q].map(d => esc(d.n)).join(', ')}${(QOWN[q] || []).length && SACH[QOWN[q][0]] ? ` · succès <span class="sgo" data-sgo="${QOWN[q][0]}">${esc(SACH[QOWN[q][0]].n)}</span>` : ''}</div></div>
@@ -963,10 +974,11 @@ function questStats(cid){
 // ce que la liste affichera avec les cases « Afficher les obtenus / indisponibles »
 const qShown = id => qDoneS(id) ? sShowDone : (sShowLocked || qAvailNow(id));
 const aShown = a => achDone(a.id) ? sShowDone : (sShowLocked || achAvailNow(a.id));
-const catHasShown = cid => sMode === 'quetes' ? qIdsOf(cid).some(qShown) : catIds(cid).some(id => (SBYCAT[id] || []).some(a => sVisible(a) && aShown(a)));
+const catHasShown = cid => cid === QGOAL || (sMode === 'quetes' ? qIdsOf(cid).some(qShown) : catIds(cid).some(id => (SBYCAT[id] || []).some(a => sVisible(a) && aShown(a))));
 // Menu de gauche : liste plate — sous-catégories de Quêtes, puis Événements, puis les quêtes sans succès
 function scCatList(){
-  const l = sMode === 'quetes' ? [{ id: QALL, n: 'Toutes les quêtes' }] : [];
+  const l = GOALD.length ? [{ id: QGOAL, n: 'Mes objectifs Dofus' }] : [];
+  if (sMode === 'quetes') l.push({ id: QALL, n: 'Toutes les quêtes' });
   l.push(...(SKIDS[QUETES] || []).filter(c => catAllowed(c.id)).map(c => ({ id: c.id, n: c.n })));
   l.push({ id: EVENTS, n: (SCAT[EVENTS] || {}).n || 'Événements' });
   if (sMode === 'quetes') l.push({ id: QOTHER, n: 'Autres quêtes (prérequis)' });
@@ -977,9 +989,13 @@ function renderScTree(){
   const pct = s => s.n ? Math.floor(100 * s.d / s.n) : 0;
   const stats = sMode === 'quetes' ? questStats : catStats;
   const cur = scCatList().find(c => c.id === sCat);
-  document.getElementById('catBtn').innerHTML = cur ? `<span class="cb-n">${esc(cur.n)}</span><span class="pct">${pct(stats(cur.id))} %</span><span aria-hidden="true">▾</span>` : 'Choisir une catégorie';
-  el.innerHTML = scCatList().map(c => [c, stats(c.id)]).filter(([c, s]) => s.n && (c.id === sCat || catHasShown(c.id))).map(([c, s]) =>
-    `<div class="sc-cat${sCat === c.id ? ' sel' : ''}${s.d === s.n ? ' full' : ''}" data-scat="${c.id}" title="${s.d} / ${s.n}"><span>${esc(c.n)}</span><span class="pct">${pct(s)}%</span></div>`).join('');
+  document.getElementById('catBtn').innerHTML = cur ? `<span class="cb-n">${esc(cur.n)}</span>${cur.id === QGOAL ? '' : `<span class="pct">${pct(stats(cur.id))} %</span>`}<span aria-hidden="true">▾</span>` : 'Choisir une catégorie';
+  const goalN = cid => sMode === 'quetes' ? qIdsOf(cid).filter(q => GOALQ[q]).length : catIds(cid).flatMap(id => SBYCAT[id] || []).filter(a => sVisible(a) && GOALA[a.id]).length;
+  const goalCount = () => sMode === 'quetes' ? Object.keys(GOALQ).length : Object.keys(GOALA).length;
+  el.innerHTML = scCatList().map(c => [c, c.id === QGOAL ? { n: goalCount(), d: 0 } : stats(c.id)]).filter(([c, s]) => s.n && (c.id === sCat || catHasShown(c.id))).map(([c, s]) => {
+    if (c.id === QGOAL) return `<div class="sc-cat${sCat === c.id ? ' sel' : ''}" data-scat="${c.id}" title="${s.n} à faire pour tes objectifs Dofus"><span>${esc(c.n)}</span><span class="rt"><span class="gdot">${s.n}</span></span></div>`;
+    const g = GOALD.length ? goalN(c.id) : 0;
+    return `<div class="sc-cat${sCat === c.id ? ' sel' : ''}${s.d === s.n ? ' full' : ''}" data-scat="${c.id}" title="${s.d} / ${s.n}${g ? ` · ${g} pour tes objectifs Dofus` : ''}"><span>${esc(c.n)}</span><span class="rt">${g ? `<span class="gdot" title="${g} pour tes objectifs Dofus">◆ ${g}</span>` : ''}<span class="pct">${pct(s)}%</span></span></div>`; }).join('');
 }
 // Dofus donnés proprement par un succès (récompense ou « obtenir le Dofus X ») ou par une quête (récompense d’étape)
 const DZ_REW_A = {}, DZ_REW_Q = {};
@@ -1009,6 +1025,19 @@ function lockReasons(qid){
   return out;
 }
 
+// ---------- objectifs Dofus : quêtes et succès qui y mènent ----------
+const QGOAL = -3;   // entrée « Mes objectifs Dofus » du menu de gauche
+var GOALQ = {}, GOALA = {}, GOALD = [];
+function computeGoals(){
+  GOALQ = {}; GOALA = {};
+  GOALD = SDZL.filter(d => sdzVisible(d) && sdzGoals.has(d.id) && !sdzOwned(d));
+  for (const d of GOALD) { const acc = collectPrereqs('d', d.id);
+    acc.q.forEach(q => (GOALQ[q] = GOALQ[q] || []).push(d)); acc.a.forEach(a => (GOALA[a] = GOALA[a] || []).push(d)); }
+}
+const goalIcons = list => !list ? '' : `<span class="goalchips" title="Pour tes objectifs : ${esc(list.map(d => d.n).join(', '))}">${list.slice(0, 3).map(d => `<img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer">`).join('')}${list.length > 3 ? `<b>+${list.length - 3}</b>` : ''}</span>`;
+const goalBox = list => !list ? '' : `<div class="goalbox"><b>Sert tes objectifs Dofus :</b><div>${list.map(dzChip).join('')}</div></div>`;
+let sAGoal = false;   // filtre « Mes objectifs » dans la liste des succès
+
 // ---------- étiquettes ----------
 const TAGS = { dj: 'Donjon', cb: 'Combat', fm: 'Farm', cr: 'Craft', ex: 'Exploration', gr: 'Groupe' };
 const qTags = q => [...(q.tg || []), ...(q.grp ? ['gr'] : [])];
@@ -1019,10 +1048,10 @@ const isMobile = () => window.matchMedia('(max-width:700px)').matches;
 // ---------- lignes ----------
 function achCard(a){
   const dn = achDone(a.id), [d, n] = achProg(a);
-  return `<div class="row arow${dn ? ' done' : ''}${isPick('a', a.id) ? ' sel' : ''}" id="ach${a.id}" data-pick="a:${a.id}" tabindex="0" role="button">
+  return `<div class="row arow${dn ? ' done' : ''}${GOALA[a.id] ? ' goal' : ''}${isPick('a', a.id) ? ' sel' : ''}" id="ach${a.id}" data-pick="a:${a.id}" tabindex="0" role="button">
     <img src="${achImg(a)}" alt="" loading="lazy" referrerpolicy="no-referrer">
     <div style="min-width:0"><div class="t">${esc(a.n)}</div><div class="m">${esc(a.d)}</div></div>
-    <div class="r">${dzIcons(DZ_REW_A[a.id])}${n > 1 ? `<span class="mini"><span class="bar"><i style="width:${pctOf(d, n)}%"></i></span>${d}/${n}</span>` : ''}
+    <div class="r">${goalIcons(GOALA[a.id])}${dzIcons(DZ_REW_A[a.id])}${n > 1 ? `<span class="mini"><span class="bar"><i style="width:${pctOf(d, n)}%"></i></span>${d}/${n}</span>` : ''}
       <input type="checkbox" class="gc" data-sach="${a.id}" ${dn ? 'checked' : ''} title="Succès obtenu" aria-label="Succès obtenu"></div>
   </div>`;
 }
@@ -1030,11 +1059,11 @@ function questRow(qid, groupAid = null){
   const q = SC.quetes[qid] || {}, dn = qDoneS(qid), av = !dn && qAvailNow(qid);
   const owners = (QOWN[qid] || []).map(id => SACH[id]).filter(a => a && a.id !== groupAid);
   const nxt = (QNEXT[qid] || []).length, why = !dn && !av ? lockReasons(qid) : [];
-  const meta = [owners.map(a => esc(a.n)).join(' · '), nxt ? `débloque ${plural(nxt, 'quête')}` : '', why.length ? `🔒 ${esc(why[0])}${why.length > 1 ? ` (+${why.length - 1})` : ''}` : ''].filter(Boolean).join(' · ');
-  return `<div class="row${dn ? ' done' : ''}${isPick('q', qid) ? ' sel' : ''}" id="q${qid}" data-pick="q:${qid}" tabindex="0" role="button">
+  const meta = [owners.map(a => esc(a.n)).join(' · '), nxt ? `débloque ${plural(nxt, 'quête')}` : '', why.length ? `Bloquée : ${esc(why[0])}${why.length > 1 ? ` (+${why.length - 1})` : ''}` : ''].filter(Boolean).join(' · ');
+  return `<div class="row${dn ? ' done' : ''}${GOALQ[qid] ? ' goal' : ''}${isPick('q', qid) ? ' sel' : ''}" id="q${qid}" data-pick="q:${qid}" tabindex="0" role="button">
     <input type="checkbox" class="gc round ${dn ? '' : av ? 'av' : 'lock'}" data-sq="${qid}" ${dn ? 'checked' : ''} title="${dn ? 'Faite' : av ? 'Disponible' : 'Indisponible'} — cocher quand elle est faite" aria-label="Quête faite">
     <div style="min-width:0"><div class="t">${esc(qName(qid))}</div>${meta ? `<div class="m">${meta}</div>` : ''}${tagsHtml(q)}</div>
-    <div class="r">${dzIcons(DZ_REW_Q[qid])}${q.ev ? '<span class="grp" title="Quête d’événement">événement</span>' : ''}<span class="lv">${q.lv ? 'Niv. ' + q.lv : ''}</span></div>
+    <div class="r">${goalIcons(GOALQ[qid])}${dzIcons(DZ_REW_Q[qid])}${q.ev ? '<span class="grp" title="Quête d’événement">événement</span>' : ''}<span class="lv">${q.lv ? 'Niv. ' + q.lv : ''}</span></div>
   </div>`;
 }
 
@@ -1042,19 +1071,41 @@ function questRow(qid, groupAid = null){
 const head = (title, info, btns = '') => `<div class="sc-head"><h2>${title}</h2><span class="n">${info}</span><span class="sp"></span>${btns}</div>`;
 const EMPTY = '<div class="empty">Rien à afficher : tout est fait, ou masqué par les options en bas de la fenêtre.</div>';
 const LV_BANDS = [[1, 49], [50, 99], [100, 149], [150, 199], [200, 200]];
+// Vue « Mes objectifs Dofus » : une section par Dofus visé, avec les quêtes qui restent (disponibles d'abord)
+function renderGoalQuests(){
+  const lv = id => (SC.quetes[id] || {}).lv || 0;
+  const secs = GOALD.map(d => {
+    const qs = Object.keys(GOALQ).map(Number).filter(q => GOALQ[q].includes(d)).filter(q => !qDoneS(q) || sShowDone);
+    qs.sort((x, y) => (qAvailNow(y) - qAvailNow(x)) || lv(x) - lv(y));
+    const av = qs.filter(q => qAvailNow(q)).length;
+    return `<div class="sec dzsec"><img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer"><span>${esc(d.n)}</span><span class="sp"></span>${qs.length ? `${qs.length} à faire · ${av} dispo.` : 'rien à faire : coche-le obtenu'}</div>${qs.map(q => questRow(q)).join('')}`;
+  }).join('');
+  const all = Object.keys(GOALQ).length, av = Object.keys(GOALQ).map(Number).filter(q => qAvailNow(q)).length;
+  return head('Mes objectifs Dofus', `${plural(GOALD.length, 'Dofus visé')} · ${plural(all, 'quête')} à faire, ${av} disponible${av > 1 ? 's' : ''}`) + (secs || EMPTY);
+}
+function renderGoalAchs(){
+  const secs = GOALD.map(d => {
+    const as = Object.keys(GOALA).map(Number).filter(a => GOALA[a].includes(d)).map(a => SACH[a]).filter(Boolean).sort((x, y) => x.lv - y.lv || x.o - y.o);
+    return `<div class="sec dzsec"><img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer"><span>${esc(d.n)}</span><span class="sp"></span>${as.length ? plural(as.length, 'succès', 'succès') : 'aucun succès à faire'}</div>${as.map(achCard).join('')}`;
+  }).join('');
+  return head('Mes objectifs Dofus', `${plural(GOALD.length, 'Dofus visé')} · ${plural(Object.keys(GOALA).length, 'succès', 'succès')} à finir`) + (secs || EMPTY);
+}
 function renderQuestList(el){
   const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   const qn = norm(sSearch.trim());
   let ids, title, cid = null;
   if (qn) { ids = Object.keys(SC.quetes).map(Number).filter(id => qVisible(id) && norm(qName(id)).includes(qn)).slice(0, 120); title = `Recherche « ${esc(sSearch)} »`; }
+  else if (sCat === QGOAL) { el.innerHTML = renderGoalQuests(); imgErr(el); return; }
   else if (sCat === QALL) { ids = qIdsOf(QALL); title = 'Toutes les quêtes'; }
   else if (sCat === QOTHER || (sCat && SCAT[sCat])) { cid = sCat; ids = (QBYCAT[sCat] || []).filter(qVisible); title = sCat === QOTHER ? 'Autres quêtes (prérequis)' : esc(catPath(sCat)); }
   else { el.innerHTML = '<div class="empty">Choisis une catégorie à gauche.</div>'; return; }
   const d = ids.filter(qDoneS).length, shownAll = ids.filter(qShown);
-  const tagCount = c => shownAll.filter(id => qTags(SC.quetes[id] || {}).includes(c)).length;
+  const hasTag = (id, c) => c === 'goal' ? !!GOALQ[id] : qTags(SC.quetes[id] || {}).includes(c);
+  const tagCount = c => shownAll.filter(id => hasTag(id, c)).length;
   if (sTag && !tagCount(sTag)) sTag = null;
-  const shown = sTag ? shownAll.filter(id => qTags(SC.quetes[id] || {}).includes(sTag)) : shownAll;
-  const chips = Object.keys(TAGS).filter(tagCount).length ? `<div class="chips" role="group" aria-label="Filtrer par type de quête"><button class="chip" data-tagf="" aria-pressed="${!sTag}">Toutes<small>${shownAll.length}</small></button>${Object.keys(TAGS).filter(tagCount).map(c => `<button class="chip" data-tagf="${c}" aria-pressed="${sTag === c}">${TAGS[c]}<small>${tagCount(c)}</small></button>`).join('')}</div>` : '';
+  const shown = sTag ? shownAll.filter(id => hasTag(id, sTag)) : shownAll;
+  const chipKeys = ['goal', ...Object.keys(TAGS)].filter(tagCount);
+  const chips = chipKeys.length ? `<div class="chips" role="group" aria-label="Filtrer les quêtes"><button class="chip" data-tagf="" aria-pressed="${!sTag}">Toutes<small>${shownAll.length}</small></button>${chipKeys.map(c => `<button class="chip${c === 'goal' ? ' goal' : ''}" data-tagf="${c}" aria-pressed="${sTag === c}">${c === 'goal' ? '◆ Mes objectifs' : TAGS[c]}<small>${tagCount(c)}</small></button>`).join('')}</div>` : '';
   const info = `${d} / ${ids.length} faites (${pctOf(d, ids.length)} %) · ${plural(shown.length, 'affichée')}${sCat === QALL && !qn ? ' · par niveau' : ''}`;
   const btns = cid != null ? `<button class="btn" data-sqall="${cid}">Tout cocher</button><button class="btn" data-sqnone="${cid}">Tout décocher</button>` : '';
   const lv = id => (SC.quetes[id] || {}).lv || 0;
@@ -1090,11 +1141,15 @@ function renderScList(){
   if (q) {
     list = SC.succes.filter(a => sVisible(a) && (norm(a.n).includes(q) || norm(a.d).includes(q) || a.ob.some(oid => SC.objectifs[oid] && norm(SC.objectifs[oid].n).includes(q)))).slice(0, 80);
     title = `Recherche « ${esc(sSearch)} »`;
-  } else if (sCat && SCAT[sCat]) { cid = sCat; list = catIds(sCat).flatMap(id => SBYCAT[id] || []).filter(sVisible); title = esc(catPath(sCat)); }
+  } else if (sCat === QGOAL) { el.innerHTML = renderGoalAchs(); imgErr(el); return; }
+  else if (sCat && SCAT[sCat]) { cid = sCat; list = catIds(sCat).flatMap(id => SBYCAT[id] || []).filter(sVisible); title = esc(catPath(sCat)); }
   else { el.innerHTML = '<div class="empty">Choisis une catégorie à gauche.</div>'; return; }
-  const shown = list.filter(aShown), d = list.filter(a => achDone(a.id)).length;
+  const nGoal = list.filter(a => GOALA[a.id] && aShown(a)).length;
+  if (sAGoal && !nGoal) sAGoal = false;
+  const shown = list.filter(a => aShown(a) && (!sAGoal || GOALA[a.id])), d = list.filter(a => achDone(a.id)).length;
+  const chips = nGoal ? `<div class="chips" role="group" aria-label="Filtrer les succès"><button class="chip" data-agoal="" aria-pressed="${!sAGoal}">Tous</button><button class="chip goal" data-agoal="1" aria-pressed="${sAGoal}">◆ Mes objectifs<small>${nGoal}</small></button></div>` : '';
   const btns = cid ? `<button class="btn" data-sall="${cid}" title="Marquer tous les succès de cette catégorie comme obtenus, avec leurs quêtes">Tout cocher</button><button class="btn" data-snone="${cid}" title="Décocher tous les succès de cette catégorie, avec leurs quêtes et objectifs">Tout décocher</button>` : '';
-  el.innerHTML = head(title, `${d} / ${list.length} obtenus (${pctOf(d, list.length)} %) · ${plural(shown.length, 'affiché')}`, btns) + (shown.length ? shown.map(achCard).join('') : EMPTY);
+  el.innerHTML = head(title, `${d} / ${list.length} obtenus (${pctOf(d, list.length)} %) · ${plural(shown.length, 'affiché')}`, btns) + chips + (shown.length ? shown.map(achCard).join('') : EMPTY);
   imgErr(el);
 }
 
@@ -1117,6 +1172,7 @@ function achDetailHtml(a){
   return `<div class="hd"><img src="${achImg(a)}" alt="" referrerpolicy="no-referrer"><h3>${esc(a.n)}</h3><div class="k">Succès · niveau ${a.lv}</div></div>
     <div class="orn">${n ? `${d} / ${n}` : '✦'}</div>
     <div class="quote${dn ? ' ok' : ''}">${esc(a.d)}${dn ? ' — obtenu.' : ''}</div>
+    ${goalBox(GOALA[a.id])}
     ${a.ob.length ? `<div class="lab">Objectifs</div>${a.ob.map(line).join('')}` : ''}
     ${parents.length ? `<div class="lab">Fait partie de</div>${parents.map(p => `<div class="ob${achDone(p.id) ? ' done' : ''}">${okx(achDone(p.id))}<span><span class="sgo" data-pick="a:${p.id}">${esc(p.n)}</span></span></div>`).join('')}` : ''}
     <div class="acts"><label class="chk"><input type="checkbox" class="gc" data-sach="${a.id}" ${dn ? 'checked' : ''}> Succès obtenu</label></div>
@@ -1136,6 +1192,7 @@ function questDetailHtml(qid){
   return `<div class="hd"><h3>${esc(qName(qid))}</h3><div class="k">Quête${q.lv ? ` · niveau ${q.lv}` : ''}${q.ev ? ' · événement' : ''}</div><div class="tags" style="justify-content:center;margin-top:6px">${qTags(q).map(c => `<span class="tag ${c}">${TAGS[c]}</span>`).join('')}</div></div>
     <div class="orn">!</div>
     <div class="quote ${dn || av ? 'ok' : 'ko'}">${dn ? 'Quête faite.' : av ? 'Disponible : tu peux la faire maintenant.' : `Indisponible : ${esc(why.join(', ')) || 'prérequis manquants'}.`}</div>
+    ${goalBox(GOALQ[qid])}
     ${(q.dj || []).length ? `<div class="lab">${(q.dj || []).length > 1 ? 'Donjons' : 'Donjon'}</div>${q.dj.map(id => `<div class="ob"><span class="tag dj">DJ</span><span>${esc(DJN[id] || 'Donjon ' + id)}</span></div>`).join('')}` : ''}
     ${(q.ft || []).length ? `<div class="lab">À faire</div>${q.ft.map(l => `<div class="ob"><span class="x">•</span><span>${esc(l)}</span></div>`).join('')}` : ''}
     ${pre.length ? `<div class="lab">Prérequis</div>${pre.join('')}` : ''}
@@ -1174,13 +1231,14 @@ function achAvailNow(id, stack = new Set()){
 }
 function ensureCat(){
   const l = scCatList(); if (l.some(c => c.id === sCat)) return;
-  const st = sMode === 'quetes' ? questStats : catStats;
-  sCat = (l.find(c => { const x = st(c.id); return x.n && x.d < x.n; }) || l[0]).id;   // première catégorie pas finie
+  const st = sMode === 'quetes' ? questStats : catStats, real = l.filter(c => c.id !== QGOAL);
+  sCat = (real.find(c => { const x = st(c.id); return x.n && x.d < x.n; }) || real[0] || l[0]).id;   // première catégorie pas finie
 }
 function renderSucces(){
   AVAIL = new Map();
   if (!SC.succes.length) { document.getElementById('scList').innerHTML = '<div class="panel muted">Données des succès absentes.</div>'; return; }
   SMEMO = new Map();
+  computeGoals();
   const vis = SC.succes.filter(sVisible), dn = vis.filter(a => achDone(a.id));
   const qv = Object.keys(SC.quetes).map(Number).filter(qVisible), qd = qv.filter(qDoneS).length;
   document.getElementById('plN').textContent = qd; document.getElementById('plS').textContent = `/ ${qv.length} quêtes`;
@@ -1221,6 +1279,10 @@ document.getElementById('scTree').addEventListener('click', e => {
 function onScClick(e){
   if (e.target.closest('input,label')) return;
   if (e.target.closest('[data-closedet]')) { closeSheet(); return; }
+  const ag = e.target.closest('[data-agoal]');
+  if (ag) { sAGoal = !!ag.dataset.agoal; renderScList(); return; }
+  const gv = e.target.closest('[data-goalview]');
+  if (gv) { sMode = 'quetes'; mTab = 'quetes'; store.set('sMode', sMode); sCat = QGOAL; store.set('sCat', sCat); sPick = null; sSearch = ''; document.getElementById('scSearch').value = ''; renderSucces(); document.getElementById('viewSucces').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   const tf = e.target.closest('[data-tagf]');
   if (tf) { sTag = tf.dataset.tagf || null; renderScList(); return; }
   const own = e.target.closest('[data-sdzown]');
@@ -1232,7 +1294,7 @@ function onScClick(e){
     return;
   }
   const card = e.target.closest('[data-sdz]');
-  if (card && !e.target.closest('[data-sgo]')) { const d = SDZ[+card.dataset.sdz]; if (!sdzOwned(d)) { sdzGoals.has(d.id) ? sdzGoals.delete(d.id) : sdzGoals.add(d.id); store.set('sdzGoals', [...sdzGoals]); renderScHelp(); } return; }
+  if (card && !e.target.closest('[data-sgo]')) { const d = SDZ[+card.dataset.sdz]; if (!sdzOwned(d)) { sdzGoals.has(d.id) ? sdzGoals.delete(d.id) : sdzGoals.add(d.id); store.set('sdzGoals', [...sdzGoals]); renderSucces(); } return; }
   const go = e.target.closest('[data-sgo]'); if (go) { goToAch(+go.dataset.sgo); return; }
   const all = e.target.closest('[data-sall]');
   if (all) { const id = +all.dataset.sall, list = catIds(id).flatMap(c => SBYCAT[c] || []).filter(sVisible);
@@ -1271,7 +1333,7 @@ document.getElementById('scHelp').addEventListener('click', onScClick);
 document.getElementById('scDetail').addEventListener('click', onScClick);
 function onScChange(e){
   const t = e.target;
-  if (t.dataset.sdzgoal) { const id = +t.dataset.sdzgoal; t.checked ? sdzGoals.add(id) : sdzGoals.delete(id); store.set('sdzGoals', [...sdzGoals]); renderScHelp(); return; }
+  if (t.dataset.sdzgoal) { const id = +t.dataset.sdzgoal; t.checked ? sdzGoals.add(id) : sdzGoals.delete(id); store.set('sdzGoals', [...sdzGoals]); renderSucces(); return; }
   if (t.id === 'sdzShowOwned') { sdzShowOwned = t.checked; store.set('sdzShowOwned', sdzShowOwned); renderScHelp(); return; }
   if (t.dataset.sach) {
     const id = +t.dataset.sach;

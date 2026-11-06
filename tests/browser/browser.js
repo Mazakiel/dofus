@@ -28,7 +28,9 @@ async function open(url, { width = 1440, height = 900, mobile = false } = {}) {
   // options des conteneurs et de la CI : sans /dev/shm ni GPU, Chrome démarre parfois sans jamais annoncer son port
   const args = ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--hide-scrollbars', 'about:blank'];
   if (!/headless-shell/.test(bin)) args.unshift('--headless=new');
-  const chrome = spawn(bin, args, { stdio: ['ignore', 'ignore', 'pipe'] });
+  // groupe de processus à part : Chrome lance des processus enfants qu'il faut arrêter avec lui
+  const chrome = spawn(bin, args, { stdio: ['ignore', 'ignore', 'pipe'], detached: true });
+  const killAll = () => { try { process.kill(-chrome.pid, 'SIGKILL'); } catch (e) { try { chrome.kill('SIGKILL'); } catch (e2) { /* déjà arrêté */ } } };
   let buf = '';
   chrome.stderr.on('data', d => { buf += d; });
   const port = await new Promise((res, rej) => {
@@ -36,8 +38,8 @@ async function open(url, { width = 1440, height = 900, mobile = false } = {}) {
     const poll = setInterval(() => { const m = buf.match(/ws:\/\/127\.0\.0\.1:(\d+)\//); if (m) { clearTimeout(t); clearInterval(poll); res(m[1]); } }, 100);
     chrome.on('exit', code => { clearTimeout(t); clearInterval(poll); rej(new Error('Chrome arrêté (code ' + code + ')')); });
   }).catch(e => {
-    chrome.kill();   // sans ça, le processus reste vivant et Node ne se termine plus
-    fs.rmSync(profile, { recursive: true, force: true });
+    killAll();   // sans ça, le processus reste vivant et Node ne se termine plus
+    try { fs.rmSync(profile, { recursive: true, force: true }); } catch (e2) { /* dossier temporaire : sans importance */ }
     throw new Error(`${e.message} — ${bin}\n${buf.slice(-600)}`);
   });
   const tabs = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
@@ -62,8 +64,8 @@ async function open(url, { width = 1440, height = 900, mobile = false } = {}) {
     async close() {
       try { ws.close(); } catch (e) { /* déjà fermé */ }
       const sorti = new Promise(r => chrome.once('exit', r));
-      chrome.kill(); await Promise.race([sorti, sleep(5000)]);   // le profil ne se supprime qu'une fois Chrome arrêté
-      fs.rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+      killAll(); await Promise.race([sorti, sleep(3000)]);
+      try { fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch (e) { /* le nettoyage du dossier temporaire ne doit pas faire échouer un test */ }
     },
   };
 }

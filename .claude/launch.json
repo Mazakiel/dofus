@@ -10,7 +10,7 @@
     {
       "name": "maquette",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["-e", "const h=require('http'),f=require('fs');h.createServer((q,r)=>{f.readFile('maquette-style.html',(e,d)=>{r.writeHead(e?404:200,{'content-type':'text/html; charset=utf-8'});r.end(d)})}).listen(8766)"],
+      "runtimeArgs": ["-e", "const h=require('http'),f=require('fs');h.createServer((q,r)=>{f.readFile('docs/maquettes/style.html',(e,d)=>{r.writeHead(e?404:200,{'content-type':'text/html; charset=utf-8'});r.end(d)})}).listen(8766)"],
       "port": 8766
     }
   ]

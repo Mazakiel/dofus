@@ -27,7 +27,7 @@ jobs:
         run: |
           mkdir -p dist
           cp ordre-contenu-200.html dist/index.html
-          cp pet_xp_calculator.html dist/pet-xp.html
+          cp apps/pet-xp/index.html dist/pet-xp.html
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

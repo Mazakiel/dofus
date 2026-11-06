@@ -13,8 +13,11 @@ Etats d'une quête : faite (cochée), commencée ou bloquée (à indiquer dans l
 - `scripts/enrich-quetes.js` : complète le JSON avec, pour chaque quête, les étiquettes (donjon, combat, farm, craft, exploration), le type (icône), la tranche de niveau, les donjons concernés et ce qu'il y a à faire ; ajoute aussi la fiche des donjons (niveau optimal, boss). Mêmes données DofusDB, avec cache dans `cache/`.
 - `scripts/build-succes.js` : injecte le JSON dans `scripts/template-succes.html` pour produire la page.
 - `scripts/template-succes.html` : le modèle de la page (style, logique, profils).
-- `maquette-style.html` : maquette statique de la direction visuelle.
-- `maquette-mobile.html` : maquette des deux navigations mobile étudiées (la version à onglets a été retenue).
+- `docs/maquettes/style.html` : maquette statique de la direction visuelle.
+- `docs/maquettes/mobile.html` : maquette des deux navigations mobile étudiées (la version à onglets a été retenue).
+- `docs/maquettes/donjons.html` : maquette de la vue Donjons.
+- `docs/references/` : captures du jeu qui servent de référence visuelle.
+- `apps/pet-xp/` : calculateur d'XP de familier, une application à part publiée sur `/pet-xp.html`. `resources.json` est la source des données embarquées dans la page (aucun script ne la régénère).
 
 ## Régénérer
 

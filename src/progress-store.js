@@ -92,7 +92,11 @@
       current: () => current,
       name: id => (find(id) || {}).n || id,
       switchTo(id) { if (find(id)) { current = id; adapter.set('profile', id); } },
-      add(name) { const id = 'p' + Date.now().toString(36); profiles.push({ id, n: name }); writeProfiles(); return id; },
+      add(name) {
+        let id;   // l'heure seule ne suffit pas : deux profils créés dans la même milliseconde auraient le même identifiant
+        do { id = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 4); } while (find(id));
+        profiles.push({ id, n: name }); writeProfiles(); return id;
+      },
       rename(id, name) { const p = find(id); if (p && name) { p.n = name; writeProfiles(); } },
       remove(id) {
         if (profiles.length < 2 || !find(id)) return false;

@@ -35,6 +35,13 @@ test("une sauvegarde relue est identique, et la date ne bouge que si quelque cho
   assert.notEqual(s.savedAt('default'), t1);
 });
 
+test('deux profils créés au même instant ont des identifiants différents', () => {
+  const s = PS.create(memory(), { now: clock() });
+  const ids = Array.from({ length: 200 }, (_, i) => s.add('P' + i));
+  assert.equal(new Set(ids).size, 200);
+  assert.equal(s.profiles().length, 201);
+});
+
 test('profils : ajouter, renommer, changer de profil actif, supprimer', () => {
   const a = memory(); const s = PS.create(a, { now: clock() });
   const id = s.add('Alt'); s.rename(id, 'Alt Eniripsa');

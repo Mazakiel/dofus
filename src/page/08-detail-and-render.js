@@ -81,6 +81,7 @@ function renderSucces(){
   showTab();
   if (sMode === 'donjons') ensureDj(); else ensureCat();
   renderScTree(); renderScList(); renderScHelp(); renderDetail();
+  if (typeof routeSync === 'function') routeSync();
 }
 function goToAch(id){
   const a = SACH[id]; if (!a) return;
@@ -98,7 +99,7 @@ document.getElementById('scTree').addEventListener('click', e => {
   if (dj) {
     sDj = +dj.dataset.sdj; store.set('sDj', sDj); sPick = null;
     document.querySelector('.side').classList.remove('open'); document.getElementById('catBtn').setAttribute('aria-expanded', 'false');
-    renderScTree(); renderScList(); renderDetail();
+    renderScTree(); renderScList(); renderDetail(); routeSync();
     if (isMobile()) window.scrollTo({ top: 0 });
     return;
   }
@@ -107,6 +108,6 @@ document.getElementById('scTree').addEventListener('click', e => {
   sCat = id; store.set('sCat', id);
   sSearch = ''; document.getElementById('scSearch').value = '';
   document.querySelector('.side').classList.remove('open'); document.getElementById('catBtn').setAttribute('aria-expanded', 'false');
-  renderScTree(); renderScList();
+  renderScTree(); renderScList(); routeSync();
   if (isMobile()) window.scrollTo({ top: 0 });
 });

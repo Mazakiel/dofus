@@ -187,5 +187,54 @@ test('la page construite avec les données actuelles se charge et affiche du con
     arbre: document.querySelectorAll('#scTree .sc-cat').length, lignes: document.querySelectorAll('#scList .row').length, titre: document.title })`);
   assert.ok(r.quetes > 500 && r.succes > 100 && r.dofus > 10 && r.menu > 5, JSON.stringify(r));
   assert.ok(r.arbre > 5 && r.lignes > 0, 'le menu et une liste s’affichent : ' + JSON.stringify(r));
-  assert.equal(r.titre, 'Progression Dofus');
+  assert.match(r.titre, /Progression Dofus$/);
 }, {}, buildPage(path.join(__dirname, '..', '..', 'data', 'dofusdb.json'))));
+
+test('navigation : l\'adresse suit la vue, un lien collé ouvre la bonne vue, retour revient en arrière', { skip }, () => withPage(async p => {
+  const hash = () => p.eval('location.hash'), view = () => p.eval('mTab');
+  assert.match(await hash(), /^#\/succes/);
+  await p.eval(`document.querySelector('#scTree [data-cat]') ? document.querySelector('#scTree [data-cat]').click() : 0; 1`);
+  const q = await p.eval(`Object.keys(SC.quetes)[0]`);
+  await p.eval(`mTab='quetes'; sMode='quetes'; renderSucces(); 1`);
+  assert.match(await hash(), /^#\/quetes/);
+  await p.eval(`sPick={k:'q',id:${q}}; renderScList(); renderDetail(); routeSync(); 1`);
+  assert.equal(await hash(), `#/quetes${(await hash()).match(/^#\/quetes(\/[^/]+)?/)[1] || ''}/q${q}`);
+  await p.eval(`history.back(); 1`); await p.wait(400);
+  assert.equal(await view(), 'succes', 'retour revient à la vue précédente');
+  // lien collé
+  await p.eval(`location.hash = '#/quetes/tous/q${q}'; 1`); await p.wait(400);
+  assert.equal(await view(), 'quetes');
+  assert.deepEqual(await p.eval('sPick'), { k: 'q', id: +q });
+  assert.match(await p.eval('document.title'), /^Quêtes/);
+}));
+
+test('navigation mobile : retour ferme la fiche au lieu de quitter la vue', { skip }, () => withPage(async p => {
+  const q = await p.eval(`Object.keys(SC.quetes)[0]`);
+  await p.eval(`mTab='quetes'; sMode='quetes'; renderSucces(); 1`);
+  const before = await p.eval('history.length');
+  await p.eval(`sPick={k:'q',id:${q}}; renderScList(); renderDetail(); openSheet(); 1`); await p.wait(200);
+  assert.equal(await p.eval(`document.body.classList.contains('sheet-open')`), true);
+  assert.match(await p.eval('location.hash'), new RegExp('/q' + q + '$'));
+  await p.eval(`history.back(); 1`); await p.wait(400);
+  assert.equal(await p.eval(`document.body.classList.contains('sheet-open')`), false, 'la fiche est fermée');
+  assert.equal(await p.eval('mTab'), 'quetes', 'on reste sur la vue');
+  // ✕ : retire l'entrée d'historique ajoutée
+  await p.eval(`sPick={k:'q',id:${q}}; renderScList(); renderDetail(); openSheet(); dismissSheet(); 1`); await p.wait(400);
+  assert.equal(await p.eval(`document.body.classList.contains('sheet-open')`), false);
+  assert.ok(!/\/q\d+$/.test(await p.eval('location.hash')));
+  assert.ok(await p.eval('history.length') >= before);
+}, { width: 390, height: 800, mobile: true }));
+
+test('annuler : une action en masse affiche un bandeau, « Annuler » rend la progression d\'avant', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); 1`); await p.reload();
+  const avant = await p.eval(`JSON.stringify(P.snapshot())`);
+  await p.eval(`withUndo('test', () => { Object.keys(SC.quetes).slice(0, 5).forEach(q => sq.add(+q)); }); saveSc(); 1`);
+  assert.equal(await p.eval(`document.getElementById('toast').hidden`), false);
+  assert.equal(await p.eval(`sq.size`), 5);
+  await p.eval(`document.querySelector('#toast [data-undo]').click(); 1`); await p.wait(300);
+  assert.equal(await p.eval(`JSON.stringify(P.snapshot())`), avant);
+  assert.equal(await p.eval(`document.getElementById('toast').hidden`), true);
+  assert.equal(await p.eval(`PS.load().sq.length`), 0, 'l\'annulation est sauvegardée');
+  await p.eval(`withUndo('rien', () => {}); 1`);
+  assert.equal(await p.eval(`document.getElementById('toast').hidden`), true, 'rien à annuler : pas de bandeau');
+}));

@@ -20,6 +20,7 @@ Etats d'une quête : faite (cochée), commencée ou bloquée (à indiquer dans l
 - `scripts/build.js` : assemble la page (`dist/index.html`) depuis la coquille, la feuille de style, les fichiers de `src/page/`, les modules de `src/` et le JSON.
 - `src/page.html`, `src/style.css` et `src/page/*.js` : la page. La coquille HTML, la feuille de style et une douzaine de fichiers de script (un par partie : stockage, modèle, Dofus, cascade, listes, fiche, événements, mobile, synchro, profils), assemblés dans l'ordre de leur nom en un seul script.
 - `src/progression.js` : le module de règles de progression (statuts, disponibilité, cascade, objectifs). Il possède l'état suivi et ses caches ; le build l'insère dans la page, et les tests le chargent directement.
+- `src/route.js` : adresse (`#/quetes/40/q219`) ↔ vue affichée. Pure ; la page s'en sert pour le bouton retour et les liens partageables (`src/page/13-router.js`). Un bandeau « Annuler » (`src/page/14-undo.js`) suit les actions en masse, cascades et imports.
 - `src/progress-store.js` : le module de progression persistée (profils, sauvegarde par profil, synchro entre appareils, export et import). Il parle à un stockage et à un distant interchangeables : le navigateur et Firestore dans la page, une mémoire et un faux distant dans les tests.
 - `tests/` : tests des deux modules (`npm test`) et contrôles de bout en bout dans Chrome (`npm run test:e2e`).
 - `docs/maquettes/style.html` : maquette statique de la direction visuelle.

@@ -155,13 +155,15 @@ dlgEl.addEventListener('click', e => {
   const act = e.target.closest('[data-dlact]');
   if (act) {
     const k = act.dataset.dlact;
-    if (k === 'apply' && DLG.mode === 'rm') { applyRemoval(DLG.rm); closeDlg(); closeSheet(); saveSc(); return; }
+    if (k === 'apply' && DLG.mode === 'rm') { withUndo('Éléments décochés', () => applyRemoval(DLG.rm)); closeDlg(); closeSheet(); saveSc(); return; }
+    const before = k === 'apply' ? P.snapshot() : null;
     if (k === 'apply') { DLG.a.forEach(id => sdone.add(id)); DLG.q.forEach(id => sq.add(id)); DLG.o.forEach(id => sodone.add(id)); DLG.d.forEach(id => setSdzOwned(SDZ[id], true)); }
     if (k === 'apply') {
       if (DLG.k === 'a') sdone.add(DLG.id);
       else if (DLG.k === 'q') sq.add(DLG.id);
       else { const d = SDZ[DLG.id]; setSdzOwned(d, true); }   // Dofus : obtenu (calculé, ou forcé s'il manque des coches)
     }
+    if (before && JSON.stringify(before) !== JSON.stringify(P.snapshot())) showUndo('Éléments cochés', before);
     closeDlg(); if (k === 'apply') closeSheet(); saveSc();   // « Annuler » : rien n'est modifié, la feuille reste ouverte
   }
 });

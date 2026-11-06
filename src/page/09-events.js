@@ -11,7 +11,7 @@ function onScClick(e){
     renderSucces(); return;
   }
   if (e.target.closest('input,label')) return;
-  if (e.target.closest('[data-closedet]')) { closeSheet(); return; }
+  if (e.target.closest('[data-closedet]')) { dismissSheet(); return; }
   const gv = e.target.closest('[data-goalview]');
   if (gv) { sMode = 'quetes'; mTab = 'quetes'; store.set('sMode', sMode); sCat = QGOAL; store.set('sCat', sCat); sPick = null; sSearch = ''; document.getElementById('scSearch').value = ''; renderSucces(); document.getElementById('viewSucces').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   const pf = e.target.closest('[data-progf]');
@@ -32,22 +32,22 @@ function onScClick(e){
   const all = e.target.closest('[data-sall]');
   if (all) { const id = +all.dataset.sall, list = catIds(id).flatMap(c => SBYCAT[c] || []).filter(sVisible);
     askConfirm(`Marquer les ${list.length} succès de « ${SCAT[id].n} » comme obtenus, avec leurs quêtes ?`, 'Tout cocher').then(ok => { if (!ok) return;
-      for (const a of list) { sdone.add(a.id); for (const oid of a.ob) { const o = SC.objectifs[oid]; if (o && o.t === 'q') sq.add(o.r); } }
+      withUndo(`${list.length} succès cochés`, () => { for (const a of list) { sdone.add(a.id); for (const oid of a.ob) { const o = SC.objectifs[oid]; if (o && o.t === 'q') sq.add(o.r); } } });
       saveSc(); });
     return; }
   const qall = e.target.closest('[data-sqall]');
   if (qall) { const id = +qall.dataset.sqall, ids = (QBYCAT[id] || []).filter(qVisible), nom = id === QOTHER ? 'Autres quêtes' : SCAT[id].n;
-    askConfirm(`Marquer les ${ids.length} quêtes de « ${nom} » comme faites ?`, 'Tout cocher').then(ok => { if (ok) { ids.forEach(q => sq.add(q)); saveSc(); } });
+    askConfirm(`Marquer les ${ids.length} quêtes de « ${nom} » comme faites ?`, 'Tout cocher').then(ok => { if (ok) { withUndo(`${ids.length} quêtes cochées`, () => ids.forEach(q => sq.add(q))); saveSc(); } });
     return; }
   const qnone = e.target.closest('[data-sqnone]');
   if (qnone) { const id = +qnone.dataset.sqnone, ids = (QBYCAT[id] || []).filter(qVisible), nom = id === QOTHER ? 'Autres quêtes' : SCAT[id].n;
     askConfirm(`Décocher les ${ids.length} quêtes de « ${nom} » ? Les succès marqués obtenus qui les demandent sont aussi décochés.`, 'Tout décocher').then(ok => { if (!ok) return;
-      ids.forEach(q => { sq.delete(q); (QOWN[q] || []).forEach(a => sdone.delete(a)); }); saveSc(); });
+      withUndo(`${ids.length} quêtes décochées`, () => ids.forEach(q => { sq.delete(q); (QOWN[q] || []).forEach(a => sdone.delete(a)); })); saveSc(); });
     return; }
   const none = e.target.closest('[data-snone]');
   if (none) { const id = +none.dataset.snone, list = catIds(id).flatMap(c => SBYCAT[c] || []).filter(sVisible);
     askConfirm(`Décocher les ${list.length} succès de « ${SCAT[id].n} », avec leurs quêtes et objectifs ?`, 'Tout décocher').then(ok => { if (!ok) return;
-      for (const a of list) { sdone.delete(a.id); for (const oid of a.ob) { const o = SC.objectifs[oid]; if (!o) continue; if (o.t === 'q') sq.delete(o.r); else if (o.t === 'x') sodone.delete(+oid); } }
+      withUndo(`${list.length} succès décochés`, () => { for (const a of list) { sdone.delete(a.id); for (const oid of a.ob) { const o = SC.objectifs[oid]; if (!o) continue; if (o.t === 'q') sq.delete(o.r); else if (o.t === 'x') sodone.delete(+oid); } } });
       saveSc(); });
     return; }
   const pk = e.target.closest('[data-pick]');
@@ -58,6 +58,7 @@ function onScClick(e){
     if (fromDetail) { const r = document.getElementById((k === 'a' ? 'ach' : 'q') + id); if (r) r.scrollIntoView({ block: 'nearest' }); }
     else if (isMobile()) openSheet();
     else if (window.innerWidth <= 1100) document.getElementById('scDetail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    routeSync();
   }
 }
 document.getElementById('scList').addEventListener('click', onScClick);

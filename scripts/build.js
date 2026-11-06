@@ -13,8 +13,9 @@ const pageJs = fs.readdirSync(path.join(__dirname, '..', 'src', 'page')).filter(
 const tpl = src('page.html').replace('/*__STYLE__*/', () => src('style.css')).replace('/*__PAGE_JS__*/', () => pageJs);
 const sc = JSON.stringify(light).replace(/</g, '\\u003c');
 fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
-// les modules src/progression.js et src/progress-store.js sont insérés tels quels : mêmes fichiers dans la page et dans les tests
+// les modules src/progression.js, src/progress-store.js et src/route.js sont insérés tels quels : mêmes fichiers dans la page et dans les tests
 const progression = fs.readFileSync(path.join(__dirname, '..', 'src', 'progression.js'), 'utf8');
 const progressStore = fs.readFileSync(path.join(__dirname, '..', 'src', 'progress-store.js'), 'utf8');
-fs.writeFileSync(out, tpl.replace('/*__PROGRESSION__*/', () => progression).replace('/*__PROGRESS_STORE__*/', () => progressStore).replace('/*__DATA__*/null', () => sc));
+const route = fs.readFileSync(path.join(__dirname, '..', 'src', 'route.js'), 'utf8');
+fs.writeFileSync(out, tpl.replace('/*__PROGRESSION__*/', () => progression).replace('/*__PROGRESS_STORE__*/', () => progressStore).replace('/*__ROUTE__*/', () => route).replace('/*__DATA__*/null', () => sc));
 console.log(`succès gardés ${light.succes.length} / ${D.succes.length} (dont ${light.succes.filter(a => a.t).length} suivis) · objectifs ${Object.keys(light.objectifs).length} · quêtes ${Object.keys(D.quetes).length} · écrit ${out} ${(fs.statSync(out).size / 1024).toFixed(0)} Ko`);

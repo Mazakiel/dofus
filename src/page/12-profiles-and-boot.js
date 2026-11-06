@@ -13,8 +13,9 @@ document.getElementById('importFile').onchange = async e => {
     const j = JSON.parse(await f.text()), info = ProgressStore.inspectImport(j);
     if (!info.count && !info.hasDofus) { uiAlert('Aucune coche reconnue dans ce fichier.'); return; }
     if (!(await askConfirm(`Le fichier contient ${info.count} coche(s) de succès, quêtes et objectifs${info.profil ? ` (profil « ${info.profil} »)` : ''}. Les ajouter au profil « ${PS.name(PS.current())} » ?`, 'Importer'))) return;
+    const avant = P.snapshot();
     P.load(ProgressStore.importInto(P.snapshot(), j, { dofus: id => !!SDZ[id], quest: id => !!SC.quetes[id] }));
-    persistNow(); saveSc();
+    persistNow(); showUndo('Import terminé', avant); saveSc();
   } catch (err) { uiAlert('Fichier illisible : ' + err.message); }
 };
 

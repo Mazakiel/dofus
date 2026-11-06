@@ -7,7 +7,7 @@ Etats d'une quête : faite (cochée), commencée ou bloquée (à indiquer dans l
 
 ## Fichiers
 
-- `ordre-contenu-200.html` : la page finale, données incluses. S'ouvre directement dans un navigateur.
+- `dist/index.html` : la page finale, données incluses, générée par `npm run build` (non versionnée : la CI la reconstruit à chaque publication). S'ouvre directement dans un navigateur.
 - `succes-dofusdb.json` : les données DofusDB préparées (catégories, succès, objectifs, quêtes, Dofus).
 - `scripts/achievements.js` : télécharge les données DofusDB (avec cache dans `cache/`) et écrit le JSON.
 - `scripts/enrich-quetes.js` : complète le JSON avec, pour chaque quête, les étiquettes (donjon, combat, farm, craft, exploration), le type (icône), la tranche de niveau, les donjons concernés et ce qu'il y a à faire ; ajoute aussi la fiche des donjons (niveau optimal, boss). Mêmes données DofusDB, avec cache dans `cache/`.
@@ -22,16 +22,15 @@ Etats d'une quête : faite (cochée), commencée ou bloquée (à indiquer dans l
 ## Régénérer
 
 ```bash
-node scripts/achievements.js succes-dofusdb.json
-node scripts/enrich-quetes.js succes-dofusdb.json
-node scripts/build-succes.js succes-dofusdb.json ordre-contenu-200.html
+npm run data    # rafraîchit les données DofusDB (achievements.js puis enrich-quetes.js)
+npm run build   # assemble dist/index.html depuis le modèle et le JSON
 ```
 
-Les deux premières commandes ne servent qu'à rafraîchir les données DofusDB (sans le dossier `cache/`, elles retéléchargent tout). `enrich-quetes.js` doit être relancé après `achievements.js`, qui réécrit le JSON.
+`npm run data` ne sert qu'à rafraîchir les données DofusDB (sans le dossier `cache/`, elles retéléchargent tout). `enrich-quetes.js` doit être relancé après `achievements.js`, qui réécrit le JSON.
 
 ## Mobile
 
-Sous 700 px de large, la page passe en navigation par onglets en bas (Succès, Quêtes, Dofus, Réglages) : le choix de catégorie se fait par un menu sous la recherche, et la fiche d'une quête ou d'un succès s'ouvre en feuille par-dessus la liste.
+Sous 700 px de large, la page passe en navigation par onglets en bas (Succès, Quêtes, Donjons, Dofus, Réglages) : le choix de catégorie se fait par un menu sous la recherche, et la fiche d'une quête ou d'un succès s'ouvre en feuille par-dessus la liste.
 
 ## Synchronisation entre appareils (optionnelle)
 

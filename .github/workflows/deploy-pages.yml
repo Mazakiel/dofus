@@ -23,10 +23,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Préparer le site
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Construire le site
         run: |
-          mkdir -p dist
-          cp ordre-contenu-200.html dist/index.html
+          npm run build
           cp apps/pet-xp/index.html dist/pet-xp.html
 
       - uses: actions/configure-pages@v5

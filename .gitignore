@@ -1,4 +1,7 @@
 # Cache des réponses DofusDB (≈ 200 Mo, régénérable avec scripts/achievements.js)
 cache/
 node_modules/
+# Page finale générée par `npm run build` (la CI la reconstruit à chaque publication)
+dist/
+ordre-contenu-200.html
 .claude/settings.local.json

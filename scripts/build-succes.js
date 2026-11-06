@@ -20,5 +20,6 @@ const objK = {}; for (const a of succesK) for (const oid of a.ob) if (D.objectif
 const light = { ...D, categories: D.categories.filter(c => catK.has(c.id)), succes: succesK, objectifs: objK };
 const tpl = fs.readFileSync(path.join(__dirname, 'template-succes.html'), 'utf8');
 const sc = JSON.stringify(light).replace(/</g, '\\u003c');
+fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
 fs.writeFileSync(out, tpl.replace('/*__SUCCES__*/null', () => sc));
 console.log(`succès gardés ${succesK.length} / ${D.succes.length} · objectifs ${Object.keys(objK).length} · quêtes ${Object.keys(D.quetes).length} · écrit ${out} ${(fs.statSync(out).size / 1024).toFixed(0)} Ko`);

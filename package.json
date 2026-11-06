@@ -1,0 +1,9 @@
+{
+  "name": "dofus-succes-quetes",
+  "private": true,
+  "description": "Suivi des succès, quêtes et Dofus (données DofusDB)",
+  "scripts": {
+    "data": "node scripts/achievements.js succes-dofusdb.json && node scripts/enrich-quetes.js succes-dofusdb.json",
+    "build": "node scripts/build-succes.js succes-dofusdb.json dist/index.html"
+  }
+}

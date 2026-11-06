@@ -21,5 +21,7 @@ const light = { ...D, categories: D.categories.filter(c => catK.has(c.id)), succ
 const tpl = fs.readFileSync(path.join(__dirname, 'template-succes.html'), 'utf8');
 const sc = JSON.stringify(light).replace(/</g, '\\u003c');
 fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
-fs.writeFileSync(out, tpl.replace('/*__SUCCES__*/null', () => sc));
+// le module de règles de progression (src/progression.js) est inséré tel quel : même fichier dans la page et dans les tests
+const progression = fs.readFileSync(path.join(__dirname, '..', 'src', 'progression.js'), 'utf8');
+fs.writeFileSync(out, tpl.replace('/*__PROGRESSION__*/', () => progression).replace('/*__SUCCES__*/null', () => sc));
 console.log(`succès gardés ${succesK.length} / ${D.succes.length} · objectifs ${Object.keys(objK).length} · quêtes ${Object.keys(D.quetes).length} · écrit ${out} ${(fs.statSync(out).size / 1024).toFixed(0)} Ko`);

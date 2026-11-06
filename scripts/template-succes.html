@@ -545,6 +545,7 @@ input[type=checkbox]:not(.gc){accent-color:var(--gold)}
   <button role="tab" data-tab="plus" aria-selected="false" aria-label="Réglages" title="Réglages"><span class="ti c-set"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5.2" width="20" height="2.6" rx="1.3"/><rect x="2" y="10.7" width="20" height="2.6" rx="1.3"/><rect x="2" y="16.2" width="20" height="2.6" rx="1.3"/><circle cx="15.5" cy="6.5" r="3.2" stroke="var(--win)" stroke-width="1.6"/><circle cx="7.5" cy="12" r="3.2" stroke="var(--win)" stroke-width="1.6"/><circle cx="16.5" cy="17.5" r="3.2" stroke="var(--win)" stroke-width="1.6"/></svg></span></button>
 </nav>
 
+<script>/*__PROGRESSION__*/</script>
 <script>
 const SUCCES = /*__SUCCES__*/null;   // données DofusDB uniquement (catégories, succès, objectifs, quêtes, Dofus)
 // Sauvegarde : localStorage (lecture immédiate) + copie miroir dans IndexedDB (mêmes clés, sans le préfixe c200:).
@@ -593,7 +594,7 @@ const store = {
     } catch(e){}
     if (ok) { location.reload(); return; }
     const g = k => saved['p:' + profile + ':' + k] || saved[k] || [];
-    sdone = new Set(g('sdone')); sq = new Set(g('sq')); sodone = new Set(g('sodone')); renderSucces();   // localStorage bloqué : on travaille depuis IndexedDB
+    P.load({ ...P.snapshot(), sdone: g('sdone'), sq: g('sq'), sodone: g('sodone') }); renderSucces();   // localStorage bloqué : on travaille depuis IndexedDB
   } else {
     for (const k of lsKeys()) { const s = k.slice(5); if (!(s in saved)) { try { idb.put(s, JSON.parse(localStorage.getItem(k))); } catch(e){} } }
   }
@@ -626,28 +627,28 @@ applyTheme();
 
 // ===================== Succès et quêtes — DofusDB uniquement =====================
 const SC = SUCCES || { categories: [], succes: [], objectifs: {}, quetes: {} };
+// Règles de progression (src/progression.js) : possède l'état suivi, ses caches et la cascade. La page ne fait que l'interroger.
+const P = Progression.create(SC);
+P.load({ sdone: store.get('sdone', []), sq: store.get('sq', []), sodone: store.get('sodone', []), sLevel: store.get('sLevel', 200),
+  sdzState: store.get('sdzState', {}), sdzGoals: store.get('sdzGoals', []), qState: store.get('qState', {}) });
+const { SACH, SDZ, QOWN, QNEXT, SPARENTS } = P.index;
+const { sdone, sq, sodone, sdzState, sdzGoals, qState } = P.state;   // états suivis : toute modification invalide les caches du module
+const { achDone, objDone, achProg, collectPrereqs, collectDependents, lockReasons } = P;
+const { questDone: qDoneS, questAvailable: qAvailNow, achAvailable: achAvailNow, questStatus: qStatus, dofusAuto: sdzAuto, dofusOwned: sdzOwned } = P;
 const SCAT = Object.fromEntries(SC.categories.map(c => [c.id, c]));
-const SACH = Object.fromEntries(SC.succes.map(a => [a.id, a]));
 const SKIDS = {}; for (const c of SC.categories) (SKIDS[c.p] = SKIDS[c.p] || []).push(c);
 for (const k in SKIDS) SKIDS[k].sort((a, b) => a.o - b.o);
 const SBYCAT = {}; for (const a of SC.succes) (SBYCAT[a.c] = SBYCAT[a.c] || []).push(a);
 for (const k in SBYCAT) SBYCAT[k].sort((a, b) => a.o - b.o || a.id - b.id);
 const QOWN_PRE = {};  // quête → succès qui la demandent en objectif (calculé tôt, pour ranger les quêtes)
 for (const o of Object.values(SC.objectifs)) if (o.t === 'q') (QOWN_PRE[o.r] = QOWN_PRE[o.r] || []).push(o.a);
-const SPARENTS = {};   // succès qui demandent ce succès (imbrication)
-for (const o of Object.values(SC.objectifs)) if (o.t === 'a') (SPARENTS[o.r] = SPARENTS[o.r] || []).push(o.a);
 const EVENTS = 9;
 const topOf = cid => { let c = SCAT[cid]; while (c && c.p && SCAT[c.p]) c = SCAT[c.p]; return c ? c.id : null; };
 const catPath = cid => { const c = SCAT[cid]; if (!c) return ''; const p = SCAT[c.p]; return p ? `${p.n} › ${c.n}` : c.n; };
 const achImg = a => `https://api.dofusdb.fr/img/achievements/${a.ic}.png`;
-let sdone = new Set(store.get('sdone', []));     // succès marqués obtenus
-let sq = new Set(store.get('sq', []));           // quêtes (id DofusDB) faites : partagées par tous les succès qui les citent
-let sodone = new Set(store.get('sodone', []));   // autres objectifs cochés (monstre, donjon, exploration…)
-let qState = store.get('qState', {});            // état saisi à la main : 's' commencée, 'b' bloquée (disponible / indisponible se déduisent, faite = cochée)
 let sCat = store.get('sCat', null);
 // « Afficher les obtenus » (ancien « Masquer les obtenus », repris dans l'autre sens) et « Afficher les indisponibles »
 let sShowDone = store.get('sShowDone', !store.get('sHideDone', false)), sShowLocked = store.get('sShowLocked', false);
-let sLevel = store.get('sLevel', 200);
 let sSearch = '';
 // Succès « liés aux quêtes » : catégorie Quêtes, au moins une quête en objectif, ou un sous-succès lié aux quêtes
 const QREL = new Set();
@@ -666,24 +667,6 @@ const groupOf = cid => topOf(cid) === EVENTS ? EVENTS : cid;   // catégorie aff
 const SEASONAL = new Set([60, 23, 89, 68]);
 let sSeasonal = store.get("sSeasonal", false);
 const sVisible = a => catAllowed(a.c) && (sSeasonal || !SEASONAL.has(a.c)) && (!sQuestOnly || QREL.has(a.id));
-let SMEMO = new Map();
-function achDone(id, stack){
-  if (sdone.has(id)) return true;
-  if (SMEMO.has(id)) return SMEMO.get(id);
-  const a = SACH[id]; if (!a || !a.ob.length) return false;
-  stack = stack || new Set(); if (stack.has(id)) return false;
-  stack.add(id); const r = a.ob.every(oid => objDone(oid, stack)); stack.delete(id);
-  SMEMO.set(id, r); return r;
-}
-function objDone(oid, stack){
-  const o = SC.objectifs[oid]; if (!o) return false;
-  if (sdone.has(o.a)) return true;                    // succès obtenu → tous ses objectifs le sont
-  if (o.t === 'q') return sq.has(o.r);
-  if (o.t === 'a') return achDone(o.r, stack);
-  if (o.t === 'lvl') return sLevel >= o.r;           // « Atteindre le niveau N » : d'après le niveau saisi
-  return sodone.has(+oid);
-}
-const achProg = a => [a.ob.filter(oid => objDone(oid)).length, a.ob.length];
 function catStats(cid){
   if (cid === SALL) { const all = SC.succes.filter(sVisible); return { n: all.length, d: all.filter(a => achDone(a.id)).length }; }
   const ids = [cid, ...(SKIDS[cid] || []).map(c => c.id)];
@@ -691,53 +674,15 @@ function catStats(cid){
   const d = list.filter(a => achDone(a.id));
   return { n: list.length, d: d.length };
 }
-// ---- Cascade : ce que valider un succès (ou une quête) implique ----
-// Un succès implique ses objectifs (sous-succès, quêtes, autres). Une quête implique ses conditions de départ :
-// quêtes à avoir terminées (Qf) et succès à avoir obtenus (OA), récursivement. C'est ainsi que « Quatre sur six »
-// remonte jusqu'aux succès des 4 premiers Dofus primordiaux.
-const QOWN = {};   // quête → succès qui la demandent en objectif
-for (const [oid, o] of Object.entries(SC.objectifs)) if (o.t === 'q') (QOWN[o.r] = QOWN[o.r] || []).push(o.a);
-const qDoneS = qid => sq.has(qid) || (QOWN[qid] || []).some(a => sdone.has(a));
 const qName = qid => (SC.quetes[qid] && SC.quetes[qid].n) || `quête ${qid}`;
-function collectPrereqs(kind, id){
-  const acc = { a: new Set(), q: new Set(), o: new Set(), d: new Set() }, seen = new Set();
-  const quest = qid => {
-    if (seen.has('q' + qid)) return; seen.add('q' + qid);
-    if (!qDoneS(qid)) acc.q.add(qid);
-    const q = SC.quetes[qid]; if (!q) return;
-    (q.pre || []).forEach(quest); (q.preA || []).forEach(ach); (q.preD || []).forEach(dofus);
-  };
-  // Dofus à posséder (condition PO d'une quête) : le Dofus lui-même, puis ce qui le donne (succès, quête, ou prérequis)
-  const dofus = did => {
-    if (seen.has('d' + did)) return; seen.add('d' + did);
-    const d = SDZ[did]; if (!d || d.cadeau) return;
-    if (!sdzOwned(d)) acc.d.add(did);
-    if (d.a) ach(d.a); if (d.q) quest(d.q); (d.pa || []).forEach(ach);
-  };
-  const objs = aid => { for (const oid of (SACH[aid] || { ob: [] }).ob) { const o = SC.objectifs[oid]; if (!o) continue;
-    if (o.t === 'a') ach(o.r); else if (o.t === 'q') quest(o.r); else if (o.t === 'x' && !sodone.has(+oid)) acc.o.add(+oid); } };
-  const ach = aid => {
-    if (seen.has('a' + aid)) return; seen.add('a' + aid);
-    if (!sdone.has(aid) && !achDone(aid)) acc.a.add(aid);
-    objs(aid);
-  };
-  if (kind === 'a') { seen.add('a' + id); objs(id); }
-  else if (kind === 'd') { seen.add('d' + id); const d = SDZ[id]; if (d) { if (d.a) ach(d.a); if (d.q) quest(d.q); (d.pa || []).forEach(ach); } }   // Dofus : son succès, sa quête et ses succès prérequis, inclus
-  else { seen.add('q' + id); const q = SC.quetes[id]; if (q) { (q.pre || []).forEach(quest); (q.preA || []).forEach(ach); (q.preD || []).forEach(dofus); } }
-  return acc;
-}
 // ---- Dofus (DofusDB : objets de type Dofus, reliés au succès qui les donne, ou à la quête) ----
-const SDZ = Object.fromEntries((SC.dofus || []).map(d => [d.id, d]));
 const SDZL = (SC.dofus || []).filter(d => !d.cadeau);   // Jyfus : cadeau d'Ankama, ne s'obtient pas en jeu
 const DZ_SEASONAL_SANS_LIEN = new Set([20833]);   // Dofus Cacao : événement de l'île de Pwâk
 const sdzSeasonal = d => DZ_SEASONAL_SANS_LIEN.has(d.id) || [d.a, ...(d.pa || []), ...(d.q ? (QOWN_PRE[d.q] || []) : [])].some(a => a && SACH[a] && SEASONAL.has(SACH[a].c));
 const sdzVisible = d => sSeasonal || !sdzSeasonal(d);
-let sdzState = store.get('sdzState', {}), sdzGoals = new Set(store.get('sdzGoals', [])), sdzShowOwned = store.get('sdzShowOwned', !store.get('sdzHide', false));
+let sdzShowOwned = store.get('sdzShowOwned', !store.get('sdzHide', false));
 const itemImg = d => `https://api.dofusdb.fr/img/items/${d.ic}.png`;
-// un succès seulement prérequis (Ocre d'ambre pour le Dofus Ocre) ne suffit pas : le Dofus se coche à la main
-const sdzAuto = d => !d.pre && ((!!d.a && achDone(d.a)) || (!!d.q && qDoneS(d.q)));
-const sdzOwned = d => sdzState[d.id] === 'owned' ? true : sdzState[d.id] === 'missing' ? false : sdzAuto(d);
-function setSdzOwned(d, on){ SMEMO = new Map(); if (on === sdzAuto(d)) delete sdzState[d.id]; else sdzState[d.id] = on ? 'owned' : 'missing'; if (on) sdzGoals.delete(d.id); store.set('sdzState', sdzState); store.set('sdzGoals', [...sdzGoals]); }
+function setSdzOwned(d, on){ P.setDofusOwned(d, on); store.set('sdzState', sdzState); store.set('sdzGoals', [...sdzGoals]); }
 const sdzSrc = d => d.pa ? `les succès « ${d.pa.map(a => SACH[a] ? SACH[a].n : a).join(" » et « ")} » (prérequis), puis un dialogue avec le PNJ — rattachement fait à la main, absent de DofusDB` : d.pre && d.a && SACH[d.a] ? `le succès « ${SACH[d.a].n} », qui n’en est qu’un prérequis : l’obtention elle-même n’est pas décrite dans DofusDB` : d.a && SACH[d.a] ? `le succès « ${SACH[d.a].n} »` : d.q ? `la quête « ${qName(d.q)} »${d.src === 'remis pendant la quête' ? ' (remis pendant la quête)' : d.src && d.src.startsWith('manuel') ? ' (remis par le PNJ en fin de quête ; rattachement fait à la main, absent de DofusDB)' : ''}` : '';
 // Texte d'infobulle quand DofusDB ne dit pas comment obtenir le Dofus
 // Explication affichée au clic sur le « i » d'une carte Dofus (le survol n'existe pas sur téléphone)
@@ -808,7 +753,6 @@ function renderScDofus(el){
 let DLG = null;   // { k:'a'|'q', id, a:Set, q:Set, o:Set, open:Set('a12'|'q34') }
 const dlgEl = document.getElementById('scDialog');
 function openDlg(k, id){
-  SMEMO = new Map();
   const acc = collectPrereqs(k, id);
   DLG = { k, id, a: new Set(acc.a), q: new Set(acc.q), o: new Set(acc.o), d: new Set(acc.d), open: new Set() };
   renderDlg();
@@ -819,55 +763,7 @@ function closeDlg(){ DLG = null; if (dlgEl.open) dlgEl.close(); }
 // ---- Décocher en cascade : tout ce qui dépend de l'élément décoché ----
 // Dépendances inverses : quête → quêtes qui l'exigent (QNEXT), succès qui la contiennent (QOWN), Dofus qu'elle donne ;
 // succès → succès parents, quêtes qui l'exigent (OA), Dofus qu'il donne ou dont il est prérequis ; Dofus → quêtes qui l'exigent (PO).
-const QBYPREA = {}, QBYPRED = {};
-for (const [qid, q] of Object.entries(SC.quetes)) {
-  (q.preA || []).forEach(a => (QBYPREA[a] = QBYPREA[a] || []).push(+qid));
-  (q.preD || []).forEach(d => (QBYPRED[d] = QBYPRED[d] || []).push(+qid));
-}
-const DZ_BY_A = {}, DZ_BY_Q = {};
-for (const d of (SC.dofus || [])) {
-  if (d.a && !d.pre) (DZ_BY_A[d.a] = DZ_BY_A[d.a] || []).push(d.id);
-  (d.pa || []).forEach(a => (DZ_BY_A[a] = DZ_BY_A[a] || []).push(d.id));
-  if (d.q) (DZ_BY_Q[d.q] = DZ_BY_Q[d.q] || []).push(d.id);
-}
-function collectDependents(kind, id){
-  const seen = new Set(), queue = [];
-  const push = (k, x) => { if (seen.has(k + x)) return; seen.add(k + x); queue.push([k, x]); };
-  // un succès décoché emporte ses propres objectifs (sinon il resterait validé par eux), mais pas ses prérequis
-  const contained = aid => {
-    push('a', aid);
-    for (const oid of (SACH[aid] || { ob: [] }).ob) {
-      const o = SC.objectifs[oid]; if (!o) continue;
-      if (o.t === 'q') push('q', o.r); else if (o.t === 'x') push('o', +oid); else if (o.t === 'a' && !seen.has('a' + o.r)) contained(o.r);
-    }
-  };
-  if (kind === 'a') contained(id);
-  else if (kind === 'q') push('q', id);
-  else if (kind === 'o') push('o', id);
-  else if (kind === 'd') { push('d', id); const d = SDZ[id]; if (d && !d.pre) { if (d.a) contained(d.a); if (d.q) push('q', d.q); } }
-  while (queue.length) {
-    const [k, x] = queue.shift();
-    if (k === 'q') { (QOWN[x] || []).forEach(a => push('a', a)); (QNEXT[x] || []).forEach(q => push('q', q)); (DZ_BY_Q[x] || []).forEach(d => push('d', d)); }
-    else if (k === 'a') { (SPARENTS[x] || []).forEach(a => push('a', a)); (QBYPREA[x] || []).forEach(q => push('q', q)); (DZ_BY_A[x] || []).forEach(d => push('d', d)); }
-    else if (k === 'o') { const o = SC.objectifs[x]; if (o) push('a', o.a); }
-    else if (k === 'd') (QBYPRED[x] || []).forEach(q => push('q', q));
-  }
-  // on ne garde que ce qui est actuellement validé
-  SMEMO = new Map();
-  const res = { a: new Set(), q: new Set(), o: new Set(), d: new Set() };
-  for (const key of seen) {
-    const k = key[0], x = +key.slice(1);
-    const ok = k === 'q' ? qDoneS(x) : k === 'a' ? (sdone.has(x) || achDone(x)) : k === 'o' ? sodone.has(x) : (SDZ[x] && sdzOwned(SDZ[x]));
-    if (ok) res[k].add(x);
-  }
-  return res;
-}
-function applyRemoval(rm){
-  rm.a.forEach(a => sdone.delete(a)); rm.q.forEach(q => sq.delete(q)); rm.o.forEach(o => sodone.delete(o));
-  // Dofus : on retire le forçage, puis on force « non obtenu » s'il reste obtenu par ailleurs
-  rm.d.forEach(id => { delete sdzState[id]; SMEMO = new Map(); if (sdzOwned(SDZ[id])) sdzState[id] = 'missing'; });
-  store.set('sdzState', sdzState);
-}
+function applyRemoval(rm){ P.applyRemoval(rm); store.set('sdzState', sdzState); }
 // Décocher : directement si rien d'autre n'en dépend, sinon confirmation avec la liste de ce qui sera décoché
 function uncheck(kind, id){
   const rm = collectDependents(kind, id);
@@ -948,7 +844,7 @@ function dlAchKids(aid, seen){
   return a.ob.map(oid => [oid, SC.objectifs[oid]]).filter(x => x[1]).map(([oid, o]) => {
     if (o.t === 'a') return dlAchRow(o.r, seen, 'succès');
     if (o.t === 'q') return dlQuestRow(o.r, seen, 'quête');
-    if (o.t === 'lvl') return `<li><div class="dl-row ${sLevel >= o.r ? 'done' : 'off'}"><span class="dl-tog empty"></span><input type="checkbox" ${sLevel >= o.r ? 'checked' : ''} disabled><span class="dl-kind">niveau</span><span class="dl-lbl">${esc(o.n)}</span></div></li>`;
+    if (o.t === 'lvl') return `<li><div class="dl-row ${P.state.level >= o.r ? 'done' : 'off'}"><span class="dl-tog empty"></span><input type="checkbox" ${P.state.level >= o.r ? 'checked' : ''} disabled><span class="dl-kind">niveau</span><span class="dl-lbl">${esc(o.n)}</span></div></li>`;
     const dn = sodone.has(+oid);
     return `<li><div class="dl-row ${dn ? 'done' : DLG.o.has(+oid) ? '' : 'off'}"><span class="dl-tog empty"></span>${dlBox('o', +oid, dn)}<span class="dl-kind">objectif</span><span class="dl-lbl">${esc((o.n || '').trim() || a.d || a.n)}</span></div></li>`;
   }).join('');
@@ -956,16 +852,13 @@ function dlAchKids(aid, seen){
 // Succès qui seraient complétés « par la même occasion » si on valide la sélection
 function alsoCompleted(){
   const before = new Set(SC.succes.filter(a => achDone(a.id)).map(a => a.id));
-  const keep = [new Set(sdone), new Set(sq), new Set(sodone)];
-  DLG.a.forEach(x => sdone.add(x)); DLG.q.forEach(x => sq.add(x)); DLG.o.forEach(x => sodone.add(x)); if (DLG.k === 'a') sdone.add(DLG.id); else if (DLG.k === 'q') sq.add(DLG.id);
-  SMEMO = new Map();
-  const after = SC.succes.filter(a => !before.has(a.id) && sVisible(a) && achDone(a.id) && a.id !== DLG.id);
-  sdone = keep[0]; sq = keep[1]; sodone = keep[2]; SMEMO = new Map();
-  return after;
+  return P.simulate(() => {   // on applique la sélection, on regarde ce qui devient complet, puis l'état d'origine revient
+    DLG.a.forEach(x => sdone.add(x)); DLG.q.forEach(x => sq.add(x)); DLG.o.forEach(x => sodone.add(x)); if (DLG.k === 'a') sdone.add(DLG.id); else if (DLG.k === 'q') sq.add(DLG.id);
+    return SC.succes.filter(a => !before.has(a.id) && sVisible(a) && achDone(a.id) && a.id !== DLG.id);
+  });
 }
 function renderDlg(){
   if (!DLG) return;
-  SMEMO = new Map();
   document.querySelector('#scDialog .dl-tools').hidden = DLG.mode === 'rm';
   if (DLG.mode === 'rm') { renderRmDlg(); return; }
   const isA = DLG.k === 'a', isD = DLG.k === 'd', r = isA ? SACH[DLG.id] : null, dz = isD ? SDZ[DLG.id] : null, q = isA || isD ? null : (SC.quetes[DLG.id] || {});
@@ -1049,12 +942,11 @@ function questStats(cid){
   return { n: list.length, d: list.filter(qDoneS).length };
 }
 // ce que la liste affichera avec les cases « Afficher les obtenus / indisponibles »
-// Statut d'une quête : faite (cochée) · bloquée / commencée (saisis à la main) · disponible · indisponible (prérequis ou niveau manquants)
-const qStatus = id => qDoneS(id) ? 'done' : qState[id] === 'b' ? 'bl' : qState[id] === 's' ? 'st' : qAvailNow(id) ? 'av' : 'lock';
 const QSTAT_LBL = { done: 'Faite', av: 'Disponible', st: 'Commencée', bl: 'Bloquée', lock: 'Indisponible' };
 const qCls = id => { const t = qStatus(id); return t === 'done' ? '' : t; };   // classe de la pastille : vert dispo, jaune commencée, rouge bloquée, vide indispo
-const qShown = id => qDoneS(id) ? sShowDone : (sShowLocked || qAvailNow(id) || !!qState[id]);   // une quête que tu as marquée reste visible
-const aShown = a => achDone(a.id) ? sShowDone : (sShowLocked || achAvailNow(a.id));
+const showOpts = () => ({ showDone: sShowDone, showLocked: sShowLocked });
+const qShown = id => P.questShown(id, showOpts());   // une quête que tu as marquée reste visible
+const aShown = a => P.achShown(a.id, showOpts());
 const catHasShown = cid => cid === QGOAL || cid === SALL || (sMode === 'quetes' ? qIdsOf(cid).some(qShown) : catIds(cid).some(id => (SBYCAT[id] || []).some(a => sVisible(a) && aShown(a))));
 // Menu de gauche : liste plate — sous-catégories de Quêtes, puis Événements, puis les quêtes sans succès
 function scCatList(){
@@ -1085,8 +977,6 @@ for (const d of SDZL) { if (d.pre || d.pa) continue;
   if (d.a && /récompense de succès|description de succès/.test(d.src || "")) (DZ_REW_A[d.a] = DZ_REW_A[d.a] || []).push(d);
   if (d.q && d.src === "récompense de quête") (DZ_REW_Q[d.q] = DZ_REW_Q[d.q] || []).push(d); }
 const rewChips = list => list.map(d => `<span class="rew" title="Récompense : ${esc(d.n)}"><img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer">${esc(d.n)}</span>`).join(" ");
-const QNEXT = {};   // quête → quêtes qu'elle débloque
-for (const [qid, q] of Object.entries(SC.quetes)) for (const p of q.pre || []) (QNEXT[p] = QNEXT[p] || []).push(+qid);
 // ---- Sélection : la liste reste compacte, le détail s'affiche dans le panneau de droite ----
 let sPick = null;   // { k:'a'|'q', id }
 const isPick = (k, id) => !!sPick && sPick.k === k && sPick.id === id;
@@ -1095,25 +985,14 @@ const pctOf = (d, n) => n ? Math.floor(100 * d / n) : 0;
 const plural = (n, s, p) => `${n} ${n > 1 ? (p || s + 's') : s}`;
 const dzChip = (d, goal) => `<span class="rew${goal ? ' goalrew' : ''}"${goal ? ' title="Récompense, et ton objectif"' : ''}><img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer">${esc(d.n)}</span>`;
 const dzIcons = list => (list || []).map(d => `<img class="rew-ic" src="${itemImg(d)}" alt="" title="Récompense : ${esc(d.n)}" referrerpolicy="no-referrer">`).join('');
-// Ce qui manque pour pouvoir faire une quête (niveau, quêtes, succès, Dofus à posséder)
-function lockReasons(qid){
-  const q = SC.quetes[qid] || {}, out = [];
-  if ((q.lv || 0) > sLevel) out.push(`niveau ${q.lv} requis`);
-  for (const p of q.pre || []) if (!qDoneS(p)) out.push(`quête « ${qName(p)} »`);
-  for (const a of q.preA || []) if (!achDone(a)) out.push(`succès « ${SACH[a] ? SACH[a].n : a} »`);
-  for (const d of q.preD || []) if (SDZ[d] && !sdzOwned(SDZ[d])) out.push(`posséder le ${SDZ[d].n}`);
-  return out;
-}
 
 // ---------- objectifs Dofus : quêtes et succès qui y mènent ----------
 const QGOAL = -3;   // entrée « Mes objectifs » du menu de gauche
 const SALL = -4;    // entrée « Tous les succès » (mode Succès), par niveau
 var GOALQ = {}, GOALA = {}, GOALD = [];
 function computeGoals(){
-  GOALQ = {}; GOALA = {};
   GOALD = SDZL.filter(d => sdzVisible(d) && sdzGoals.has(d.id) && !sdzOwned(d));
-  for (const d of GOALD) { const acc = collectPrereqs('d', d.id);
-    acc.q.forEach(q => (GOALQ[q] = GOALQ[q] || []).push(d)); acc.a.forEach(a => (GOALA[a] = GOALA[a] || []).push(d)); }
+  const g = P.goalsFor(GOALD); GOALQ = g.q; GOALA = g.a;
 }
 const goalIcons = list => !list ? '' : `<span class="goalchips" title="Pour tes objectifs : ${esc(list.map(d => d.n).join(', '))}">${list.slice(0, 3).map(d => `<img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer">`).join('')}${list.length > 3 ? `<b>+${list.length - 3}</b>` : ''}</span>`;
 const goalBox = (list, rewards) => { const l = (list || []).filter(d => !(rewards || []).includes(d)); return l.length ? `<div class="goalbox"><b>Sert tes objectifs Dofus :</b><div>${l.map(d => dzChip(d)).join('')}</div></div>` : ''; };
@@ -1275,7 +1154,7 @@ const djShown = id => id === sDj || djOwn(id).some(qShown);   // mêmes cases qu
 function ensureDj(){
   if (sDj != null && DJ_IDS.includes(sDj) && djOwn(sDj).length) return;
   const ok = DJ_IDS.filter(id => djOwn(id).length);
-  sDj = (ok.find(id => { const st = djStats(id); return st.d < st.n && SDJ[id].lv <= sLevel; }) || ok.find(id => { const st = djStats(id); return st.d < st.n; }) || ok[0] || {}) ;
+  sDj = (ok.find(id => { const st = djStats(id); return st.d < st.n && SDJ[id].lv <= P.state.level; }) || ok.find(id => { const st = djStats(id); return st.d < st.n; }) || ok[0] || {}) ;
   if (typeof sDj !== 'number') sDj = null;
 }
 function renderDjTree(){
@@ -1352,7 +1231,7 @@ function achDetailHtml(a){
 function questDetailHtml(qid){
   const q = SC.quetes[qid] || {}, dn = qDoneS(qid), av = !dn && qAvailNow(qid), why = lockReasons(qid);
   const pre = [
-    q.lv ? `<div class="ob">${okx(sLevel >= q.lv)}<span>Niveau ${q.lv}</span></div>` : '',
+    q.lv ? `<div class="ob">${okx(P.state.level >= q.lv)}<span>Niveau ${q.lv}</span></div>` : '',
     ...(q.pre || []).map(p => `<div class="ob">${okx(qDoneS(p))}<span>Quête ${qLink(p)}</span><span class="lv">${SC.quetes[p] && SC.quetes[p].lv ? 'Niv. ' + SC.quetes[p].lv : ''}</span></div>`),
     ...(q.preA || []).map(a => `<div class="ob">${okx(achDone(a))}<span>Succès ${SACH[a] ? `<span class="sgo" data-pick="a:${a}">${esc(SACH[a].n)}</span>` : a}</span></div>`),
     ...(q.preD || []).filter(d => SDZ[d]).map(d => `<div class="ob">${okx(sdzOwned(SDZ[d]))}<span>Posséder le ${esc(SDZ[d].n)}</span></div>`)].filter(Boolean);
@@ -1380,34 +1259,13 @@ function renderDetail(){
   imgErr(el);
 }
 function renderScHelp(){ renderScDofus(document.getElementById("scHelp")); }
-const qAvailNow = qid => { const q = SC.quetes[qid] || {};
-  return (q.lv || 0) <= sLevel && (q.pre || []).every(qDoneS) && (q.preA || []).every(a => achDone(a)) && (q.preD || []).every(d => !SDZ[d] || sdzOwned(SDZ[d])); };
-let AVAIL = new Map();
-function achAvailNow(id, stack = new Set()){
-  if (AVAIL.has(id)) return AVAIL.get(id);
-  if (stack.has(id)) return false;
-  const a = SACH[id]; if (!a) return false;
-  if (sdone.has(id) || achDone(id)) { AVAIL.set(id, true); return true; }
-  // Indisponible tant qu'un sous-succès exigé n'est pas fini ; sinon disponible si un objectif restant est faisable maintenant.
-  const obs = a.ob.map(oid => [oid, SC.objectifs[oid]]).filter(([, o]) => o);
-  if (obs.some(([oid, o]) => o.t === 'a' && !objDone(oid))) { AVAIL.set(id, false); return false; }
-  stack.add(id);
-  const r = obs.some(([oid, o]) => {
-    if (objDone(oid)) return false;
-    if (o.t === 'q') return qAvailNow(o.r);
-    if (o.t === 'lvl') return sLevel >= o.r;
-    return true; });
-  stack.delete(id); AVAIL.set(id, r); return r;
-}
 function ensureCat(){
   const l = scCatList(); if (l.some(c => c.id === sCat)) return;
   const st = sMode === 'quetes' ? questStats : catStats, real = l.filter(c => ![QGOAL, QALL, SALL].includes(c.id));
   sCat = (real.find(c => { const x = st(c.id); return x.n && x.d < x.n; }) || real[0] || l[0]).id;   // première catégorie pas finie
 }
 function renderSucces(){
-  AVAIL = new Map();
   if (!SC.succes.length) { document.getElementById('scList').innerHTML = '<div class="panel muted">Données des succès absentes.</div>'; return; }
-  SMEMO = new Map();
   computeGoals();
   const vis = SC.succes.filter(sVisible), dn = vis.filter(a => achDone(a.id));
   const qv = Object.keys(SC.quetes).map(Number).filter(qVisible), qd = qv.filter(qDoneS).length;
@@ -1415,7 +1273,7 @@ function renderSucces(){
   const pq = pctOf(qd, qv.length), pa = pctOf(dn.length, vis.length);
   document.getElementById('progQ').innerHTML = `<div class="l"><span>Quêtes</span><span><b>${qd}</b> / ${qv.length} · ${pq} %</span></div><div class="bar" role="progressbar" aria-label="Quêtes faites" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pq}"><i style="width:${pq}%"></i></div>`;
   document.getElementById('progA').innerHTML = `<div class="l"><span>Succès de quêtes</span><span><b>${dn.length}</b> / ${vis.length} · ${pa} %</span></div><div class="bar gold" role="progressbar" aria-label="Succès de quêtes obtenus" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pa}"><i style="width:${pa}%"></i></div>`;
-  document.getElementById('scLevel').value = sLevel;
+  document.getElementById('scLevel').value = P.state.level;
   document.getElementById('scShowDone').checked = sShowDone;
   document.getElementById('scShowLocked').checked = sShowLocked;
   document.getElementById('scSeasonal').checked = sSeasonal;
@@ -1475,7 +1333,7 @@ function onScClick(e){
   if (inf) { const d = SDZ[+inf.dataset.dzinfo]; uiAlert(`${d.n} : ${dzWho(d)}`); return; }
   const own = e.target.closest('[data-sdzown]');
   if (own) {   // ✓ obtenu (avec cascade) / ↺ non obtenu
-    const d = SDZ[+own.dataset.sdzown]; SMEMO = new Map();
+    const d = SDZ[+own.dataset.sdzown];
     if (sdzOwned(d)) { uncheck('d', d.id); return; }
     const acc = collectPrereqs('d', d.id);
     if (acc.a.size + acc.q.size + acc.o.size + acc.d.size) openDlg('d', d.id); else { setSdzOwned(d, true); saveSc(); }
@@ -1523,7 +1381,6 @@ document.getElementById('scDetail').addEventListener('click', onScClick);
 function setAchDone(id, on){
   if (on) {
     // le succès n'est marqué qu'à la validation : ses propres quêtes apparaissent ainsi comme « à valider », pas « déjà faites »
-    SMEMO = new Map();
     const acc = collectPrereqs('a', id);
     if (acc.a.size + acc.q.size + acc.o.size + acc.d.size) { openDlg('a', id); return; }   // aperçu de la cascade
     confirmCheck(`Marquer le succès « ${SACH[id].n} » comme obtenu ?`, () => sdone.add(id)); return;
@@ -1533,7 +1390,6 @@ function setAchDone(id, on){
 // Cocher : confirmation (avec la cascade des prérequis s'il y en a) ; décocher : confirmation si d'autres éléments en dépendent
 function setQuestDone(id, on){
   if (on) {
-    SMEMO = new Map();
     const acc = collectPrereqs('q', id);
     if (acc.a.size + acc.q.size + acc.o.size + acc.d.size) { openDlg('q', id); return; }   // ses prérequis
     confirmCheck(`Marquer la quête « ${qName(id)} » comme faite ?`, () => sq.add(id)); return;
@@ -1557,7 +1413,7 @@ document.getElementById('scHelp').addEventListener('change', onScChange);
 document.getElementById('scDetail').addEventListener('change', onScChange);
 let scSearchT;
 document.getElementById('scSearch').addEventListener('input', e => { clearTimeout(scSearchT); scSearchT = setTimeout(() => { sSearch = e.target.value; renderScList(); if (sMode === 'donjons') renderScTree(); }, 200); });
-document.getElementById('scLevel').addEventListener('change', e => { sLevel = Math.max(1, Math.min(200, +e.target.value || 200)); store.set('sLevel', sLevel); renderSucces(); });
+document.getElementById('scLevel').addEventListener('change', e => { P.state.level = Math.max(1, Math.min(200, +e.target.value || 200)); store.set('sLevel', P.state.level); renderSucces(); });
 document.getElementById('scShowDone').onchange = e => { sShowDone = e.target.checked; store.set('sShowDone', sShowDone); renderSucces(); };
 document.getElementById('scShowLocked').onchange = e => { sShowLocked = e.target.checked; store.set('sShowLocked', sShowLocked); renderSucces(); };
 document.getElementById('scSeasonal').onchange = e => { sSeasonal = e.target.checked; store.set('sSeasonal', sSeasonal); renderSucces(); };
@@ -1672,9 +1528,9 @@ async function syncNow(manual){
   } catch (e) { syncMsg = syncErr(e); }
   syncBusy = false;
   if (refresh) {   // le profil actif a pu changer : on recharge l'état en mémoire
-    sdone = new Set(store.get('sdone', [])); sq = new Set(store.get('sq', [])); sodone = new Set(store.get('sodone', []));
-    sLevel = store.get('sLevel', 200); sdzState = store.get('sdzState', {}); sdzGoals = new Set(store.get('sdzGoals', [])); qState = store.get('qState', {});
-    SMEMO = new Map(); renderProfiles(); renderSucces();
+    P.load({ sdone: store.get('sdone', []), sq: store.get('sq', []), sodone: store.get('sodone', []), sLevel: store.get('sLevel', 200),
+      sdzState: store.get('sdzState', {}), sdzGoals: store.get('sdzGoals', []), qState: store.get('qState', {}) });
+    renderProfiles(); renderSucces();
   }
   renderSync();
   if (syncAgain) { syncAgain = false; syncNow(false); }
@@ -1716,7 +1572,7 @@ if (raw.get('sync:on', false)) preloadSync();   // déjà connecté : on reprend
 
 // ---- Export / import des coches ----
 document.getElementById('exportBtn').onclick = () => {
-  const payload = { format: 'succes-dofus-coches', version: 2, exporteLe: new Date().toISOString(), profil: profName(profile), niveau: sLevel,
+  const payload = { format: 'succes-dofus-coches', version: 2, exporteLe: new Date().toISOString(), profil: profName(profile), niveau: P.state.level,
     succesObtenus: [...sdone], succesQuetes: [...sq], succesObjectifs: [...sodone], succesDofusEtat: sdzState, succesDofusObjectifs: [...sdzGoals], succesQuetesEtat: qState };
   const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
   const a = Object.assign(document.createElement('a'), { href: url, download: `coches-${profName(profile).replace(/[^\w\u00C0-\u017F-]+/g, '_')}-${new Date().toISOString().slice(0, 10)}.json` });

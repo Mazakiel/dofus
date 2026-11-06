@@ -45,6 +45,8 @@ npm run build && npm run test:e2e   # bout en bout dans Chrome ; CHROME_BIN pour
 UPDATE_GOLDEN=1 npm run test:e2e    # après un `npm run data` ou un changement voulu des règles : refait tests/browser/golden.json
 ```
 
+La CI lance les tests unitaires avant chaque publication (`.github/workflows/deploy-pages.yml`), et le workflow `Tests` rejoue unitaires et bout en bout sur chaque push, sans bloquer le déploiement.
+
 `tests/browser/golden.json` est la « photo » des règles sur les vraies données (statut de chaque quête, cascades dans les deux sens, objectifs…) : elle a été prise avant l'extraction du module et sert de référence.
 
 ## Mobile

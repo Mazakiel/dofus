@@ -228,5 +228,5 @@
     };
   }
 
-  return { create, TrackedSet };
+  return { create };
 });

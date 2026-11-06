@@ -32,7 +32,7 @@ const PHOTO = `(()=>{
   o.raisons=h(qids.map(id=>id+':'+lockReasons(id).join('/')).join(';'));
   o.succesFaits=h(aids.map(id=>id+':'+(achDone(id)?1:0)).join(';'));
   o.succesDispo=h(aids.map(id=>id+':'+(achAvailNow(id)?1:0)).join(';'));
-  o.dofus=h(SC.dofus.map(d=>d.id+':'+(sdzOwned(d)?1:0)+(sdzAuto(d)?1:0)).join(';'));
+  o.dofus=h(SC.dofus.map(d=>d.id+':'+(sdzOwned(d)?1:0)+(P.dofusAuto(d)?1:0)).join(';'));
   o.prereqQ=h(qids.filter((x,i)=>i%7===0).map(id=>id+':'+ser(collectPrereqs('q',id))).join(';'));
   o.prereqA=h(aids.filter((x,i)=>i%9===0).map(id=>id+':'+ser(collectPrereqs('a',id))).join(';'));
   o.prereqD=h(SC.dofus.map(d=>d.id+':'+ser(collectPrereqs('d',d.id))).join(';'));

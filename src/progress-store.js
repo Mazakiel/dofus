@@ -155,5 +155,5 @@
     return { refresh, conflicts, pushed: Object.keys(push).length };
   }
 
-  return { create, sync, KEYS, toPayload, fromPayload, samePayload, mergePayloads, exportFile, inspectImport, importInto };
+  return { create, sync, toPayload, samePayload, mergePayloads, exportFile, inspectImport, importInto };
 });

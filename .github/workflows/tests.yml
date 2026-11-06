@@ -1,0 +1,28 @@
+name: Tests
+
+# Tests unitaires et de bout en bout (Chrome du runner). Séparé de la publication : un raté ici ne bloque pas le déploiement,
+# qui lance de son côté les tests unitaires avant de construire.
+on:
+  push:
+    branches: [main]
+  pull_request: {}
+  workflow_dispatch: {}
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Tests unitaires
+        run: npm test
+
+      - name: Construire la page
+        run: npm run build
+
+      - name: Tests de bout en bout
+        run: npm run test:e2e

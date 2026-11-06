@@ -280,6 +280,33 @@ input.gc:focus-visible{outline-offset:3px}
 .plus-note{padding:14px 16px;font-size:.8rem;color:var(--muted)}
 .plus-btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 
+/* ---------- bas de page : les options d'affichage restent toujours visibles ---------- */
+@media (min-width:701px){
+  .win.body{overflow:clip}   /* garde les coins arrondis sans empêcher le pied de rester collé en bas */
+  .foot{position:sticky;bottom:0;z-index:5}
+}
+/* Grand écran : le bloc succès / quêtes prend toute la hauteur restante et chaque colonne défile seule */
+@media (min-width:1101px) and (min-height:820px){
+  html,body{height:100%}
+  body{overflow:hidden}
+  .wrap{height:100vh;height:100dvh;display:flex;flex-direction:column;padding:12px 16px}
+  .wrap > section.win:first-child{flex:none}
+  #viewSucces{flex:1 1 0;min-height:0;margin-bottom:0;grid-template-rows:minmax(0,1fr) auto}
+  .side{min-height:0;overflow:hidden}
+  #scTree{flex:1;min-height:0;max-height:none;position:static}
+  .sc-main,.det{min-height:0;overflow:auto}
+  .det-in{position:static;max-height:none;overflow:visible}
+  /* en-tête resserré pour laisser la place à la liste */
+  .win-t{padding:7px 14px}
+  .plaque-wrap{padding:8px 16px 0}
+  .plaque{padding:3px 34px}
+  .pl-n{font-size:1.25rem}
+  .sum{padding:8px 18px 10px;gap:18px}
+  .lvl{width:54px;height:54px}
+  .dz-sec{padding:8px 18px 10px}
+  .dz{padding-top:14px}
+}
+
 /* ---------- petits écrans ---------- */
 @media (max-width:1100px){
   .body{grid-template-columns:220px minmax(0,1fr)}
@@ -605,6 +632,7 @@ function objDone(oid, stack){
 }
 const achProg = a => [a.ob.filter(oid => objDone(oid)).length, a.ob.length];
 function catStats(cid){
+  if (cid === SALL) { const all = SC.succes.filter(sVisible); return { n: all.length, d: all.filter(a => achDone(a.id)).length }; }
   const ids = [cid, ...(SKIDS[cid] || []).map(c => c.id)];
   const list = ids.flatMap(id => SBYCAT[id] || []).filter(sVisible);
   const d = list.filter(a => achDone(a.id));
@@ -711,23 +739,10 @@ function renderScDofus(el){
       <div class="dz-ctl">${own ? '<span class="dz-ok">✓ obtenu</span>' : `<label><input type="checkbox" data-sdzgoal="${d.id}" ${goal ? 'checked' : ''}> objectif</label>`}
         <button class="dz-tg" data-sdzown="${d.id}" title="${own ? 'Marquer comme non obtenu' : 'Marquer comme obtenu (avec la cascade de ses quêtes)'}">${own ? '↺' : '✓'}</button></div></div>`;
   };
-  // prochaines quêtes pour les objectifs : disponibles (prérequis faits), dans la cascade d'au moins un Dofus visé
-  let next = '';
-  if (goals.length) {
-    const forQ = {};
-    for (const d of goals) for (const q of collectPrereqs('d', d.id).q) (forQ[q] = forQ[q] || []).push(d);
-    const avail = Object.keys(forQ).map(Number).filter(q => !qDoneS(q) && qAvail(q)).sort((x, y) => (SC.quetes[x].lv || 0) - (SC.quetes[y].lv || 0));
-    next = `<div class="lab" style="padding:12px 0 4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">Prochaines quêtes pour tes objectifs (${avail.length} disponible${avail.length > 1 ? 's' : ''} sur ${Object.keys(forQ).length} restantes) <span class="sp"></span><button class="btn" data-goalview>Tout voir dans la liste</button></div>`
-      + (avail.length ? avail.slice(0, 15).map(q => { const x = SC.quetes[q];
-        return `<div class="sugg"><input type="checkbox" class="gc round av" data-sq="${q}" aria-label="Quête faite"><div><span class="sgo" data-pick="q:${q}">${esc(qName(q))}</span> <span class="muted" style="font-size:.8rem">niv. ${x.lv ?? '?'}${x.grp ? ' · groupe' : ''}</span>
-          <div class="left">Pour ${forQ[q].map(d => esc(d.n)).join(', ')}${(QOWN[q] || []).length && SACH[QOWN[q][0]] ? ` · succès <span class="sgo" data-sgo="${QOWN[q][0]}">${esc(SACH[QOWN[q][0]].n)}</span>` : ''}</div></div>
-          <span class="goalchips">${forQ[q].map(d => `<img src="${itemImg(d)}" alt="" title="${esc(d.n)}" referrerpolicy="no-referrer">`).join('')}</span></div>`; }).join('')
-        : '<div class="muted" style="font-size:.84rem">Aucune quête disponible : il manque peut-être des coches sur ce que tu as déjà fait.</div>');
-  }
-  const help = 'Clique sur un Dofus pour en faire un objectif : les quêtes à faire pour l’obtenir s’affichent en dessous. ✓ le marque obtenu et valide en cascade le succès ou la quête qui le donne, puis leurs prérequis. Rangés dans l’ordre d’obtention. Au survol : ce qui le donne et les quêtes qui restent.';
-  el.innerHTML = `<div class="dz-head"><h2>Dofus</h2><span class="cnt">${owned} / ${shownDz.length} obtenus${goals.length ? ` · ${goals.length} objectif${goals.length > 1 ? 's' : ''}` : ''}</span><span class="help" title="${esc(help)}">?</span><span class="sp"></span>
+  const help = 'Clique sur un Dofus pour en faire un objectif : les quêtes et succès qui y mènent sont repérés dans les listes, et regroupés dans « Mes objectifs Dofus ». ✓ le marque obtenu et valide en cascade le succès ou la quête qui le donne, puis leurs prérequis. Rangés dans l’ordre d’obtention. Au survol : ce qui le donne et les quêtes qui restent.';
+  el.innerHTML = `<div class="dz-head"><h2>Dofus</h2><span class="cnt">${owned} / ${shownDz.length} obtenus${goals.length ? ` · ${goals.length} objectif${goals.length > 1 ? 's' : ''}` : ''}</span><span class="help" title="${esc(help)}">?</span><span class="sp"></span>${goals.length ? '<button class="btn" data-goalview>Voir mes objectifs</button>' : ''}
       <label class="chk"><input type="checkbox" class="gc" id="sdzShowOwned" ${sdzShowOwned ? 'checked' : ''}> Afficher les obtenus</label></div>
-    <div class="dz-wrap"><div class="dz-grid">${SDZ_ORDER.filter(d => sdzVisible(d) && (sdzShowOwned || !sdzOwned(d))).map(card).join('')}</div></div>${next}`;
+    <div class="dz-wrap"><div class="dz-grid">${SDZ_ORDER.filter(d => sdzVisible(d) && (sdzShowOwned || !sdzOwned(d))).map(card).join('')}</div></div>`;
   el.querySelectorAll('img').forEach(img => img.addEventListener('error', () => { img.style.visibility = 'hidden'; }, { once: true }));
 }
 
@@ -939,18 +954,22 @@ dlgEl.addEventListener('click', e => {
   const act = e.target.closest('[data-dlact]');
   if (act) {
     const k = act.dataset.dlact;
-    if (k === 'apply' && DLG.mode === 'rm') { applyRemoval(DLG.rm); closeDlg(); saveSc(); return; }
+    if (k === 'apply' && DLG.mode === 'rm') { applyRemoval(DLG.rm); closeDlg(); closeSheet(); saveSc(); return; }
     if (k === 'apply') { DLG.a.forEach(id => sdone.add(id)); DLG.q.forEach(id => sq.add(id)); DLG.o.forEach(id => sodone.add(id)); DLG.d.forEach(id => setSdzOwned(SDZ[id], true)); }
     if (k === 'apply') {
       if (DLG.k === 'a') sdone.add(DLG.id);
       else if (DLG.k === 'q') sq.add(DLG.id);
       else { const d = SDZ[DLG.id]; setSdzOwned(d, true); }   // Dofus : obtenu (calculé, ou forcé s'il manque des coches)
     }
-    closeDlg(); saveSc();   // « Annuler » : rien n'est modifié
+    closeDlg(); if (k === 'apply') closeSheet(); saveSc();   // « Annuler » : rien n'est modifié, la feuille reste ouverte
   }
 });
 // Échap = Annuler (la case cochée est décochée)
 dlgEl.addEventListener('cancel', e => { e.preventDefault(); if (DLG) { closeDlg(); saveSc(); } });
+// Pas de cascade : une simple confirmation évite les coches par accident. Dans tous les cas on redessine (la case est remise à son état réel).
+function confirmCheck(msg, apply){
+  askConfirm(msg, 'Valider').then(ok => { if (ok) { apply(); closeSheet(); } saveSc(); });
+}
 function saveSc(){ store.set('sdone', [...sdone]); store.set('sq', [...sq]); store.set('sodone', [...sodone]); renderSucces(); }
 
 // ---- Quêtes : rangées dans la catégorie du premier succès qui les demande ----
@@ -974,11 +993,11 @@ function questStats(cid){
 // ce que la liste affichera avec les cases « Afficher les obtenus / indisponibles »
 const qShown = id => qDoneS(id) ? sShowDone : (sShowLocked || qAvailNow(id));
 const aShown = a => achDone(a.id) ? sShowDone : (sShowLocked || achAvailNow(a.id));
-const catHasShown = cid => cid === QGOAL || (sMode === 'quetes' ? qIdsOf(cid).some(qShown) : catIds(cid).some(id => (SBYCAT[id] || []).some(a => sVisible(a) && aShown(a))));
+const catHasShown = cid => cid === QGOAL || cid === SALL || (sMode === 'quetes' ? qIdsOf(cid).some(qShown) : catIds(cid).some(id => (SBYCAT[id] || []).some(a => sVisible(a) && aShown(a))));
 // Menu de gauche : liste plate — sous-catégories de Quêtes, puis Événements, puis les quêtes sans succès
 function scCatList(){
   const l = GOALD.length ? [{ id: QGOAL, n: 'Mes objectifs Dofus' }] : [];
-  if (sMode === 'quetes') l.push({ id: QALL, n: 'Toutes les quêtes' });
+  l.push(sMode === 'quetes' ? { id: QALL, n: 'Toutes les quêtes' } : { id: SALL, n: 'Tous les succès' });
   l.push(...(SKIDS[QUETES] || []).filter(c => catAllowed(c.id)).map(c => ({ id: c.id, n: c.n })));
   l.push({ id: EVENTS, n: (SCAT[EVENTS] || {}).n || 'Événements' });
   if (sMode === 'quetes') l.push({ id: QOTHER, n: 'Autres quêtes (prérequis)' });
@@ -990,7 +1009,7 @@ function renderScTree(){
   const stats = sMode === 'quetes' ? questStats : catStats;
   const cur = scCatList().find(c => c.id === sCat);
   document.getElementById('catBtn').innerHTML = cur ? `<span class="cb-n">${esc(cur.n)}</span>${cur.id === QGOAL ? '' : `<span class="pct">${pct(stats(cur.id))} %</span>`}<span aria-hidden="true">▾</span>` : 'Choisir une catégorie';
-  const goalN = cid => sMode === 'quetes' ? qIdsOf(cid).filter(q => GOALQ[q]).length : catIds(cid).flatMap(id => SBYCAT[id] || []).filter(a => sVisible(a) && GOALA[a.id]).length;
+  const goalN = cid => cid === SALL ? SC.succes.filter(a => sVisible(a) && GOALA[a.id]).length : sMode === 'quetes' ? qIdsOf(cid).filter(q => GOALQ[q]).length : catIds(cid).flatMap(id => SBYCAT[id] || []).filter(a => sVisible(a) && GOALA[a.id]).length;
   const goalCount = () => sMode === 'quetes' ? Object.keys(GOALQ).length : Object.keys(GOALA).length;
   el.innerHTML = scCatList().map(c => [c, c.id === QGOAL ? { n: goalCount(), d: 0 } : stats(c.id)]).filter(([c, s]) => s.n && (c.id === sCat || catHasShown(c.id))).map(([c, s]) => {
     if (c.id === QGOAL) return `<div class="sc-cat${sCat === c.id ? ' sel' : ''}" data-scat="${c.id}" title="${s.n} à faire pour tes objectifs Dofus"><span>${esc(c.n)}</span><span class="rt"><span class="gdot">${s.n}</span></span></div>`;
@@ -1027,6 +1046,7 @@ function lockReasons(qid){
 
 // ---------- objectifs Dofus : quêtes et succès qui y mènent ----------
 const QGOAL = -3;   // entrée « Mes objectifs Dofus » du menu de gauche
+const SALL = -4;    // entrée « Tous les succès » (mode Succès), par niveau
 var GOALQ = {}, GOALA = {}, GOALD = [];
 function computeGoals(){
   GOALQ = {}; GOALA = {};
@@ -1132,6 +1152,13 @@ function renderQuestList(el){
   el.innerHTML = head(title, info, btns) + chips + (html || EMPTY);
   imgErr(el);
 }
+// « Tous les succès » : par tranche de niveau, puis dans l'ordre des catégories
+function achByLevel(list){
+  const co = a => (SCAT[a.c] || {}).o || 0;
+  list = [...list].sort((x, y) => (x.lv || 0) - (y.lv || 0) || co(x) - co(y) || x.o - y.o);
+  return LV_BANDS.map(([lo, hi]) => { const g = list.filter(a => (a.lv || 0) >= lo && (a.lv || 0) <= hi); if (!g.length) return '';
+    return `<div class="sec">${lo === hi ? `Niveau ${lo}` : `Niveau ${lo} – ${hi}`}<span class="sp"></span>${g.length}</div>${g.map(achCard).join('')}`; }).join('');
+}
 function renderScList(){
   const el = document.getElementById('scList');
   if (sMode === 'quetes') { renderQuestList(el); return; }
@@ -1142,6 +1169,7 @@ function renderScList(){
     list = SC.succes.filter(a => sVisible(a) && (norm(a.n).includes(q) || norm(a.d).includes(q) || a.ob.some(oid => SC.objectifs[oid] && norm(SC.objectifs[oid].n).includes(q)))).slice(0, 80);
     title = `Recherche « ${esc(sSearch)} »`;
   } else if (sCat === QGOAL) { el.innerHTML = renderGoalAchs(); imgErr(el); return; }
+  else if (sCat === SALL) { list = SC.succes.filter(sVisible); title = 'Tous les succès'; }
   else if (sCat && SCAT[sCat]) { cid = sCat; list = catIds(sCat).flatMap(id => SBYCAT[id] || []).filter(sVisible); title = esc(catPath(sCat)); }
   else { el.innerHTML = '<div class="empty">Choisis une catégorie à gauche.</div>'; return; }
   const nGoal = list.filter(a => GOALA[a.id] && aShown(a)).length;
@@ -1149,7 +1177,7 @@ function renderScList(){
   const shown = list.filter(a => aShown(a) && (!sAGoal || GOALA[a.id])), d = list.filter(a => achDone(a.id)).length;
   const chips = nGoal ? `<div class="chips" role="group" aria-label="Filtrer les succès"><button class="chip" data-agoal="" aria-pressed="${!sAGoal}">Tous</button><button class="chip goal" data-agoal="1" aria-pressed="${sAGoal}">◆ Mes objectifs<small>${nGoal}</small></button></div>` : '';
   const btns = cid ? `<button class="btn" data-sall="${cid}" title="Marquer tous les succès de cette catégorie comme obtenus, avec leurs quêtes">Tout cocher</button><button class="btn" data-snone="${cid}" title="Décocher tous les succès de cette catégorie, avec leurs quêtes et objectifs">Tout décocher</button>` : '';
-  el.innerHTML = head(title, `${d} / ${list.length} obtenus (${pctOf(d, list.length)} %) · ${plural(shown.length, 'affiché')}`, btns) + chips + (shown.length ? shown.map(achCard).join('') : EMPTY);
+  el.innerHTML = head(title, `${d} / ${list.length} obtenus (${pctOf(d, list.length)} %) · ${plural(shown.length, 'affiché')}`, btns) + chips + (shown.length ? (sCat === SALL && !q ? achByLevel(shown) : shown.map(achCard).join('')) : EMPTY);
   imgErr(el);
 }
 
@@ -1231,7 +1259,7 @@ function achAvailNow(id, stack = new Set()){
 }
 function ensureCat(){
   const l = scCatList(); if (l.some(c => c.id === sCat)) return;
-  const st = sMode === 'quetes' ? questStats : catStats, real = l.filter(c => c.id !== QGOAL);
+  const st = sMode === 'quetes' ? questStats : catStats, real = l.filter(c => ![QGOAL, QALL, SALL].includes(c.id));
   sCat = (real.find(c => { const x = st(c.id); return x.n && x.d < x.n; }) || real[0] || l[0]).id;   // première catégorie pas finie
 }
 function renderSucces(){
@@ -1342,7 +1370,7 @@ function onScChange(e){
       SMEMO = new Map();
       const acc = collectPrereqs('a', id);
       if (acc.a.size + acc.q.size + acc.o.size + acc.d.size) { openDlg('a', id); return; }   // aperçu de la cascade
-      sdone.add(id); saveSc(); return;
+      confirmCheck(`Marquer le succès « ${SACH[id].n} » comme obtenu ?`, () => sdone.add(id)); return;
     }
     uncheck('a', id);
   }
@@ -1352,7 +1380,7 @@ function onScChange(e){
       SMEMO = new Map();
       const acc = collectPrereqs('q', id);
       if (acc.a.size + acc.q.size + acc.o.size + acc.d.size) { openDlg('q', id); return; }   // ses prérequis
-      sq.add(id); saveSc(); return;
+      confirmCheck(`Marquer la quête « ${qName(id)} » comme faite ?`, () => sq.add(id)); return;
     }
     uncheck('q', id);
   }

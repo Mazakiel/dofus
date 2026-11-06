@@ -8,7 +8,7 @@ Données issues uniquement de l'API DofusDB. Les coches sont enregistrées dans 
 - `ordre-contenu-200.html` : la page finale, données incluses. S'ouvre directement dans un navigateur.
 - `succes-dofusdb.json` : les données DofusDB préparées (catégories, succès, objectifs, quêtes, Dofus).
 - `scripts/achievements.js` : télécharge les données DofusDB (avec cache dans `cache/`) et écrit le JSON.
-- `scripts/enrich-quetes.js` : complète le JSON avec, pour chaque quête, les étiquettes (donjon, combat, farm, craft, exploration), les donjons concernés et ce qu'il y a à faire. Mêmes données DofusDB, avec cache dans `cache/`.
+- `scripts/enrich-quetes.js` : complète le JSON avec, pour chaque quête, les étiquettes (donjon, combat, farm, craft, exploration), le type (icône), la tranche de niveau, les donjons concernés et ce qu'il y a à faire ; ajoute aussi la fiche des donjons (niveau optimal, boss). Mêmes données DofusDB, avec cache dans `cache/`.
 - `scripts/build-succes.js` : injecte le JSON dans `scripts/template-succes.html` pour produire la page.
 - `scripts/template-succes.html` : le modèle de la page (style, logique, profils).
 - `maquette-style.html` : maquette statique de la direction visuelle.

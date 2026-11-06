@@ -264,6 +264,25 @@ dialog::backdrop{background:rgba(8,6,4,.6)}
 .pf-new{display:flex;gap:8px;padding:10px 16px 0}
 .pf-new input{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
 
+/* ---------- icônes de quêtes (dessinées pour cette page, dans l'esprit de celles du jeu) ---------- */
+.qi{display:inline-flex;vertical-align:-4px;width:20px;height:20px;margin-right:6px;flex:none}
+.ri{display:inline-flex;width:20px;height:20px;color:var(--muted)}
+.qi svg,.ri svg,.pts svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.qi.t0,.qi.t1,.qi.t3{color:var(--green)} .qi.t2{color:var(--gold)}
+.pts{display:inline-flex;align-items:center;gap:3px;font-size:.8rem;font-weight:800;color:var(--gold-txt);white-space:nowrap}
+.pts svg{width:16px;height:16px}
+.chip .ri{width:16px;height:16px;vertical-align:-3px;margin-right:3px}
+.sc-cat.dj{display:grid;grid-template-columns:1fr auto;gap:0 8px;align-items:center}
+.sc-cat.dj small{grid-column:1;color:var(--muted);font-size:.72rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc-cat.dj .rt{grid-row:1 / span 2;grid-column:2}
+.sc-cat .lv{font-size:.78rem;font-weight:800;color:var(--gold-txt)}
+.sc-cat.dj.done > span:first-child{color:var(--muted);text-decoration:line-through}
+.band{display:flex;justify-content:space-between;padding:5px 14px;background:var(--sec);color:var(--muted);font-size:.72rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.dj-meta{display:flex;flex-wrap:wrap;gap:4px 18px;padding:0 14px 10px;font-size:.82rem;color:var(--muted)}
+.dj-meta b{color:var(--text);font-weight:700}
+.multi{padding:9px 14px;font-size:.82rem;color:var(--muted);border-bottom:1px solid var(--line)}
+.multi button{color:var(--gold-txt);font-weight:800;cursor:pointer}
+
 /* ---------- étiquettes et filtres ---------- */
 .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
 .tag{font-size:.62rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;line-height:1.5;padding:0 6px;border-radius:4px;border:1px solid currentColor;white-space:nowrap}
@@ -337,12 +356,12 @@ input.gc:focus-visible{outline-offset:3px}
   .row .m{white-space:normal}
 
   /* onglets */
-  .tabbar{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--win);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -4px 16px rgba(0,0,0,.12)}
-  .tabbar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:58px;border:0;background:none;color:var(--muted);font-weight:800;font-size:.68rem;cursor:pointer}
+  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--win);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -4px 16px rgba(0,0,0,.12)}
+  .tabbar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:58px;border:0;background:none;color:var(--muted);font-weight:800;font-size:.64rem;cursor:pointer}
   .tabbar svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .tabbar button[aria-selected="true"]{color:var(--gold-txt);box-shadow:inset 0 3px 0 var(--gold)}
   body[data-tab="dofus"] .sum,body[data-tab="plus"] .sum,
-  body[data-tab="succes"] .dz-sec,body[data-tab="quetes"] .dz-sec,body[data-tab="plus"] .dz-sec,
+  body[data-tab="succes"] .dz-sec,body[data-tab="quetes"] .dz-sec,body[data-tab="donjons"] .dz-sec,body[data-tab="plus"] .dz-sec,
   body[data-tab="dofus"] #viewSucces{display:none}
   body[data-tab="plus"] #viewSucces .side,body[data-tab="plus"] #viewSucces .sc-main{display:none}
   body:not([data-tab="plus"]) .foot{display:none}
@@ -443,7 +462,7 @@ input[type=checkbox]:not(.gc){accent-color:var(--gold)}
 
   <section class="win body" id="viewSucces">
     <aside class="side">
-      <div class="sc-modes" role="tablist"><button class="sc-mode" data-smode="succes">Succès</button><button class="sc-mode" data-smode="quetes">Quêtes</button></div>
+      <div class="sc-modes" role="tablist"><button class="sc-mode" data-smode="succes">Succès</button><button class="sc-mode" data-smode="quetes">Quêtes</button><button class="sc-mode" data-smode="donjons">Donjons</button></div>
       <div class="search"><input type="search" id="scSearch" placeholder="Rechercher…"></div>
       <button class="cat-btn" id="catBtn" aria-expanded="false" aria-controls="scTree"></button>
       <div id="scTree"></div>
@@ -454,7 +473,7 @@ input[type=checkbox]:not(.gc){accent-color:var(--gold)}
       <label><input type="checkbox" class="gc" id="scShowDone"> Afficher les obtenus</label>
       <label title="Quêtes au-dessus de ton niveau ou dont les prérequis (quêtes, succès, Dofus) ne sont pas faits, et succès sur lesquels tu ne peux pas encore avancer"><input type="checkbox" class="gc" id="scShowLocked"> Afficher les indisponibles</label>
       <label title="Vulkania, Île de Nowel, Halouine et Île de Pwâk (Pâques) : succès, quêtes et Dofus"><input type="checkbox" class="gc" id="scSeasonal"> Afficher les contenus saisonniers</label>
-      <span class="note">Données DofusDB · seuls les succès liés aux quêtes sont suivis · Dofus est une marque d’Ankama, ce site n’y est pas affilié</span>
+      <span class="note">Données DofusDB · Dofus est une marque d’Ankama, ce site n’y est pas affilié</span>
     </footer>
   </section>
 
@@ -491,6 +510,7 @@ input[type=checkbox]:not(.gc){accent-color:var(--gold)}
 <nav class="tabbar" id="tabbar" role="tablist" aria-label="Sections">
   <button role="tab" data-tab="succes" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></svg>Succès</button>
   <button role="tab" data-tab="quetes" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10M12 19v1" stroke-width="3"/></svg>Quêtes</button>
+  <button role="tab" data-tab="donjons" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5c0 4 2 5 4 5.5M21 5c0 4-2 5-4 5.5M7.5 10.5a4.5 4.5 0 0 1 9 0v3.5l-1 1v3h-7v-3l-1-1z"/></svg>Donjons</button>
   <button role="tab" data-tab="dofus" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4 0 7 6 7 11a7 7 0 0 1-14 0C5 9 8 3 12 3z"/></svg>Dofus</button>
   <button role="tab" data-tab="plus" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Réglages</button>
 </nav>
@@ -1013,6 +1033,7 @@ function scCatList(){
   return l;
 }
 function renderScTree(){
+  if (sMode === 'donjons') { renderDjTree(); return; }
   const el = document.getElementById('scTree');
   const pct = s => s.n ? Math.floor(100 * s.d / s.n) : 0;
   const stats = sMode === 'quetes' ? questStats : catStats;
@@ -1068,10 +1089,27 @@ const goalBox = (list, rewards) => { const l = (list || []).filter(d => !(reward
 const notGoal = (rewards, goals) => (rewards || []).filter(d => !(goals || []).includes(d));
 let sAGoal = false;   // filtre « Mes objectifs » dans la liste des succès
 
+// ---------- icônes ----------
+const SVG = p => `<svg viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
+const IC = {
+  t0: SVG('<path d="M12 4v10M12 19.5v.5" stroke-width="3.4"/>'),
+  ring: SVG('<circle cx="12" cy="12" r="9.5"/><path d="M12 7v6M12 16.5v.5" stroke-width="2.8"/>'),
+  star: SVG('<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" fill="currentColor" stroke-width="1.2"/>'),
+  dj: SVG('<path d="M3 5c0 4 2 5 4 5.5M21 5c0 4-2 5-4 5.5M7.5 10.5a4.5 4.5 0 0 1 9 0v3.5l-1 1v3h-7v-3l-1-1z"/><circle cx="9.7" cy="12.6" r="1" fill="currentColor"/><circle cx="14.3" cy="12.6" r="1" fill="currentColor"/><path d="M10.7 18v2M13.3 18v2" stroke-width="1.6"/>'),
+  grp: SVG('<circle cx="12" cy="8" r="3"/><circle cx="5" cy="10" r="2.2"/><circle cx="19" cy="10" r="2.2"/><path d="M6.5 20v-3a5.5 5.5 0 0 1 11 0v3zM1.8 18v-1.5a3.2 3.2 0 0 1 3-3.2M22.2 18v-1.5a3.2 3.2 0 0 0-3-3.2"/>'),
+  cup: SVG('<path d="M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 20h8"/>')
+};
+// type de quête DofusDB : 0 normale, 1 anneau vert, 2 anneau jaune, 3 étoile (à confirmer avec les libellés du jeu)
+const QTYPE = { 0: ['t0', IC.t0, 'Quête'], 1: ['t1', IC.ring, 'Quête principale'], 2: ['t2', IC.ring, 'Quête primordiale'], 3: ['t3', IC.star, 'Quête spéciale'] };
+const qIcon = q => { const t = QTYPE[q.ty || 0] || QTYPE[0]; return `<span class="qi ${t[0]}" title="${t[2]}">${t[1]}</span>`; };
+const qFlags = q => `${(q.tg || []).includes('dj') ? `<span class="ri" title="Donjon">${IC.dj}</span>` : ''}${q.grp ? `<span class="ri" title="Quête de groupe">${IC.grp}</span>` : ''}`;
+const lvTxt = q => q.lv ? 'Niv. ' + q.lv + (q.lx ? '-' + q.lx : '') : '';
+
 // ---------- étiquettes ----------
 const TAGS = { dj: 'Donjon', cb: 'Combat', fm: 'Farm', cr: 'Craft', ex: 'Exploration', gr: 'Groupe' };
 const qTags = q => [...(q.tg || []), ...(q.grp ? ['gr'] : [])];
-const tagsHtml = q => { const t = qTags(q); return t.length ? `<div class="tags">${t.map(c => `<span class="tag ${c}">${TAGS[c]}</span>`).join('')}</div>` : ''; };
+// donjon et groupe ont leur icône à droite : pas de pastille
+const tagsHtml = q => { const t = qTags(q).filter(c => c !== 'dj' && c !== 'gr'); return t.length ? `<div class="tags">${t.map(c => `<span class="tag ${c}">${TAGS[c]}</span>`).join('')}</div>` : ''; };
 let sTag = null;   // filtre actif dans la liste des quêtes
 const isMobile = () => window.matchMedia('(max-width:700px)').matches;
 
@@ -1081,7 +1119,7 @@ function achCard(a){
   return `<div class="row arow${dn ? ' done' : ''}${GOALA[a.id] ? ' goal' : ''}${isPick('a', a.id) ? ' sel' : ''}" id="ach${a.id}" data-pick="a:${a.id}" tabindex="0" role="button">
     <img src="${achImg(a)}" alt="" loading="lazy" referrerpolicy="no-referrer">
     <div style="min-width:0"><div class="t">${esc(a.n)}</div><div class="m">${esc(a.d)}</div></div>
-    <div class="r">${goalIcons(GOALA[a.id])}${dzIcons(notGoal(DZ_REW_A[a.id], GOALA[a.id]))}${n > 1 ? `<span class="mini"><span class="bar"><i style="width:${pctOf(d, n)}%"></i></span>${d}/${n}</span>` : ''}
+    <div class="r">${a.pts ? `<span class="pts" title="Points de succès">${a.pts}${IC.cup}</span>` : ''}${goalIcons(GOALA[a.id])}${dzIcons(notGoal(DZ_REW_A[a.id], GOALA[a.id]))}${n > 1 ? `<span class="mini"><span class="bar"><i style="width:${pctOf(d, n)}%"></i></span>${d}/${n}</span>` : ''}
       <input type="checkbox" class="gc" data-sach="${a.id}" ${dn ? 'checked' : ''} title="Succès obtenu" aria-label="Succès obtenu"></div>
   </div>`;
 }
@@ -1092,8 +1130,8 @@ function questRow(qid, groupAid = null){
   const meta = [owners.map(a => esc(a.n)).join(' · '), nxt ? `débloque ${plural(nxt, 'quête')}` : '', why.length ? `Bloquée : ${esc(why[0])}${why.length > 1 ? ` (+${why.length - 1})` : ''}` : ''].filter(Boolean).join(' · ');
   return `<div class="row${dn ? ' done' : ''}${GOALQ[qid] ? ' goal' : ''}${isPick('q', qid) ? ' sel' : ''}" id="q${qid}" data-pick="q:${qid}" tabindex="0" role="button">
     <input type="checkbox" class="gc round ${dn ? '' : av ? 'av' : 'lock'}" data-sq="${qid}" ${dn ? 'checked' : ''} title="${dn ? 'Faite' : av ? 'Disponible' : 'Indisponible'} — cocher quand elle est faite" aria-label="Quête faite">
-    <div style="min-width:0"><div class="t">${esc(qName(qid))}</div>${meta ? `<div class="m">${meta}</div>` : ''}${tagsHtml(q)}</div>
-    <div class="r">${goalIcons(GOALQ[qid])}${dzIcons(notGoal(DZ_REW_Q[qid], GOALQ[qid]))}${q.ev ? '<span class="grp" title="Quête d’événement">événement</span>' : ''}<span class="lv">${q.lv ? 'Niv. ' + q.lv : ''}</span></div>
+    <div style="min-width:0"><div class="t">${qIcon(q)}${esc(qName(qid))}</div>${meta ? `<div class="m">${meta}</div>` : ''}${tagsHtml(q)}</div>
+    <div class="r">${goalIcons(GOALQ[qid])}${dzIcons(notGoal(DZ_REW_Q[qid], GOALQ[qid]))}${q.ev ? '<span class="grp" title="Quête d’événement">événement</span>' : ''}${qFlags(q)}<span class="lv">${lvTxt(q)}</span></div>
   </div>`;
 }
 
@@ -1135,7 +1173,7 @@ function renderQuestList(el){
   if (sTag && !tagCount(sTag)) sTag = null;
   const shown = sTag ? shownAll.filter(id => hasTag(id, sTag)) : shownAll;
   const chipKeys = ['goal', ...Object.keys(TAGS)].filter(tagCount);
-  const chips = chipKeys.length ? `<div class="chips" role="group" aria-label="Filtrer les quêtes"><button class="chip" data-tagf="" aria-pressed="${!sTag}">Toutes<small>${shownAll.length}</small></button>${chipKeys.map(c => `<button class="chip${c === 'goal' ? ' goal' : ''}" data-tagf="${c}" aria-pressed="${sTag === c}">${c === 'goal' ? '◆ Mes objectifs' : TAGS[c]}<small>${tagCount(c)}</small></button>`).join('')}</div>` : '';
+  const chips = chipKeys.length ? `<div class="chips" role="group" aria-label="Filtrer les quêtes"><button class="chip" data-tagf="" aria-pressed="${!sTag}">Toutes<small>${shownAll.length}</small></button>${chipKeys.map(c => `<button class="chip${c === 'goal' ? ' goal' : ''}" data-tagf="${c}" aria-pressed="${sTag === c}">${c === 'goal' ? '◆ Mes objectifs' : (c === 'dj' ? `<span class="ri">${IC.dj}</span>` : c === 'gr' ? `<span class="ri">${IC.grp}</span>` : '') + TAGS[c]}<small>${tagCount(c)}</small></button>`).join('')}</div>` : '';
   const info = `${d} / ${ids.length} faites (${pctOf(d, ids.length)} %) · ${plural(shown.length, 'affichée')}${sCat === QALL && !qn ? ' · par niveau' : ''}`;
   const btns = cid != null ? `<button class="btn" data-sqall="${cid}">Tout cocher</button><button class="btn" data-sqnone="${cid}">Tout décocher</button>` : '';
   const lv = id => (SC.quetes[id] || {}).lv || 0;
@@ -1169,8 +1207,54 @@ function achByLevel(list){
   return LV_BANDS.map(([lo, hi]) => { const g = list.filter(a => (a.lv || 0) >= lo && (a.lv || 0) <= hi); if (!g.length) return '';
     return `<div class="sec">${lo === hi ? `Niveau ${lo}` : `Niveau ${lo} – ${hi}`}<span class="sp"></span>${g.length}</div>${g.map(achCard).join('')}`; }).join('');
 }
+// ---------- Donjons : les quêtes rangées par donjon, triés par niveau optimal ----------
+const SDJ = SC.donjons || {};
+const QDJ = {};   // donjon → quêtes qui le citent
+for (const [qid, q] of Object.entries(SC.quetes)) for (const id of q.dj || []) (QDJ[id] = QDJ[id] || []).push(+qid);
+const DJ_MULTI = 4;   // une quête qui touche 4 donjons ou plus (L'éternelle moisson…) est à part : elle polluerait chaque fiche
+const isMultiDj = q => (SC.quetes[q].dj || []).length >= DJ_MULTI;
+const djOwn = id => (QDJ[id] || []).filter(q => !isMultiDj(q) && qVisible(q));
+const djMulti = id => (QDJ[id] || []).filter(q => isMultiDj(q) && qVisible(q));
+const DJ_IDS = Object.keys(SDJ).map(Number).filter(id => (QDJ[id] || []).some(q => !isMultiDj(q)))
+  .sort((a, b) => SDJ[a].lv - SDJ[b].lv || SDJ[a].n.localeCompare(SDJ[b].n, 'fr'));
+let sDj = store.get('sDj', null), sDjMulti = false;
+function djStats(id){ const own = djOwn(id); return { n: own.length, d: own.filter(qDoneS).length, goal: own.filter(q => GOALQ[q]).length }; }
+const djShown = id => id === sDj || djOwn(id).some(qShown);   // mêmes cases que les quêtes : obtenus, indisponibles, objectifs Dofus
+function ensureDj(){
+  if (sDj != null && DJ_IDS.includes(sDj) && djOwn(sDj).length) return;
+  const ok = DJ_IDS.filter(id => djOwn(id).length);
+  sDj = (ok.find(id => { const st = djStats(id); return st.d < st.n && SDJ[id].lv <= sLevel; }) || ok.find(id => { const st = djStats(id); return st.d < st.n; }) || ok[0] || {}) ;
+  if (typeof sDj !== 'number') sDj = null;
+}
+function renderDjTree(){
+  const el = document.getElementById('scTree');
+  const norm = t => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''), qn = norm(sSearch.trim());
+  const rows = DJ_IDS.filter(id => djOwn(id).length && djShown(id) && (!qn || norm(SDJ[id].n + ' ' + SDJ[id].b.join(' ')).includes(qn)));
+  const row = id => { const st = djStats(id), dj = SDJ[id], done = st.n && st.d === st.n;
+    return `<div class="sc-cat dj${sDj === id ? ' sel' : ''}${done ? ' done' : ''}" data-sdj="${id}" title="${st.d} / ${st.n} quêtes faites"><span>${esc(dj.n)}</span><span class="rt">${st.goal ? `<span class="gdot" title="${st.goal} pour tes objectifs Dofus">◆ ${st.goal}</span>` : ''}<span class="pct">${done ? '✓' : `${st.d}/${st.n}`}</span><span class="lv">${dj.lv}</span></span><small>${esc(dj.b.join(', '))}</small></div>`; };
+  let html = '';
+  for (const [lo, hi] of LV_BANDS) { const g = rows.filter(id => SDJ[id].lv >= lo && SDJ[id].lv <= hi); if (!g.length) continue;
+    html += `<div class="band"><span>${lo === hi ? `Niveau ${lo}` : `Niveau ${lo} – ${hi}`}</span><span>${g.length}</span></div>${g.map(row).join('')}`; }
+  el.innerHTML = html || '<div class="empty">Aucun donjon à afficher : tout est fait, ou masqué par les options en bas de la fenêtre.</div>';
+  const cur = SDJ[sDj], st = cur ? djStats(sDj) : null;
+  document.getElementById('catBtn').innerHTML = cur ? `<span class="cb-n">${esc(cur.n)}</span><span class="pct">${st.d}/${st.n}</span><span aria-hidden="true">▾</span>` : 'Choisir un donjon';
+}
+function renderDjMain(el){
+  const dj = SDJ[sDj];
+  if (!dj) { el.innerHTML = '<div class="empty">Choisis un donjon à gauche.</div>'; return; }
+  const st = djStats(sDj), lvl = q => (SC.quetes[q] || {}).lv || 0;
+  const shown = djOwn(sDj).filter(qShown).sort((x, y) => lvl(x) - lvl(y) || qName(x).localeCompare(qName(y), 'fr'));
+  const multi = djMulti(sDj), mShown = multi.filter(qShown).sort((x, y) => lvl(x) - lvl(y));
+  el.innerHTML = head(esc(dj.n), `${st.d} / ${st.n} faites · ${plural(shown.length, 'affichée')}`)
+    + `<div class="dj-meta"><span>Niveau optimal <b>${dj.lv}</b></span>${dj.b.length ? `<span>${dj.b.length > 1 ? 'Boss' : 'Boss'} <b>${esc(dj.b.join(', '))}</b></span>` : ''}</div>`
+    + (shown.length ? shown.map(id => questRow(id)).join('') : EMPTY)
+    + (multi.length ? `<div class="multi">${plural(multi.length, 'quête')} ${multi.length > 1 ? 'touchent' : 'touche'} aussi d’autres donjons. <button data-djmulti>${sDjMulti ? 'Masquer' : 'Les afficher'}</button></div>` : '')
+    + (multi.length && sDjMulti ? `<div class="sec">Quêtes de plusieurs donjons<span class="sp"></span>${mShown.length}</div>${mShown.map(id => questRow(id)).join('') || EMPTY}` : '');
+  imgErr(el);
+}
 function renderScList(){
   const el = document.getElementById('scList');
+  if (sMode === 'donjons') { renderDjMain(el); return; }
   if (sMode === 'quetes') { renderQuestList(el); return; }
   const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   const q = norm(sSearch.trim());
@@ -1207,7 +1291,7 @@ function achDetailHtml(a){
     return `<div class="ob${ok ? ' done' : ''}"><input type="checkbox" class="gc" data-so="${oid}" ${ok ? 'checked' : ''}><span>${esc((o.n || '').trim() || a.d || a.n)}</span></div>`;
   };
   const parents = (SPARENTS[a.id] || []).map(id => SACH[id]).filter(Boolean);
-  return `<div class="hd"><img src="${achImg(a)}" alt="" referrerpolicy="no-referrer"><h3>${esc(a.n)}</h3><div class="k">Succès · niveau ${a.lv}</div></div>
+  return `<div class="hd"><img src="${achImg(a)}" alt="" referrerpolicy="no-referrer"><h3>${esc(a.n)}</h3><div class="k">Succès · niveau ${a.lv}${a.pts ? ` · <span class="pts">${a.pts}${IC.cup}</span>` : ''}</div></div>
     <div class="orn">${n ? `${d} / ${n}` : '✦'}</div>
     <div class="quote${dn ? ' ok' : ''}">${esc(a.d)}${dn ? ' — obtenu.' : ''}</div>
     ${goalBox(GOALA[a.id], DZ_REW_A[a.id])}
@@ -1227,11 +1311,11 @@ function questDetailHtml(qid){
   const owners = (QOWN[qid] || []).map(id => SACH[id]).filter(Boolean);
   const next = QNEXT[qid] || [];
   const DJN = SC.donjons || {};
-  return `<div class="hd"><h3>${esc(qName(qid))}</h3><div class="k">Quête${q.lv ? ` · niveau ${q.lv}` : ''}${q.ev ? ' · événement' : ''}</div><div class="tags" style="justify-content:center;margin-top:6px">${qTags(q).map(c => `<span class="tag ${c}">${TAGS[c]}</span>`).join('')}</div></div>
+  return `<div class="hd"><h3>${qIcon(q)}${esc(qName(qid))}</h3><div class="k">${(QTYPE[q.ty || 0] || QTYPE[0])[2]}${q.lv ? ` · niveau ${q.lv}${q.lx ? ' à ' + q.lx : ''}` : ''}${q.ev ? ' · événement' : ''}</div><div class="tags" style="justify-content:center;margin-top:6px">${qTags(q).map(c => `<span class="tag ${c}">${TAGS[c]}</span>`).join('')}</div></div>
     <div class="orn">!</div>
     <div class="stat">${dn ? '<span class="badge avail">Faite</span>' : av ? '<span class="badge avail">Disponible</span>' : `<span class="badge lock">Indisponible</span><span class="muted">${esc(why.slice(0, 2).join(' · '))}${why.length > 2 ? ` (+${why.length - 2})` : ''}</span>`}</div>
     ${goalBox(GOALQ[qid], DZ_REW_Q[qid])}
-    ${(q.dj || []).length ? `<div class="lab">${(q.dj || []).length > 1 ? 'Donjons' : 'Donjon'}</div>${q.dj.map(id => `<div class="ob"><span class="tag dj">DJ</span><span>${esc(DJN[id] || 'Donjon ' + id)}</span></div>`).join('')}` : ''}
+    ${(q.dj || []).length ? `<div class="lab">${(q.dj || []).length > 1 ? 'Donjons' : 'Donjon'}</div>${q.dj.map(id => `<div class="ob"><span class="tag dj">DJ</span><span>${esc((DJN[id] || {}).n || 'Donjon ' + id)}${(DJN[id] || {}).lv ? ` <span class="muted">· niveau ${DJN[id].lv}</span>` : ''}</span></div>`).join('')}` : ''}
     ${(q.ft || []).length ? `<div class="lab">À faire</div>${q.ft.map(l => `<div class="ob"><span class="x">•</span><span>${esc(l)}</span></div>`).join('')}` : ''}
     ${pre.length ? `<div class="lab">Prérequis</div>${pre.join('')}` : ''}
     ${owners.length ? `<div class="lab">Succès</div>${owners.map(a => `<div class="ob${achDone(a.id) ? ' done' : ''}">${okx(achDone(a.id))}<span><span class="sgo" data-pick="a:${a.id}">${esc(a.n)}</span></span></div>`).join('')}` : ''}
@@ -1288,10 +1372,10 @@ function renderSucces(){
   document.getElementById('scShowLocked').checked = sShowLocked;
   document.getElementById('scSeasonal').checked = sSeasonal;
   document.querySelectorAll('[data-smode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.smode === sMode)));
-  document.getElementById('scSearch').placeholder = sMode === 'quetes' ? 'Rechercher une quête…' : 'Rechercher un succès…';
-  if (mTab === 'succes' || mTab === 'quetes') mTab = sMode;
+  document.getElementById('scSearch').placeholder = sMode === 'quetes' ? 'Rechercher une quête…' : sMode === 'donjons' ? 'Rechercher un donjon ou un boss…' : 'Rechercher un succès…';
+  if (['succes', 'quetes', 'donjons'].includes(mTab)) mTab = sMode;
   showTab();
-  ensureCat();
+  if (sMode === 'donjons') ensureDj(); else ensureCat();
   renderScTree(); renderScList(); renderScHelp(); renderDetail();
 }
 function goToAch(id){
@@ -1306,6 +1390,14 @@ function goToAch(id){
   const el = document.getElementById('ach' + id); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1400); }
 }
 document.getElementById('scTree').addEventListener('click', e => {
+  const dj = e.target.closest('[data-sdj]');
+  if (dj) {
+    sDj = +dj.dataset.sdj; store.set('sDj', sDj); sDjMulti = false; sPick = null;
+    document.querySelector('.side').classList.remove('open'); document.getElementById('catBtn').setAttribute('aria-expanded', 'false');
+    renderScTree(); renderScList(); renderDetail();
+    if (isMobile()) window.scrollTo({ top: 0 });
+    return;
+  }
   const c = e.target.closest('[data-scat]'); if (!c) return;
   const id = +c.dataset.scat;
   sCat = id; store.set('sCat', id);
@@ -1317,6 +1409,7 @@ document.getElementById('scTree').addEventListener('click', e => {
 function onScClick(e){
   if (e.target.closest('input,label')) return;
   if (e.target.closest('[data-closedet]')) { closeSheet(); return; }
+  if (e.target.closest('[data-djmulti]')) { sDjMulti = !sDjMulti; renderScList(); return; }
   const ag = e.target.closest('[data-agoal]');
   if (ag) { sAGoal = !!ag.dataset.agoal; renderScList(); return; }
   const gv = e.target.closest('[data-goalview]');
@@ -1402,7 +1495,7 @@ document.getElementById('scList').addEventListener('change', onScChange);
 document.getElementById('scHelp').addEventListener('change', onScChange);
 document.getElementById('scDetail').addEventListener('change', onScChange);
 let scSearchT;
-document.getElementById('scSearch').addEventListener('input', e => { clearTimeout(scSearchT); scSearchT = setTimeout(() => { sSearch = e.target.value; renderScList(); }, 200); });
+document.getElementById('scSearch').addEventListener('input', e => { clearTimeout(scSearchT); scSearchT = setTimeout(() => { sSearch = e.target.value; renderScList(); if (sMode === 'donjons') renderScTree(); }, 200); });
 document.getElementById('scLevel').addEventListener('change', e => { sLevel = Math.max(1, Math.min(200, +e.target.value || 200)); store.set('sLevel', sLevel); renderSucces(); });
 document.getElementById('scShowDone').onchange = e => { sShowDone = e.target.checked; store.set('sShowDone', sShowDone); renderSucces(); };
 document.getElementById('scShowLocked').onchange = e => { sShowLocked = e.target.checked; store.set('sShowLocked', sShowLocked); renderSucces(); };
@@ -1422,7 +1515,7 @@ function closeSheet(){ document.body.classList.remove('sheet-open'); }
 document.getElementById('tabbar').addEventListener('click', e => {
   const b = e.target.closest('[data-tab]'); if (!b) return;
   closeSheet(); mTab = b.dataset.tab; raw.set('mTab', mTab);
-  if ((mTab === 'succes' || mTab === 'quetes') && sMode !== mTab) { sPick = null; sMode = mTab; store.set('sMode', sMode); sTag = null; }
+  if (['succes', 'quetes', 'donjons'].includes(mTab) && sMode !== mTab) { sPick = null; sMode = mTab; store.set('sMode', sMode); sTag = null; }
   renderSucces(); window.scrollTo({ top: 0 });
 });
 document.getElementById('scrim').addEventListener('click', closeSheet);

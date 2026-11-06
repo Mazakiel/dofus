@@ -62,14 +62,17 @@ const fr = n => (n && (n.fr || n.en)) || '';
   const items = await cached('items-min.json', () => byIds('items', [...want.item], ['id', 'name', 'dropMonsterIds', 'hasRecipe']));
   const monsters = await cached('monsters-min.json', () => byIds('monsters', [...want.monster], ['id', 'name']));
   const subareas = await cached('subareas-min.json', () => byIds('subareas', [...want.subarea], ['id', 'name']));
-  const dungeons = await cached('dungeons-min.json', async () => {
+  const dungeons = await cached('dungeons-v2.json', async () => {
     const out = {};   // l'API plafonne à 50 résultats par page
     for (let skip = 0, total = 1; skip < total; skip += 50) {
-      const j = await getJson(`${API}dungeons?$skip=${skip}&$limit=50&$select[]=id&$select[]=name`);
+      const j = await getJson(`${API}dungeons?$skip=${skip}&$limit=50&$select[]=id&$select[]=name&$select[]=optimalPlayerLevel&$select[]=bosses`);
       total = j.total; for (const d of j.data) out[d.id] = d;
     }
     return out;
   });
+  // noms des boss de donjon
+  const bossIds = [...new Set(Object.values(dungeons).flatMap(d => d.bosses || []))].filter(id => !monsters[id]);
+  if (bossIds.length) Object.assign(monsters, await byIds('monsters', bossIds, ['id', 'name']));
   // des ids peuvent manquer si le cache est plus ancien que les données : on complète
   for (const [kind, store, sel] of [['item', items, ['id', 'name', 'dropMonsterIds', 'hasRecipe']], ['monster', monsters, ['id', 'name']]]) {
     const miss = [...want[kind]].filter(id => !store[id]);
@@ -123,6 +126,8 @@ const fr = n => (n && (n.fr || n.en)) || '';
     if (souls.length > 5) { const i = lines.findIndex(l => SOUL.test(l)); lines.splice(i, 0, `Rapporter l’âme de ${souls.length} monstres différents`); for (let j = lines.length - 1; j > i; j--) if (SOUL.test(lines[j])) lines.splice(j, 1); }
     const seen = new Set(), uniq = lines.filter(l => l && !seen.has(l) && seen.add(l));
     d.tg = [...tg]; if (!d.tg.length) delete d.tg;
+    if (q.type) d.ty = q.type;                                         // 0 normale, 1 / 2 anneau vert / jaune, 3 étoile (icônes du jeu)
+    if (q.levelMax && q.levelMax !== q.levelMin) d.lx = q.levelMax;    // « Niv. 40-200 »
     d.dj = [...dj]; if (!d.dj.length) delete d.dj; else d.dj.forEach(id => used.add(id));
     if (uniq.length) d.ft = uniq;   // liste complète, sans « … et N autres »
     else delete d.ft;
@@ -131,7 +136,8 @@ const fr = n => (n && (n.fr || n.en)) || '';
   // PNJ qui remettent certains Dofus : absents de DofusDB, à renseigner à la main si besoin, ex. { 27803: 'Gobdepin (Albuera)' }
   const DOFUS_PNJ = {};
   for (const z of data.dofus || []) { if (DOFUS_PNJ[z.id]) z.pnj = DOFUS_PNJ[z.id]; }
-  data.donjons = Object.fromEntries([...used].sort((a, b) => a - b).map(id => [id, fr((dungeons[id] || {}).name) || `Donjon ${id}`]));
+  data.donjons = Object.fromEntries([...used].sort((a, b) => a - b).map(id => { const g = dungeons[id] || {};
+    return [id, { n: fr(g.name) || `Donjon ${id}`, lv: g.optimalPlayerLevel || 0, b: (g.bosses || []).map(b => fr((monsters[b] || {}).name)).filter(Boolean) }]; }));
   fs.writeFileSync(FILE, JSON.stringify(data));
   const cnt = {};
   for (const d of Object.values(data.quetes)) for (const t of d.tg || []) cnt[t] = (cnt[t] || 0) + 1;

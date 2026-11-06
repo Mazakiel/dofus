@@ -128,10 +128,6 @@ button,select,input{font:inherit;color:inherit}
 .sec.dzsec img{width:26px;height:26px}
 .goalbox{margin:8px 16px;padding:10px 14px;border:1px solid var(--orange);border-radius:6px;background:color-mix(in srgb,var(--orange) 10%,transparent);font-size:.86rem}
 .goalbox .rew{margin:4px 4px 0 0}
-.dz-next{margin-top:8px}
-.sugg{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
-.sugg:last-child{border-bottom:0}
-.sugg .left{font-size:.78rem;color:var(--muted)}
 
 /* ---------- corps : catégories | liste | détail ---------- */
 .body{display:grid;grid-template-columns:250px minmax(0,1fr) 380px;align-items:stretch}
@@ -313,8 +309,6 @@ dialog::backdrop{background:rgba(8,6,4,.6)}
 .band{display:flex;justify-content:space-between;padding:5px 14px;background:var(--sec);color:var(--muted);font-size:.72rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .dj-meta{display:flex;flex-wrap:wrap;gap:4px 18px;padding:0 14px 10px;font-size:.82rem;color:var(--muted)}
 .dj-meta b{color:var(--text);font-weight:700}
-.multi{padding:9px 14px;font-size:.82rem;color:var(--muted);border-bottom:1px solid var(--line)}
-.multi button{color:var(--gold-txt);font-weight:800;cursor:pointer}
 
 /* ---------- étiquettes et filtres ---------- */
 .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
@@ -557,7 +551,6 @@ const SUCCES = /*__SUCCES__*/null;   // données DofusDB uniquement (catégories
 // Profils (un par personnage) : coches et niveau rangés sous c200:p:<profil>:<clé> ; l'affichage (thème, cases, catégorie) est commun.
 // Migration : au premier chargement, les anciennes coches (c200:sdone…) sont copiées dans le profil « Défaut » ; les anciennes clés restent en secours.
 const PKEYS = ['sdone','sq','sodone','sLevel','sdzState','sdzGoals','qState','savedAt'];
-const TRACKED = ['sdone','sq','sodone'];
 const TRACK_RE = /(^|:)(sdone|sq|sodone)$/;
 const idb = {
   open(){ return new Promise((res, rej) => { try { const r = indexedDB.open('contenu200', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch(e){ rej(e); } }); },
@@ -621,7 +614,6 @@ function askConfirm(msg, ok = "Confirmer", cancel = "Annuler", input = null){
   });
 }
 const uiAlert = msg => askConfirm(msg, "OK", null);
-const askText = (msg, val = "", ok = "Valider") => askConfirm(msg, ok, "Annuler", val);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Thème
 const THEMES = ['auto','light','dark'], THEME_LBL = {auto:'Thème : auto', light:'Thème : clair', dark:'Thème : sombre'};
@@ -656,7 +648,7 @@ let sCat = store.get('sCat', null);
 // « Afficher les obtenus » (ancien « Masquer les obtenus », repris dans l'autre sens) et « Afficher les indisponibles »
 let sShowDone = store.get('sShowDone', !store.get('sHideDone', false)), sShowLocked = store.get('sShowLocked', false);
 let sLevel = store.get('sLevel', 200);
-let sSel = new Set(), sSearch = '';
+let sSearch = '';
 // Succès « liés aux quêtes » : catégorie Quêtes, au moins une quête en objectif, ou un sous-succès lié aux quêtes
 const QREL = new Set();
 for (const a of SC.succes) if (topOf(a.c) === 8 || a.ob.some(oid => SC.objectifs[oid] && SC.objectifs[oid].t === 'q')) QREL.add(a.id);
@@ -1093,10 +1085,8 @@ for (const d of SDZL) { if (d.pre || d.pa) continue;
   if (d.a && /récompense de succès|description de succès/.test(d.src || "")) (DZ_REW_A[d.a] = DZ_REW_A[d.a] || []).push(d);
   if (d.q && d.src === "récompense de quête") (DZ_REW_Q[d.q] = DZ_REW_Q[d.q] || []).push(d); }
 const rewChips = list => list.map(d => `<span class="rew" title="Récompense : ${esc(d.n)}"><img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer">${esc(d.n)}</span>`).join(" ");
-const rewLine = list => list && list.length ? `<div class="rewline">Récompense : ${rewChips(list)}</div>` : "";
 const QNEXT = {};   // quête → quêtes qu'elle débloque
 for (const [qid, q] of Object.entries(SC.quetes)) for (const p of q.pre || []) (QNEXT[p] = QNEXT[p] || []).push(+qid);
-const qAvail = qid => { const q = SC.quetes[qid] || {}; return (q.pre || []).every(qDoneS) && (q.preA || []).every(a => achDone(a)); };
 // ---- Sélection : la liste reste compacte, le détail s'affiche dans le panneau de droite ----
 let sPick = null;   // { k:'a'|'q', id }
 const isPick = (k, id) => !!sPick && sPick.k === k && sPick.id === id;

@@ -118,13 +118,19 @@ const fr = n => (n && (n.fr || n.en)) || '';
     if (disco.length > 3) lines.push(`Découvrir ${disco.length} cartes ou zones`); else lines.push(...disco);
     if (dj.size) tg.add('dj');
     // exploration seule = sans intérêt si la quête fait autre chose : on la garde quand même comme étiquette
+    // « Rapporter 1 âme de X » répété pour beaucoup de monstres (L'éternelle moisson : 337) : une seule ligne
+    const SOUL = /^Rapporter \d+ âme de /, souls = lines.filter(l => SOUL.test(l));
+    if (souls.length > 5) { const i = lines.findIndex(l => SOUL.test(l)); lines.splice(i, 0, `Rapporter l’âme de ${souls.length} monstres différents`); for (let j = lines.length - 1; j > i; j--) if (SOUL.test(lines[j])) lines.splice(j, 1); }
     const seen = new Set(), uniq = lines.filter(l => l && !seen.has(l) && seen.add(l));
     d.tg = [...tg]; if (!d.tg.length) delete d.tg;
     d.dj = [...dj]; if (!d.dj.length) delete d.dj; else d.dj.forEach(id => used.add(id));
-    if (uniq.length) d.ft = uniq.length > 8 ? [...uniq.slice(0, 8), `… et ${uniq.length - 8} autres`] : uniq;
+    if (uniq.length) d.ft = uniq;   // liste complète, sans « … et N autres »
     else delete d.ft;
     if (d.tg) nTag++;
   }
+  // PNJ qui remettent certains Dofus : absents de DofusDB, à renseigner à la main si besoin, ex. { 27803: 'Gobdepin (Albuera)' }
+  const DOFUS_PNJ = {};
+  for (const z of data.dofus || []) { if (DOFUS_PNJ[z.id]) z.pnj = DOFUS_PNJ[z.id]; }
   data.donjons = Object.fromEntries([...used].sort((a, b) => a - b).map(id => [id, fr((dungeons[id] || {}).name) || `Donjon ${id}`]));
   fs.writeFileSync(FILE, JSON.stringify(data));
   const cnt = {};

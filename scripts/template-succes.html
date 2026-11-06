@@ -1128,7 +1128,6 @@ function computeGoals(){
 const goalIcons = list => !list ? '' : `<span class="goalchips" title="Pour tes objectifs : ${esc(list.map(d => d.n).join(', '))}">${list.slice(0, 3).map(d => `<img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer">`).join('')}${list.length > 3 ? `<b>+${list.length - 3}</b>` : ''}</span>`;
 const goalBox = (list, rewards) => { const l = (list || []).filter(d => !(rewards || []).includes(d)); return l.length ? `<div class="goalbox"><b>Sert tes objectifs Dofus :</b><div>${l.map(d => dzChip(d)).join('')}</div></div>` : ''; };
 const notGoal = (rewards, goals) => (rewards || []).filter(d => !(goals || []).includes(d));
-let sAGoal = false;   // filtre « Mes objectifs » dans la liste des succès
 
 // ---------- icônes ----------
 const SVG = p => `<svg viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
@@ -1164,7 +1163,6 @@ const TAGS = { dj: 'Donjon', cb: 'Combat', fm: 'Farm', cr: 'Craft', ex: 'Explora
 const qTags = q => [...(q.tg || []), ...(q.grp ? ['gr'] : [])];
 // donjon et groupe ont leur icône à droite : pas de pastille
 const tagsHtml = q => { const t = qTags(q).filter(c => c !== 'dj' && c !== 'gr'); return t.length ? `<div class="tags">${t.map(c => `<span class="tag ${c}">${TAGS[c]}</span>`).join('')}</div>` : ''; };
-let sTag = null;   // filtre par type dans la liste des quêtes
 let sProg = null;  // filtre par avancement : 'av' disponible, 'st' commencé, 'bl' bloqué
 const isMobile = () => window.matchMedia('(max-width:700px)').matches;
 
@@ -1194,22 +1192,30 @@ function questRow(qid, groupAid = null){
 const head = (title, info, btns = '') => `<div class="sc-head"><h2>${title}</h2><span class="n">${info}</span><span class="sp"></span>${btns}</div>`;
 const EMPTY = '<div class="empty">Rien à afficher : tout est fait, ou masqué par les options en bas de la fenêtre.</div>';
 const LV_BANDS = [[1, 49], [50, 99], [100, 149], [150, 199], [200, 200]];
+// Filtres d'avancement : mêmes puces et même règle dans toutes les listes de quêtes (catégories, objectifs Dofus, donjons)
+function progBar(list){
+  const cnt = c => list.filter(id => qStatus(id) === c).length;
+  if (sProg && !cnt(sProg)) sProg = null;
+  const chips = `<div class="chips" role="group" aria-label="Filtrer par avancement">${[['av', 'Disponible'], ['st', 'Commencé'], ['bl', 'Bloqué']].map(([c, l]) => `<button class="chip p-${c}" data-progf="${c}" aria-pressed="${sProg === c}">${l}<small>${cnt(c)}</small></button>`).join('')}</div>`;
+  return { chips, keep: id => !sProg || qStatus(id) === sProg };
+}
 // Vue « Mes objectifs Dofus » : une section par Dofus visé, avec les quêtes qui restent (disponibles d'abord).
 // Mêmes cases que les autres listes : les indisponibles ne s'affichent que si « Afficher les indisponibles » est coché.
 const hiddenTxt = n => n ? ` · ${n} masquée${n > 1 ? 's' : ''}` : '';
 function renderGoalQuests(){
   const lv = id => (SC.quetes[id] || {}).lv || 0;
+  const per = GOALD.map(d => { const mine = Object.keys(GOALQ).map(Number).filter(q => GOALQ[q].includes(d)); return { d, mine, vis: mine.filter(qShown) }; });
+  const bar = progBar([...new Set(per.flatMap(x => x.vis))]);
   let hiddenAll = 0, shownAll = 0;
-  const secs = GOALD.map(d => {
-    const mine = Object.keys(GOALQ).map(Number).filter(q => GOALQ[q].includes(d));
-    const qs = mine.filter(qShown).sort((x, y) => (qAvailNow(y) - qAvailNow(x)) || lv(x) - lv(y));
-    const todo = mine.filter(q => !qDoneS(q)), av = todo.filter(qAvailNow).length, hidden = todo.filter(q => !qShown(q)).length;
+  const secs = per.map(({ d, mine, vis }) => {
+    const qs = vis.filter(bar.keep).sort((x, y) => (qAvailNow(y) - qAvailNow(x)) || lv(x) - lv(y));
+    const todo = mine.filter(q => !qDoneS(q)), av = todo.filter(q => qStatus(q) === 'av').length, hidden = todo.filter(q => !qShown(q)).length;
     hiddenAll += hidden; shownAll += qs.length;
     return `<div class="sec dzsec"><img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer"><span>${esc(d.n)}</span><span class="sp"></span>${todo.length ? `${todo.length} à faire · ${av} dispo.${hiddenTxt(hidden)}` : 'rien à faire : coche-le obtenu'}</div>${qs.map(q => questRow(q)).join('')}`;
   }).join('');
-  const all = Object.keys(GOALQ).length, av = Object.keys(GOALQ).map(Number).filter(q => qAvailNow(q)).length;
+  const all = Object.keys(GOALQ).length, av = Object.keys(GOALQ).map(Number).filter(q => qStatus(q) === 'av').length;
   const hint = !shownAll && hiddenAll ? '<div class="empty">Les quêtes qui restent sont indisponibles. Coche « Afficher les indisponibles » pour les voir.</div>' : '';
-  return head('Mes objectifs Dofus', `${plural(GOALD.length, 'Dofus visé')} · ${plural(all, 'quête')} à faire, ${av} disponible${av > 1 ? 's' : ''}${hiddenTxt(hiddenAll)}`) + (secs || EMPTY) + hint;
+  return head('Mes objectifs Dofus', `${plural(GOALD.length, 'Dofus visé')} · ${plural(all, 'quête')} à faire, ${av} disponible${av > 1 ? 's' : ''}${hiddenTxt(hiddenAll)}`) + bar.chips + (secs || EMPTY) + hint;
 }
 function renderGoalAchs(){
   let hiddenAll = 0, shownAll = 0;
@@ -1232,16 +1238,7 @@ function renderQuestList(el){
   else if (sCat === QOTHER || (sCat && SCAT[sCat])) { cid = sCat; ids = (QBYCAT[sCat] || []).filter(qVisible); title = sCat === QOTHER ? 'Autres quêtes (prérequis)' : esc(catPath(sCat)); }
   else { el.innerHTML = '<div class="empty">Choisis une catégorie à gauche.</div>'; return; }
   const d = ids.filter(qDoneS).length, shownAll = ids.filter(qShown);
-  const goalIds = ids.filter(id => GOALQ[id] && qShown(id));
-  const hasTag = (id, c) => qTags(SC.quetes[id] || {}).includes(c);
-  const tagCount = c => c === 'goal' ? goalIds.length : shownAll.filter(id => hasTag(id, c)).length;
-  if (sTag && !tagCount(sTag)) sTag = null;
-  const progCount = c => shownAll.filter(id => qStatus(id) === c).length;
-  if (sProg && !progCount(sProg)) sProg = null;
-  const shown = (sTag === 'goal' ? goalIds : sTag ? shownAll.filter(id => hasTag(id, sTag)) : shownAll).filter(id => !sProg || qStatus(id) === sProg);
-  const progChips = `<div class="chips" role="group" aria-label="Filtrer par avancement">${[['av', 'Disponible'], ['st', 'Commencé'], ['bl', 'Bloqué']].map(([c, l]) => `<button class="chip p-${c}" data-progf="${c}" aria-pressed="${sProg === c}">${l}<small>${progCount(c)}</small></button>`).join('')}</div>`;
-  const chipKeys = ['goal', ...Object.keys(TAGS)].filter(tagCount);
-  const chips = chipKeys.length ? `<div class="chips" role="group" aria-label="Filtrer les quêtes"><button class="chip" data-tagf="" aria-pressed="${!sTag}">Toutes<small>${shownAll.length}</small></button>${chipKeys.map(c => `<button class="chip${c === 'goal' ? ' goal' : ''}" data-tagf="${c}" aria-pressed="${sTag === c}">${c === 'goal' ? '◆ Mes objectifs' : (c === 'dj' || c === 'gr' ? flagIcon(c) : '') + TAGS[c]}<small>${tagCount(c)}</small></button>`).join('')}</div>` : '';
+  const bar = progBar(shownAll), shown = shownAll.filter(bar.keep);
   const info = `${d} / ${ids.length} faites (${pctOf(d, ids.length)} %) · ${plural(shown.length, 'affichée')}${sCat === QALL && !qn ? ' · par niveau' : ''}`;
   const btns = cid != null ? `<button class="btn" data-sqall="${cid}">Tout cocher</button><button class="btn" data-sqnone="${cid}">Tout décocher</button>` : '';
   const lv = id => (SC.quetes[id] || {}).lv || 0;
@@ -1265,7 +1262,7 @@ function renderQuestList(el){
         : `<div class="sec">Sans succès<span class="sp"></span>${qs.length}</div>`) + qs.map(q => questRow(q, aid || null)).join('');
     }).join('');
   }
-  el.innerHTML = head(title, info, btns) + progChips + chips + (html || EMPTY);
+  el.innerHTML = head(title, info, btns) + bar.chips + (html || EMPTY);
   imgErr(el);
 }
 // « Tous les succès » : par tranche de niveau, puis dans l'ordre des catégories
@@ -1308,10 +1305,11 @@ function renderDjMain(el){
   const dj = SDJ[sDj];
   if (!dj) { el.innerHTML = '<div class="empty">Choisis un donjon à gauche.</div>'; return; }
   const st = djStats(sDj), lvl = q => (SC.quetes[q] || {}).lv || 0;
-  const shown = djOwn(sDj).filter(qShown).sort((x, y) => lvl(x) - lvl(y) || qName(x).localeCompare(qName(y), 'fr'));
+  const shownAll = djOwn(sDj).filter(qShown), bar = progBar(shownAll);
+  const shown = shownAll.filter(bar.keep).sort((x, y) => lvl(x) - lvl(y) || qName(x).localeCompare(qName(y), 'fr'));
   el.innerHTML = head(esc(dj.n), `${st.d} / ${st.n} faites · ${plural(shown.length, 'affichée')}`)
     + `<div class="dj-meta"><span>Niveau optimal <b>${dj.lv}</b></span>${dj.b.length ? `<span>${dj.b.length > 1 ? 'Boss' : 'Boss'} <b>${esc(dj.b.join(', '))}</b></span>` : ''}</div>`
-    + (shown.length ? shown.map(id => questRow(id)).join('') : EMPTY);
+    + bar.chips + (shown.length ? shown.map(id => questRow(id)).join('') : EMPTY);
   imgErr(el);
 }
 function renderScList(){
@@ -1328,12 +1326,9 @@ function renderScList(){
   else if (sCat === SALL) { list = SC.succes.filter(sVisible); title = 'Tous les succès'; }
   else if (sCat && SCAT[sCat]) { cid = sCat; list = catIds(sCat).flatMap(id => SBYCAT[id] || []).filter(sVisible); title = esc(catPath(sCat)); }
   else { el.innerHTML = '<div class="empty">Choisis une catégorie à gauche.</div>'; return; }
-  const goalAs = list.filter(a => GOALA[a.id] && aShown(a)), nGoal = goalAs.length;
-  if (sAGoal && !nGoal) sAGoal = false;
-  const shown = sAGoal ? goalAs : list.filter(aShown), d = list.filter(a => achDone(a.id)).length;
-  const chips = nGoal ? `<div class="chips" role="group" aria-label="Filtrer les succès"><button class="chip" data-agoal="" aria-pressed="${!sAGoal}">Tous</button><button class="chip goal" data-agoal="1" aria-pressed="${sAGoal}">◆ Mes objectifs<small>${nGoal}</small></button></div>` : '';
+  const shown = list.filter(aShown), d = list.filter(a => achDone(a.id)).length;
   const btns = cid ? `<button class="btn" data-sall="${cid}" title="Marquer tous les succès de cette catégorie comme obtenus, avec leurs quêtes">Tout cocher</button><button class="btn" data-snone="${cid}" title="Décocher tous les succès de cette catégorie, avec leurs quêtes et objectifs">Tout décocher</button>` : '';
-  el.innerHTML = head(title, `${d} / ${list.length} obtenus (${pctOf(d, list.length)} %) · ${plural(shown.length, 'affiché')}`, btns) + chips + (shown.length ? (sCat === SALL && !q ? achByLevel(shown) : shown.map(achCard).join('')) : EMPTY);
+  el.innerHTML = head(title, `${d} / ${list.length} obtenus (${pctOf(d, list.length)} %) · ${plural(shown.length, 'affiché')}`, btns) + (shown.length ? (sCat === SALL && !q ? achByLevel(shown) : shown.map(achCard).join('')) : EMPTY);
   imgErr(el);
 }
 
@@ -1482,14 +1477,10 @@ function onScClick(e){
   }
   if (e.target.closest('input,label')) return;
   if (e.target.closest('[data-closedet]')) { closeSheet(); return; }
-  const ag = e.target.closest('[data-agoal]');
-  if (ag) { sAGoal = !!ag.dataset.agoal; renderScList(); return; }
   const gv = e.target.closest('[data-goalview]');
   if (gv) { sMode = 'quetes'; mTab = 'quetes'; store.set('sMode', sMode); sCat = QGOAL; store.set('sCat', sCat); sPick = null; sSearch = ''; document.getElementById('scSearch').value = ''; renderSucces(); document.getElementById('viewSucces').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   const pf = e.target.closest('[data-progf]');
   if (pf) { sProg = sProg === pf.dataset.progf ? null : pf.dataset.progf; renderScList(); return; }
-  const tf = e.target.closest('[data-tagf]');
-  if (tf) { sTag = tf.dataset.tagf || null; renderScList(); return; }
   const inf = e.target.closest('[data-dzinfo]');
   if (inf) { const d = SDZ[+inf.dataset.dzinfo]; uiAlert(`${d.n} : ${dzWho(d)}`); return; }
   const own = e.target.closest('[data-sdzown]');
@@ -1595,7 +1586,7 @@ function closeSheet(){ document.body.classList.remove('sheet-open'); }
 document.getElementById('tabbar').addEventListener('click', e => {
   const b = e.target.closest('[data-tab]'); if (!b) return;
   closeSheet(); mTab = b.dataset.tab; raw.set('mTab', mTab);
-  if (['succes', 'quetes', 'donjons'].includes(mTab) && sMode !== mTab) { sPick = null; sMode = mTab; store.set('sMode', sMode); sTag = null; }
+  if (['succes', 'quetes', 'donjons'].includes(mTab) && sMode !== mTab) { sPick = null; sMode = mTab; store.set('sMode', sMode); }
   renderSucces(); window.scrollTo({ top: 0 });
 });
 document.getElementById('scrim').addEventListener('click', closeSheet);

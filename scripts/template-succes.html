@@ -226,7 +226,7 @@ input.gc:disabled{opacity:.6;cursor:default}
 .badge.bl{color:var(--red);border:1px solid var(--red)}
 .acts.prog{align-items:center;padding-top:8px}
 .acts.prog .btn[aria-pressed="true"][data-qst="s"]{border-color:var(--yel);background:color-mix(in srgb,var(--yel) 22%,var(--win2))}
-.acts.prog .btn[aria-pressed="true"][data-qdone]{border-color:var(--green);background:color-mix(in srgb,var(--green) 22%,var(--win2))}
+.acts.prog .btn[aria-pressed="true"][data-qdone],.acts.prog .btn[aria-pressed="true"][data-adone]{border-color:var(--green);background:color-mix(in srgb,var(--green) 22%,var(--win2))}
 .acts.prog .btn[aria-pressed="true"][data-qst="b"]{border-color:var(--red);background:color-mix(in srgb,var(--red) 18%,var(--win2))}
 .chip[class*="p-"]:before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
 .chip.p-av:before{background:var(--green)} .chip.p-st:before{background:var(--yel)} .chip.p-bl:before{background:var(--red)}
@@ -1355,11 +1355,12 @@ function achDetailHtml(a){
   const parents = (SPARENTS[a.id] || []).map(id => SACH[id]).filter(Boolean);
   return `<div class="hd"><img src="${achImg(a)}" alt="" referrerpolicy="no-referrer"><h3>${esc(a.n)}</h3><div class="k">Succès · niveau ${a.lv}${a.pts ? ` · <span class="pts">${a.pts}${iconImg(DBI('icon_cup.png'), IC.cup, 'cup', '')}</span>` : ''}</div></div>
     <div class="orn">${n ? `${d} / ${n}` : '✦'}</div>
-    <div class="quote${dn ? ' ok' : ''}">${esc(a.d)}${dn ? ' — obtenu.' : ''}</div>
+    <div class="stat">${(() => { const st = dn ? 'done' : achAvailNow(a.id) ? 'av' : 'lock'; return `<span class="badge ${st}">${dn ? 'Obtenu' : st === 'av' ? 'Disponible' : 'Indisponible'}</span>`; })()}</div>
+    <div class="acts prog"><button class="btn" data-adone aria-pressed="${dn}">Obtenu</button></div>
+    <div class="quote${dn ? ' ok' : ''}">${esc(a.d)}</div>
     ${goalBox(GOALA[a.id], DZ_REW_A[a.id])}
     ${a.ob.length ? `<div class="lab">Objectifs</div>${a.ob.map(line).join('')}` : ''}
     ${parents.length ? `<div class="lab">Fait partie de</div>${parents.map(p => `<div class="ob${achDone(p.id) ? ' done' : ''}">${okx(achDone(p.id))}<span><span class="sgo" data-pick="a:${p.id}">${esc(p.n)}</span></span></div>`).join('')}` : ''}
-    <div class="acts"><label class="chk"><input type="checkbox" class="gc" data-sach="${a.id}" ${dn ? 'checked' : ''}> Succès obtenu</label></div>
     ${DZ_REW_A[a.id] ? `<div class="rwd"><div class="lab">Récompense</div>${DZ_REW_A[a.id].map(d => dzChip(d, (GOALA[a.id] || []).includes(d))).join('')}</div>` : ''}
     <div class="path">${esc(catPath(a.c))}</div>`;
 }
@@ -1469,6 +1470,8 @@ document.getElementById('scTree').addEventListener('click', e => {
   if (isMobile()) window.scrollTo({ top: 0 });
 });
 function onScClick(e){
+  const ad = e.target.closest('[data-adone]');
+  if (ad && sPick && sPick.k === 'a') { setAchDone(sPick.id, !achDone(sPick.id)); return; }
   const qd = e.target.closest('[data-qdone]');
   if (qd && sPick && sPick.k === 'q') { setQuestDone(sPick.id, !qDoneS(sPick.id)); return; }
   const qs = e.target.closest('[data-qst]');
@@ -1535,6 +1538,17 @@ document.getElementById('scList').addEventListener('click', onScClick);
 document.getElementById('scList').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.row[data-pick]')) { e.preventDefault(); e.target.click(); } });
 document.getElementById('scHelp').addEventListener('click', onScClick);
 document.getElementById('scDetail').addEventListener('click', onScClick);
+// Succès : même principe que les quêtes
+function setAchDone(id, on){
+  if (on) {
+    // le succès n'est marqué qu'à la validation : ses propres quêtes apparaissent ainsi comme « à valider », pas « déjà faites »
+    SMEMO = new Map();
+    const acc = collectPrereqs('a', id);
+    if (acc.a.size + acc.q.size + acc.o.size + acc.d.size) { openDlg('a', id); return; }   // aperçu de la cascade
+    confirmCheck(`Marquer le succès « ${SACH[id].n} » comme obtenu ?`, () => sdone.add(id)); return;
+  }
+  uncheck('a', id);
+}
 // Cocher : confirmation (avec la cascade des prérequis s'il y en a) ; décocher : confirmation si d'autres éléments en dépendent
 function setQuestDone(id, on){
   if (on) {
@@ -1550,15 +1564,7 @@ function onScChange(e){
   if (t.dataset.sdzgoal) { const id = +t.dataset.sdzgoal; t.checked ? sdzGoals.add(id) : sdzGoals.delete(id); store.set('sdzGoals', [...sdzGoals]); renderSucces(); return; }
   if (t.id === 'sdzShowOwned') { sdzShowOwned = t.checked; store.set('sdzShowOwned', sdzShowOwned); renderScHelp(); return; }
   if (t.dataset.sach) {
-    const id = +t.dataset.sach;
-    if (t.checked) {
-      // le succès n'est marqué qu'à la validation : ses propres quêtes apparaissent ainsi comme « à valider », pas « déjà faites »
-      SMEMO = new Map();
-      const acc = collectPrereqs('a', id);
-      if (acc.a.size + acc.q.size + acc.o.size + acc.d.size) { openDlg('a', id); return; }   // aperçu de la cascade
-      confirmCheck(`Marquer le succès « ${SACH[id].n} » comme obtenu ?`, () => sdone.add(id)); return;
-    }
-    uncheck('a', id);
+    setAchDone(+t.dataset.sach, t.checked);
   }
   else if (t.dataset.sq) {
     setQuestDone(+t.dataset.sq, t.checked);

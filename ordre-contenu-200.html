@@ -22,6 +22,7 @@
   --t1:var(--green); --t1s:#e3f0d6; --t4:var(--red); --tn:var(--muted); --tns:var(--sec);
   --shadow:0 6px 18px rgba(60,40,10,.10);
   --tg-dj:#a8352c; --tg-cb:#a85a1c; --tg-fm:#3d7a1f; --tg-cr:#7a5a07; --tg-ex:#5f5849; --tg-gr:#5f5849; --ic-grp:#3f78ad; --yel:#c99400;
+  --star-filter:brightness(0) saturate(100%) invert(48%) sepia(68%) saturate(520%) hue-rotate(58deg) brightness(95%); --cup-filter:brightness(.5); --grp-filter:brightness(.78);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -33,6 +34,7 @@
     --accent-soft:rgba(240,197,58,.14); --t1s:rgba(140,207,77,.12);
     --shadow:0 10px 30px rgba(0,0,0,.45);
     --tg-dj:#e0605a; --tg-cb:#e0832f; --tg-fm:#8ccf4d; --tg-cr:#f0c53a; --tg-ex:#9da0a8; --tg-gr:#9da0a8; --ic-grp:#6fb0e8; --yel:#f0c53a;
+    --star-filter:brightness(0) saturate(100%) invert(75%) sepia(45%) saturate(600%) hue-rotate(60deg) brightness(100%); --cup-filter:none; --grp-filter:none;
   }
 }
 :root[data-theme="dark"]{
@@ -44,6 +46,7 @@
   --accent-soft:rgba(240,197,58,.14); --t1s:rgba(140,207,77,.12);
   --shadow:0 10px 30px rgba(0,0,0,.45);
   --tg-dj:#e0605a; --tg-cb:#e0832f; --tg-fm:#8ccf4d; --tg-cr:#f0c53a; --tg-ex:#9da0a8; --tg-gr:#9da0a8; --ic-grp:#6fb0e8; --yel:#f0c53a;
+  --star-filter:brightness(0) saturate(100%) invert(75%) sepia(45%) saturate(600%) hue-rotate(60deg) brightness(100%); --cup-filter:none; --grp-filter:none;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -284,11 +287,19 @@ dialog::backdrop{background:rgba(8,6,4,.6)}
 .ti.fb img{display:none} .ti.fbk.fb svg{display:block}
 .ti.c-trophy{color:var(--gold)} .ti.c-quest{color:var(--green)} .ti.c-dj{color:var(--tg-dj)} .ti.c-dofus{color:var(--green)} .ti.c-set{color:var(--muted)}
 .sc-mode .ti{width:30px;height:30px}
-.sc-mode:not([aria-pressed="true"]) .ti{opacity:.55;filter:saturate(.7)}
+.sc-mode:not([aria-pressed="true"]) .ti{opacity:.72;filter:saturate(.8)}
 .sc-mode:hover .ti{opacity:1}
 .ri{display:inline-flex;width:20px;height:20px}
 .qi svg,.ri svg,.pts svg{width:100%;height:100%;fill:currentColor;stroke:none}
 .ri.dj{color:var(--tg-dj)} .ri.grp{color:var(--ic-grp)}
+.ri.ti{width:20px;height:20px}
+.chip .ri.ti{width:16px;height:16px;margin-right:3px;vertical-align:-3px}
+.qi.ring{box-sizing:border-box;border:2px solid var(--green);border-radius:50%;padding:2px}
+.qi.ring.t2{border-color:var(--gold)}
+.qi.t3 img{filter:var(--star-filter)}
+.pts .ti{width:16px;height:16px}
+.pts .ti img{filter:var(--cup-filter)}
+.ri.grp img{filter:var(--grp-filter)}
 .qi.t0,.qi.t1,.qi.t3{color:var(--green)} .qi.t2{color:var(--gold)}
 .pts{display:inline-flex;align-items:center;gap:3px;font-size:.8rem;font-weight:800;color:var(--gold-txt);white-space:nowrap}
 .pts svg{width:16px;height:16px}
@@ -382,7 +393,7 @@ input.gc:focus-visible{outline-offset:3px}
   .tabbar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:58px;border:0;background:none;color:var(--muted);font-weight:800;font-size:.64rem;cursor:pointer}
   .tabbar .ti{width:34px;height:34px}
   
-  .tabbar button:not([aria-selected="true"]) .ti{opacity:.6;filter:saturate(.7)}
+  .tabbar button:not([aria-selected="true"]) .ti{opacity:.75;filter:saturate(.8)}
   .tabbar button[aria-selected="true"]{color:var(--gold-txt);box-shadow:inset 0 3px 0 var(--gold)}
   body[data-tab="dofus"] .sum,body[data-tab="plus"] .sum,
   body[data-tab="succes"] .dz-sec,body[data-tab="quetes"] .dz-sec,body[data-tab="donjons"] .dz-sec,body[data-tab="plus"] .dz-sec,
@@ -486,7 +497,7 @@ input[type=checkbox]:not(.gc){accent-color:var(--gold)}
 
   <section class="win body" id="viewSucces">
     <aside class="side">
-      <div class="sc-modes" role="tablist"><button class="sc-mode" data-smode="succes" aria-label="Succès" title="Succès"><span class="ti c-trophy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h12V9a6 6 0 0 1-5 5.9v2.1h3.2V19.5H18V22H6v-2.5h1.8V17H11v-2.1A6 6 0 0 1 6 9z"/><path d="M6 4.5H2.2v3.2c0 2.6 1.7 4.2 4.2 4.6V10c-1.1-.4-1.7-1.3-1.7-2.7v-.7H6zM18 4.5h3.8v3.2c0 2.6-1.7 4.2-4.2 4.6V10c1.1-.4 1.7-1.3 1.7-2.7v-.7H18z"/></svg></span></button><button class="sc-mode" data-smode="quetes" aria-label="Quêtes" title="Quêtes"><span class="ti c-quest"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9.2" y="2" width="5.6" height="13.8" rx="2.8"/><circle cx="12" cy="20" r="2.8"/></svg></span></button><button class="sc-mode" data-smode="donjons" aria-label="Donjons" title="Donjons"><span class="ti c-dj"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3.5c.3 4.6 2.6 7 5.6 7.5l.5-2.4C5.8 7.6 4.3 6 2 3.5zM22 3.5c-.3 4.6-2.6 7-5.6 7.5l-.5-2.4c2.3-1 3.8-2.6 6.1-5.1z"/><path fill-rule="evenodd" d="M12 6.5c-3.7 0-6.2 2.6-6.2 6 0 2 .9 3.4 2.2 4.3V21h8v-4.2c1.3-.9 2.2-2.3 2.2-4.3 0-3.4-2.5-6-6.2-6zM9.1 11.2a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6zm5.8 0a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6zM12 14.8l1.1 2.2h-2.2z"/></svg></span></button></div>
+      <div class="sc-modes" role="tablist"><button class="sc-mode" data-smode="succes" aria-label="Succès" title="Succès"><span class="ti fbk c-trophy"><img src="https://api.dofusdb.fr/img/achievements/82.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h12V9a6 6 0 0 1-5 5.9v2.1h3.2V19.5H18V22H6v-2.5h1.8V17H11v-2.1A6 6 0 0 1 6 9z"/><path d="M6 4.5H2.2v3.2c0 2.6 1.7 4.2 4.2 4.6V10c-1.1-.4-1.7-1.3-1.7-2.7v-.7H6zM18 4.5h3.8v3.2c0 2.6-1.7 4.2-4.2 4.6V10c1.1-.4 1.7-1.3 1.7-2.7v-.7H18z"/></svg></span></button><button class="sc-mode" data-smode="quetes" aria-label="Quêtes" title="Quêtes"><span class="ti fbk c-quest"><img src="https://dofusdb.fr/icons/effects/quete.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9.2" y="2" width="5.6" height="13.8" rx="2.8"/><circle cx="12" cy="20" r="2.8"/></svg></span></button><button class="sc-mode" data-smode="donjons" aria-label="Donjons" title="Donjons"><span class="ti fbk c-dj"><img src="https://dofusdb.fr/icons/dungeon.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3.5c.3 4.6 2.6 7 5.6 7.5l.5-2.4C5.8 7.6 4.3 6 2 3.5zM22 3.5c-.3 4.6-2.6 7-5.6 7.5l-.5-2.4c2.3-1 3.8-2.6 6.1-5.1z"/><path fill-rule="evenodd" d="M12 6.5c-3.7 0-6.2 2.6-6.2 6 0 2 .9 3.4 2.2 4.3V21h8v-4.2c1.3-.9 2.2-2.3 2.2-4.3 0-3.4-2.5-6-6.2-6zM9.1 11.2a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6zm5.8 0a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6zM12 14.8l1.1 2.2h-2.2z"/></svg></span></button></div>
       <div class="search"><input type="search" id="scSearch" placeholder="Rechercher…"></div>
       <button class="cat-btn" id="catBtn" aria-expanded="false" aria-controls="scTree"></button>
       <div id="scTree"></div>
@@ -532,9 +543,9 @@ input[type=checkbox]:not(.gc){accent-color:var(--gold)}
 
 <div class="scrim" id="scrim"></div>
 <nav class="tabbar" id="tabbar" role="tablist" aria-label="Sections">
-  <button role="tab" data-tab="succes" aria-selected="false" aria-label="Succès" title="Succès"><span class="ti c-trophy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h12V9a6 6 0 0 1-5 5.9v2.1h3.2V19.5H18V22H6v-2.5h1.8V17H11v-2.1A6 6 0 0 1 6 9z"/><path d="M6 4.5H2.2v3.2c0 2.6 1.7 4.2 4.2 4.6V10c-1.1-.4-1.7-1.3-1.7-2.7v-.7H6zM18 4.5h3.8v3.2c0 2.6-1.7 4.2-4.2 4.6V10c1.1-.4 1.7-1.3 1.7-2.7v-.7H18z"/></svg></span></button>
-  <button role="tab" data-tab="quetes" aria-selected="false" aria-label="Quêtes" title="Quêtes"><span class="ti c-quest"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9.2" y="2" width="5.6" height="13.8" rx="2.8"/><circle cx="12" cy="20" r="2.8"/></svg></span></button>
-  <button role="tab" data-tab="donjons" aria-selected="false" aria-label="Donjons" title="Donjons"><span class="ti c-dj"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3.5c.3 4.6 2.6 7 5.6 7.5l.5-2.4C5.8 7.6 4.3 6 2 3.5zM22 3.5c-.3 4.6-2.6 7-5.6 7.5l-.5-2.4c2.3-1 3.8-2.6 6.1-5.1z"/><path fill-rule="evenodd" d="M12 6.5c-3.7 0-6.2 2.6-6.2 6 0 2 .9 3.4 2.2 4.3V21h8v-4.2c1.3-.9 2.2-2.3 2.2-4.3 0-3.4-2.5-6-6.2-6zM9.1 11.2a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6zm5.8 0a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6zM12 14.8l1.1 2.2h-2.2z"/></svg></span></button>
+  <button role="tab" data-tab="succes" aria-selected="false" aria-label="Succès" title="Succès"><span class="ti fbk c-trophy"><img src="https://api.dofusdb.fr/img/achievements/82.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h12V9a6 6 0 0 1-5 5.9v2.1h3.2V19.5H18V22H6v-2.5h1.8V17H11v-2.1A6 6 0 0 1 6 9z"/><path d="M6 4.5H2.2v3.2c0 2.6 1.7 4.2 4.2 4.6V10c-1.1-.4-1.7-1.3-1.7-2.7v-.7H6zM18 4.5h3.8v3.2c0 2.6-1.7 4.2-4.2 4.6V10c1.1-.4 1.7-1.3 1.7-2.7v-.7H18z"/></svg></span></button>
+  <button role="tab" data-tab="quetes" aria-selected="false" aria-label="Quêtes" title="Quêtes"><span class="ti fbk c-quest"><img src="https://dofusdb.fr/icons/effects/quete.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9.2" y="2" width="5.6" height="13.8" rx="2.8"/><circle cx="12" cy="20" r="2.8"/></svg></span></button>
+  <button role="tab" data-tab="donjons" aria-selected="false" aria-label="Donjons" title="Donjons"><span class="ti fbk c-dj"><img src="https://dofusdb.fr/icons/dungeon.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3.5c.3 4.6 2.6 7 5.6 7.5l.5-2.4C5.8 7.6 4.3 6 2 3.5zM22 3.5c-.3 4.6-2.6 7-5.6 7.5l-.5-2.4c2.3-1 3.8-2.6 6.1-5.1z"/><path fill-rule="evenodd" d="M12 6.5c-3.7 0-6.2 2.6-6.2 6 0 2 .9 3.4 2.2 4.3V21h8v-4.2c1.3-.9 2.2-2.3 2.2-4.3 0-3.4-2.5-6-6.2-6zM9.1 11.2a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6zm5.8 0a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6zM12 14.8l1.1 2.2h-2.2z"/></svg></span></button>
   <button role="tab" data-tab="dofus" aria-selected="false" aria-label="Dofus" title="Dofus"><span class="ti fbk c-dofus"><img src="https://api.dofusdb.fr/img/achievements/459.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c4.2 0 7.5 6.3 7.5 11.5A7.5 7.5 0 0 1 12 21a7.5 7.5 0 0 1-7.5-7.5C4.5 8.3 7.8 2 12 2z"/></svg></span></button>
   <button role="tab" data-tab="plus" aria-selected="false" aria-label="Réglages" title="Réglages"><span class="ti c-set"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5.2" width="20" height="2.6" rx="1.3"/><rect x="2" y="10.7" width="20" height="2.6" rx="1.3"/><rect x="2" y="16.2" width="20" height="2.6" rx="1.3"/><circle cx="15.5" cy="6.5" r="3.2" stroke="var(--win)" stroke-width="1.6"/><circle cx="7.5" cy="12" r="3.2" stroke="var(--win)" stroke-width="1.6"/><circle cx="16.5" cy="17.5" r="3.2" stroke="var(--win)" stroke-width="1.6"/></svg></span></button>
 </nav>
@@ -1134,13 +1145,17 @@ const IC = {
 const QTYPE = { 0: ['t0', IC.t0, 'Quête'], 1: ['t1', IC.ring, 'Quête principale'], 2: ['t2', IC.ring, 'Quête primordiale'], 3: ['t3', IC.star, 'Quête spéciale'] };
 // Image avec repli : si elle ne charge pas (DofusDB indisponible), le dessin prend le relais
 const iconImg = (src, svg, cls, title) => `<span class="ti fbk ${cls}"${title ? ` title="${esc(title)}"` : ''}><img src="${src}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')">${svg}</span>`;
+const DBI = f => 'https://dofusdb.fr/icons/' + f;   // icônes du jeu hébergées par DofusDB
 const DOFUS_ACH_IC = new Set([458, 459]);   // icônes de succès des Dofus : 458 primordiaux, 459 autres
 const qIcon = (q, qid) => {
   const own = qid != null ? (QOWN[qid] || []).map(id => SACH[id]).find(a => a && DOFUS_ACH_IC.has(a.ic)) : null;
-  if (own) return iconImg(achImg(own), QTYPE[0][1], 'qi t0', `Série du ${own.n}`);
-  const t = QTYPE[q.ty || 0] || QTYPE[0]; return `<span class="qi ${t[0]}" title="${t[2]}">${t[1]}</span>`;
+  if (own) return iconImg(achImg(own), IC.t0, 'qi t0', `Série du ${own.n}`);
+  const ty = q.ty || 0, t = QTYPE[ty] || QTYPE[0];
+  if (ty === 3) return iconImg(DBI('starFilled.png'), IC.star, 'qi t3', t[2]);
+  return iconImg(DBI('effects/quete.png'), IC.t0, `qi t${ty}${ty ? ' ring' : ''}`, t[2]);   // 1 : anneau vert, 2 : anneau jaune
 };
-const qFlags = q => `${(q.tg || []).includes('dj') ? `<span class="ri dj" title="Donjon">${IC.dj}</span>` : ''}${q.grp ? `<span class="ri grp" title="Quête de groupe">${IC.grp}</span>` : ''}`;
+const flagIcon = c => c === 'dj' ? iconImg(DBI('dungeon.png'), IC.dj, 'ri dj', 'Donjon') : iconImg(DBI('quest_grp.png'), IC.grp, 'ri grp', 'Quête de groupe');
+const qFlags = q => `${(q.tg || []).includes('dj') ? flagIcon('dj') : ''}${q.grp ? flagIcon('gr') : ''}`;
 const lvTxt = q => q.lv ? 'Niv. ' + q.lv + (q.lx ? '-' + q.lx : '') : '';
 
 // ---------- étiquettes ----------
@@ -1158,7 +1173,7 @@ function achCard(a){
   return `<div class="row arow${dn ? ' done' : ''}${GOALA[a.id] ? ' goal' : ''}${isPick('a', a.id) ? ' sel' : ''}" id="ach${a.id}" data-pick="a:${a.id}" tabindex="0" role="button">
     <img src="${achImg(a)}" alt="" loading="lazy" referrerpolicy="no-referrer">
     <div style="min-width:0"><div class="t">${esc(a.n)}</div><div class="m">${esc(a.d)}</div></div>
-    <div class="r">${a.pts ? `<span class="pts" title="Points de succès">${a.pts}${IC.cup}</span>` : ''}${goalIcons(GOALA[a.id])}${dzIcons(notGoal(DZ_REW_A[a.id], GOALA[a.id]))}${n > 1 ? `<span class="mini"><span class="bar"><i style="width:${pctOf(d, n)}%"></i></span>${d}/${n}</span>` : ''}
+    <div class="r">${a.pts ? `<span class="pts" title="Points de succès">${a.pts}${iconImg(DBI('icon_cup.png'), IC.cup, 'cup', '')}</span>` : ''}${goalIcons(GOALA[a.id])}${dzIcons(notGoal(DZ_REW_A[a.id], GOALA[a.id]))}${n > 1 ? `<span class="mini"><span class="bar"><i style="width:${pctOf(d, n)}%"></i></span>${d}/${n}</span>` : ''}
       <input type="checkbox" class="gc" data-sach="${a.id}" ${dn ? 'checked' : ''} title="Succès obtenu" aria-label="Succès obtenu"></div>
   </div>`;
 }
@@ -1225,7 +1240,7 @@ function renderQuestList(el){
   const shown = (sTag === 'goal' ? goalIds : sTag ? shownAll.filter(id => hasTag(id, sTag)) : shownAll).filter(id => !sProg || qStatus(id) === sProg);
   const progChips = `<div class="chips" role="group" aria-label="Filtrer par avancement">${[['av', 'Disponible'], ['st', 'Commencé'], ['bl', 'Bloqué']].map(([c, l]) => `<button class="chip p-${c}" data-progf="${c}" aria-pressed="${sProg === c}">${l}<small>${progCount(c)}</small></button>`).join('')}</div>`;
   const chipKeys = ['goal', ...Object.keys(TAGS)].filter(tagCount);
-  const chips = chipKeys.length ? `<div class="chips" role="group" aria-label="Filtrer les quêtes"><button class="chip" data-tagf="" aria-pressed="${!sTag}">Toutes<small>${shownAll.length}</small></button>${chipKeys.map(c => `<button class="chip${c === 'goal' ? ' goal' : ''}" data-tagf="${c}" aria-pressed="${sTag === c}">${c === 'goal' ? '◆ Mes objectifs' : (c === 'dj' ? `<span class="ri dj">${IC.dj}</span>` : c === 'gr' ? `<span class="ri grp">${IC.grp}</span>` : '') + TAGS[c]}<small>${tagCount(c)}</small></button>`).join('')}</div>` : '';
+  const chips = chipKeys.length ? `<div class="chips" role="group" aria-label="Filtrer les quêtes"><button class="chip" data-tagf="" aria-pressed="${!sTag}">Toutes<small>${shownAll.length}</small></button>${chipKeys.map(c => `<button class="chip${c === 'goal' ? ' goal' : ''}" data-tagf="${c}" aria-pressed="${sTag === c}">${c === 'goal' ? '◆ Mes objectifs' : (c === 'dj' || c === 'gr' ? flagIcon(c) : '') + TAGS[c]}<small>${tagCount(c)}</small></button>`).join('')}</div>` : '';
   const info = `${d} / ${ids.length} faites (${pctOf(d, ids.length)} %) · ${plural(shown.length, 'affichée')}${sCat === QALL && !qn ? ' · par niveau' : ''}`;
   const btns = cid != null ? `<button class="btn" data-sqall="${cid}">Tout cocher</button><button class="btn" data-sqnone="${cid}">Tout décocher</button>` : '';
   const lv = id => (SC.quetes[id] || {}).lv || 0;
@@ -1337,7 +1352,7 @@ function achDetailHtml(a){
     return `<div class="ob${ok ? ' done' : ''}"><input type="checkbox" class="gc" data-so="${oid}" ${ok ? 'checked' : ''}><span>${esc((o.n || '').trim() || a.d || a.n)}</span></div>`;
   };
   const parents = (SPARENTS[a.id] || []).map(id => SACH[id]).filter(Boolean);
-  return `<div class="hd"><img src="${achImg(a)}" alt="" referrerpolicy="no-referrer"><h3>${esc(a.n)}</h3><div class="k">Succès · niveau ${a.lv}${a.pts ? ` · <span class="pts">${a.pts}${IC.cup}</span>` : ''}</div></div>
+  return `<div class="hd"><img src="${achImg(a)}" alt="" referrerpolicy="no-referrer"><h3>${esc(a.n)}</h3><div class="k">Succès · niveau ${a.lv}${a.pts ? ` · <span class="pts">${a.pts}${iconImg(DBI('icon_cup.png'), IC.cup, 'cup', '')}</span>` : ''}</div></div>
     <div class="orn">${n ? `${d} / ${n}` : '✦'}</div>
     <div class="quote${dn ? ' ok' : ''}">${esc(a.d)}${dn ? ' — obtenu.' : ''}</div>
     ${goalBox(GOALA[a.id], DZ_REW_A[a.id])}

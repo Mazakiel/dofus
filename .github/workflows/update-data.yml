@@ -1,0 +1,64 @@
+name: Mise à jour des données DofusDB
+
+# Chaque lundi, retélécharge les données DofusDB sur un cache vierge (sinon les nouveautés ne se verraient pas),
+# les compare à celles du dépôt, et publie la mise à jour si elle est saine. Voir README, « Mise à jour automatique ».
+#   - rien de nouveau  → rien n'est commité ;
+#   - anomalie         → le job échoue (mail GitHub), rien n'est publié ;
+#   - nouveautés saines → tests, commit des données, puis déploiement.
+on:
+  schedule:
+    - cron: '0 5 * * 1'   # lundi 5 h UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write   # pousser la mise à jour des données
+  actions: write    # lancer le déploiement (un push fait avec le jeton du workflow ne le déclenche pas tout seul)
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Garder les données actuelles pour la comparaison
+        run: cp data/dofusdb.json "$RUNNER_TEMP/ancien.json"
+
+      - name: Télécharger les données DofusDB (cache vierge)
+        run: DOFUSDB_CACHE="$RUNNER_TEMP/cache" node scripts/update-data.js data/dofusdb.json
+
+      - name: Comparer et contrôler
+        id: diff
+        run: node scripts/diff-data.js "$RUNNER_TEMP/ancien.json" data/dofusdb.json --summary "$GITHUB_STEP_SUMMARY" --github-output "$GITHUB_OUTPUT"
+
+      - name: Tests (unitaires et bout en bout, page construite avec les nouvelles données)
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          npm test
+          npm run test:e2e
+
+      - name: Commiter la mise à jour
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          TITLE: ${{ steps.diff.outputs.title }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/dofusdb.json
+          git commit -m "$TITLE" -m "Mise à jour automatique des données (workflow « Mise à jour des données DofusDB »). Détail dans le résumé de l'exécution."
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Lancer le déploiement
+        if: steps.diff.outputs.changed == 'true' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages.yml --ref main

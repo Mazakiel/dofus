@@ -37,17 +37,31 @@ npm run build   # assemble dist/index.html depuis le modèle et le JSON
 
 `npm run data` ne sert qu'à rafraîchir les données DofusDB (sans le dossier `cache/`, tout est retéléchargé ; `DOFUSDB_CACHE` change l'emplacement du cache). Les deux étapes s'enchaînent toujours dans le même ordre, car l'enrichissement complète le JSON que le téléchargement réécrit.
 
+## Mise à jour automatique des données
+
+Le workflow `Mise à jour des données DofusDB` (`.github/workflows/update-data.yml`) tourne chaque lundi à 5 h UTC, et à la demande depuis l'onglet Actions de GitHub.
+
+1. Il retélécharge DofusDB sur un cache vierge (un cache ancien masquerait les nouveautés) et enrichit les données.
+2. Il compare avec `data/dofusdb.json` (`scripts/diff-data.js`) : succès, quêtes, objectifs, Dofus, donjons et catégories ajoutés, retirés ou modifiés. Le résumé s'affiche sur la page de l'exécution.
+3. **Rien de nouveau** : rien n'est commité.
+4. **Anomalie** (un effectif qui chute de plus de 10 %, des références cassées, un enrichissement perdu, une section vide…) : le job échoue, GitHub t'envoie un mail, rien n'est publié. C'est le signe d'un changement de format de l'API plutôt que d'une vraie nouveauté.
+5. **Nouveautés saines** : tests unitaires et de bout en bout, commit des données (`Données DofusDB du … : +N quêtes, …`), puis déploiement.
+
+Les retraits sont publiés aussi : les coches enregistrées sur un identifiant retiré deviennent orphelines (elles restent stockées mais ne s'affichent plus). Le résumé les liste. Pour tout relire avant publication, retire l'étape « Lancer le déploiement » ou la publication du workflow.
+
+Les tests de règles tournent sur un jeu de données figé (`tests/fixtures/dofusdb.json`) : une mise à jour des données ne les fait pas échouer. Pour le renouveler, copie `data/dofusdb.json` dessus puis `UPDATE_GOLDEN=1 npm run test:e2e`.
+
 ## Tests
 
 ```bash
 npm test             # règles de progression, sans navigateur (lancé par la CI avant chaque publication)
-npm run build && npm run test:e2e   # bout en bout dans Chrome ; CHROME_BIN pour indiquer le binaire
-UPDATE_GOLDEN=1 npm run test:e2e    # après un `npm run data` ou un changement voulu des règles : refait tests/browser/golden.json
+npm run test:e2e     # bout en bout dans Chrome (la page de test est construite par le test) ; CHROME_BIN pour indiquer le binaire
+UPDATE_GOLDEN=1 npm run test:e2e    # après un changement voulu des règles : refait tests/browser/golden.json
 ```
 
 La CI lance les tests unitaires avant chaque publication (`.github/workflows/deploy-pages.yml`), et le workflow `Tests` rejoue unitaires et bout en bout sur chaque push, sans bloquer le déploiement.
 
-`tests/browser/golden.json` est la « photo » des règles sur les vraies données (statut de chaque quête, cascades dans les deux sens, objectifs…) : elle a été prise avant l'extraction du module et sert de référence.
+`tests/browser/golden.json` est la « photo » des règles sur le jeu de données figé (statut de chaque quête, cascades dans les deux sens, objectifs…) : elle a été prise avant l'extraction du module et sert de référence.
 
 ## Mobile
 

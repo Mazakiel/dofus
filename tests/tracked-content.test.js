@@ -49,8 +49,8 @@ test('les données d’origine ne sont pas modifiées', () => {
   assert.equal(JSON.stringify(D), copie);
 });
 
-test('sur les vraies données : la règle donne les mêmes effectifs que la page avant l’extraction', { skip: !fs.existsSync(path.join(__dirname, '..', 'data', 'dofusdb.json')) }, () => {
-  const D = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'dofusdb.json'), 'utf8'));
+test('sur les données figées : la règle donne les mêmes effectifs que la page avant l’extraction', { skip: !fs.existsSync(path.join(__dirname, 'fixtures', 'dofusdb.json')) }, () => {
+  const D = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'dofusdb.json'), 'utf8'));
   const L = trackedContent(D);
   assert.equal(L.succes.length, 434);
   assert.equal(L.succes.filter(a => a.t).length, 282);

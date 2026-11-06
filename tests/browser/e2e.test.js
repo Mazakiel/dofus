@@ -1,17 +1,22 @@
-// Contrôles de bout en bout dans un vrai navigateur : npm run build && npm run test:e2e
-// Ils vérifient la page assemblée (dist/index.html). Ignorés si Chrome ou la page construite manque.
-// « Golden master » : la photo des règles (statuts, cascades…) sur les vraies données est comparée à golden.json.
-// Après un `npm run data` (données rafraîchies) ou un changement voulu des règles : UPDATE_GOLDEN=1 npm run test:e2e
+// Contrôles de bout en bout dans un vrai navigateur : npm run test:e2e (la page est construite par le test lui-même).
+// Les scénarios tournent sur un jeu de données figé (tests/fixtures/dofusdb.json) : une mise à jour des données DofusDB ne les touche pas.
+// « Golden master » : la photo des règles (statuts, cascades…) sur ce jeu figé est comparée à golden.json.
+// Changement voulu des règles : UPDATE_GOLDEN=1 npm run test:e2e
+// Un dernier scénario construit la page avec les données ACTUELLES (data/dofusdb.json) et vérifie qu'elle se charge.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { open, findChrome } = require('./browser.js');
 
-const PAGE = path.join(__dirname, '..', '..', 'dist', 'index.html');
+const { execFileSync } = require('node:child_process');
+const os = require('node:os');
+const ROOT = path.join(__dirname, '..', '..');
+const buildPage = dataFile => { const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'dofus-page-')), 'index.html'); execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'build.js'), dataFile, out], { stdio: 'ignore' }); return out; };
 const GOLDEN = path.join(__dirname, 'golden.json');
-const skip = !findChrome() ? 'Chrome introuvable (CHROME_BIN)' : !fs.existsSync(PAGE) ? 'dist/index.html absent : npm run build' : false;
-const withPage = async (fn, opts) => { const p = await open('file://' + PAGE, opts); try { await fn(p); } finally { await p.close(); } };
+const skip = !findChrome() ? 'Chrome introuvable (CHROME_BIN)' : false;
+const PAGE = skip ? null : buildPage(path.join(__dirname, '..', 'fixtures', 'dofusdb.json'));   // page de test : données figées
+const withPage = async (fn, opts, page = PAGE) => { const p = await open('file://' + page, opts); try { await fn(p); } finally { await p.close(); } };
 
 // état déterministe posé dans le stockage, puis rechargement
 const SEED = `(()=>{
@@ -176,3 +181,11 @@ test('la copie IndexedDB restaure les coches si le localStorage est vidé', { sk
   await p.reload(); await p.wait(2500);    // le rechargement détecte la perte et restaure
   assert.equal(await p.eval(`sq.has(${q})`), true);
 }));
+
+test('la page construite avec les données actuelles se charge et affiche du contenu', { skip }, () => withPage(async p => {
+  const r = await p.eval(`({ quetes: Object.keys(SC.quetes).length, succes: SC.succes.length, dofus: SC.dofus.length, menu: SC.menu.length,
+    arbre: document.querySelectorAll('#scTree .sc-cat').length, lignes: document.querySelectorAll('#scList .row').length, titre: document.title })`);
+  assert.ok(r.quetes > 500 && r.succes > 100 && r.dofus > 10 && r.menu > 5, JSON.stringify(r));
+  assert.ok(r.arbre > 5 && r.lignes > 0, 'le menu et une liste s’affichent : ' + JSON.stringify(r));
+  assert.equal(r.titre, 'Progression Dofus');
+}, {}, buildPage(path.join(__dirname, '..', '..', 'data', 'dofusdb.json'))));

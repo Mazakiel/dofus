@@ -3,6 +3,8 @@
 Page autonome pour suivre ses succès de quêtes, ses quêtes et ses Dofus, avec plusieurs profils (un par personnage).
 Données issues uniquement de l'API DofusDB. Les coches sont enregistrées dans le navigateur (localStorage + copie IndexedDB).
 
+Etats d'une quête : faite (cochée), commencée ou bloquée (à indiquer dans la fiche), disponible ou indisponible (déduit du niveau et des prérequis). La pastille de la liste le montre : vert disponible, jaune commencée, rouge bloquée, vide pointillé indisponible, coche verte faite.
+
 ## Fichiers
 
 - `ordre-contenu-200.html` : la page finale, données incluses. S'ouvre directement dans un navigateur.

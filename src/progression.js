@@ -47,31 +47,39 @@
     }
 
     // ---- état suivi + caches : une mutation invalide tout ----
-    const memoDone = new Map(), memoAvail = new Map();
-    let level = 200;
+    const memoDone = new Map(), memoAvail = new Map(), listeners = new Set();
+    let level = 200, quiet = 0;
     const invalidate = () => { memoDone.clear(); memoAvail.clear(); };
+    // une modification invalide les caches puis prévient les abonnés (la page s'en sert pour sauvegarder) ; `load` et `simulate` restent silencieux
+    const changed = () => { invalidate(); if (!quiet) listeners.forEach(fn => fn()); };
+    const silently = fn => { quiet++; try { return fn(); } finally { quiet--; invalidate(); } };
     const state = {
-      sdone: new TrackedSet(invalidate),        // succès marqués obtenus
-      sq: new TrackedSet(invalidate),           // quêtes faites
-      sodone: new TrackedSet(invalidate),       // autres objectifs cochés (monstre, donjon, exploration…)
-      sdzGoals: new TrackedSet(invalidate),     // Dofus visés
-      sdzState: trackedObject(invalidate),      // Dofus : 'owned' | 'missing' forcé à la main
-      qState: trackedObject(invalidate),        // quêtes : 's' commencée | 'b' bloquée
+      sdone: new TrackedSet(changed),        // succès marqués obtenus
+      sq: new TrackedSet(changed),           // quêtes faites
+      sodone: new TrackedSet(changed),       // autres objectifs cochés (monstre, donjon, exploration…)
+      sdzGoals: new TrackedSet(changed),     // Dofus visés
+      sdzState: trackedObject(changed),      // Dofus : 'owned' | 'missing' forcé à la main
+      qState: trackedObject(changed),        // quêtes : 's' commencée | 'b' bloquée
       get level() { return level; },
-      set level(v) { if (v !== level) { level = v; invalidate(); } },
+      set level(v) { if (v !== level) { level = v; changed(); } },
     };
     const clearObject = o => { for (const k of Object.keys(o)) delete o[k]; };
     const snapshot = () => ({ sdone: [...state.sdone], sq: [...state.sq], sodone: [...state.sodone], sLevel: level,
       sdzState: { ...state.sdzState }, sdzGoals: [...state.sdzGoals], qState: { ...state.qState } });
+    // Charge un état (depuis le stockage, la synchro, un import) : silencieux, ce n'est pas une modification de l'utilisateur
     function load(s = {}) {
-      state.sdone.replace(s.sdone || []); state.sq.replace(s.sq || []); state.sodone.replace(s.sodone || []);
-      state.sdzGoals.replace(s.sdzGoals || []);
-      clearObject(state.sdzState); Object.assign(state.sdzState, s.sdzState || {});
-      clearObject(state.qState); Object.assign(state.qState, s.qState || {});
-      state.level = s.sLevel == null ? 200 : s.sLevel; invalidate();
+      silently(() => {
+        state.sdone.replace(s.sdone || []); state.sq.replace(s.sq || []); state.sodone.replace(s.sodone || []);
+        state.sdzGoals.replace(s.sdzGoals || []);
+        clearObject(state.sdzState); Object.assign(state.sdzState, s.sdzState || {});
+        clearObject(state.qState); Object.assign(state.qState, s.qState || {});
+        state.level = s.sLevel == null ? 200 : s.sLevel;
+      });
     }
     // Exécute `fn` sur un état modifié, puis remet l'état d'origine (ex. « quels succès seraient complétés par cette validation »)
-    function simulate(fn) { const snap = snapshot(); try { return fn(); } finally { load(snap); } }
+    function simulate(fn) { const snap = snapshot(); try { return silently(fn); } finally { load(snap); } }
+    // `fn` est appelé après chaque modification de l'état ; retourne la fonction qui désabonne
+    function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }
 
     // ---- faits : obtenu / disponible ----
     const questDone = qid => state.sq.has(qid) || (QOWN[qid] || []).some(a => state.sdone.has(a));
@@ -213,7 +221,7 @@
 
     return {
       state, index: { SACH, SDZ, QOWN, QNEXT, SPARENTS },
-      load, snapshot, simulate,
+      load, snapshot, simulate, subscribe,
       questDone, achDone, objDone, achProg, dofusAuto, dofusOwned, setDofusOwned,
       questAvailable, achAvailable, questStatus, lockReasons, questShown, achShown,
       collectPrereqs, collectDependents, applyRemoval, goalsFor,

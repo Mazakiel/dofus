@@ -16,7 +16,8 @@ Etats d'une quête : faite (cochée), commencée ou bloquée (à indiquer dans l
 - `scripts/build.js` : assemble la page (`dist/index.html`) depuis le modèle `src/page.html`, le module `src/progression.js` et le JSON.
 - `src/page.html` : le modèle de la page (style, vues, profils, synchro).
 - `src/progression.js` : le module de règles de progression (statuts, disponibilité, cascade, objectifs). Il possède l'état suivi et ses caches ; le build l'insère dans la page, et les tests le chargent directement.
-- `tests/` : tests du module (`npm test`) et contrôles de bout en bout dans Chrome (`npm run test:e2e`).
+- `src/progress-store.js` : le module de progression persistée (profils, sauvegarde par profil, synchro entre appareils, export et import). Il parle à un stockage et à un distant interchangeables : le navigateur et Firestore dans la page, une mémoire et un faux distant dans les tests.
+- `tests/` : tests des deux modules (`npm test`) et contrôles de bout en bout dans Chrome (`npm run test:e2e`).
 - `docs/maquettes/style.html` : maquette statique de la direction visuelle.
 - `docs/maquettes/mobile.html` : maquette des deux navigations mobile étudiées (la version à onglets a été retenue).
 - `docs/maquettes/donjons.html` : maquette de la vue Donjons.

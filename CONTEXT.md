@@ -17,4 +17,5 @@ Vocabulaire du projet, tel qu'il apparaît dans le code et dans la page. À mett
 ## Modules
 
 - **Module progression** (`src/progression.js`) : possède l'état suivi et ses caches, et toutes les règles ci-dessus. Son état est suivi : toute modification, même directe, invalide les caches. Il ne connaît ni le DOM, ni le stockage, ni les options d'affichage (celles-ci sont passées en paramètre à `questShown` / `achShown`).
-- **La page** (`src/page.html`) : vues, fiches, onglets, profils et synchro. Elle interroge le module progression et persiste son état.
+- **Module progression persistée** (`src/progress-store.js`) : possède les profils, la liste des clés d'une progression, la sérialisation (synchro, export, import) et la décision de synchro (envoyer, recevoir, fusionner). Il parle à un **stockage** et à un **distant** : le navigateur (localStorage + copie IndexedDB) et Firestore dans la page, une mémoire et un faux distant dans les tests. La disposition des clés est historique et ne change pas.
+- **La page** (`src/page.html`) : vues, fiches, onglets, profils et adapters. Elle interroge le module progression ; une modification de l'état déclenche la sauvegarde toute seule (le module progression prévient ses abonnés).

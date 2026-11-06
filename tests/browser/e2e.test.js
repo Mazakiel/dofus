@@ -65,8 +65,10 @@ test("états d'une quête : commencée, bloquée, filtres d'avancement, visibili
     document.querySelector('[data-progf=st]').click();
     sShowLocked=false; sPick={k:'q',id:lock}; renderSucces(); document.querySelector('#scDetail [data-qst=s]').click(); out.indispoMarquee=!!document.getElementById('q'+lock);
     document.querySelector('#scDetail [data-qst=s]').click(); out.retiree=qState[lock]===undefined;
-    out.persiste=JSON.parse(localStorage.getItem('c200:p:default:qState'))[av[0]];
+    window.AV0=av[0];
     return out; })()`);
+  await p.wait(100);   // la sauvegarde est automatique, à la fin du geste
+  r.persiste = await p.eval(`JSON.parse(localStorage.getItem('c200:p:default:qState'))[AV0]`);
   assert.equal(r.st, 'st'); assert.match(r.cls, /\bst\b/); assert.equal(r.bl, 'bl');
   assert.match(r.chips, /av:\d+,st:1,bl:1/); assert.equal(r.filtre, 1);
   assert.equal(r.indispoMarquee, true); assert.equal(r.retiree, true); assert.equal(r.persiste, 's');
@@ -125,11 +127,43 @@ test('synchro : envoi, réception, fusion en cas de conflit (Firestore simulé)'
     getDoc:async()=>({exists:()=>!!REMOTE,data:()=>JSON.parse(JSON.stringify(REMOTE))}),
     setDoc:async(r,d)=>{REMOTE=REMOTE||{profiles:{}};Object.assign(REMOTE.profiles,JSON.parse(JSON.stringify(d.profiles)))},
     serverTimestamp:()=>1,updateDoc:async()=>{},deleteField:()=>0}}; 1`);
-  await p.eval(`store.set('sq',[1,2,3]); sq.replace([1,2,3]); syncNow(true)`); await p.wait(500);
+  await p.eval(`sq.replace([1,2,3]); 1`); await p.wait(100); await p.eval(`syncNow(true)`); await p.wait(500);
   assert.deepEqual(await p.eval(`REMOTE.profiles.default.sq`), [1, 2, 3]);
   await p.eval(`(()=>{const r=REMOTE.profiles.default; r.sq=[1,2,3,999]; r.savedAt=new Date(Date.now()+5000).toISOString(); return syncNow(false)})()`); await p.wait(500);
   assert.deepEqual(await p.eval(`[...sq].sort((a,b)=>a-b)`), [1, 2, 3, 999]);
-  await p.eval(`(()=>{store.set('sq',[...sq,50]); sq.add(50); const r=REMOTE.profiles.default; r.sq=[1,2,3,999,777]; r.savedAt=new Date(Date.now()+9000).toISOString(); setTimeout(()=>document.getElementById('cfOk').click(),400); return syncNow(true)})()`); await p.wait(1200);
+  await p.eval(`sq.add(50); 1`); await p.wait(100);
+  await p.eval(`(()=>{const r=REMOTE.profiles.default; r.sq=[1,2,3,999,777]; r.savedAt=new Date(Date.now()+9000).toISOString(); setTimeout(()=>document.getElementById('cfOk').click(),400); return syncNow(true)})()`); await p.wait(1200);
   assert.deepEqual(await p.eval(`[...sq].sort((a,b)=>a-b)`), [1, 2, 3, 50, 777, 999]);
   assert.deepEqual(await p.eval(`REMOTE.profiles.default.sq.slice().sort((a,b)=>a-b)`), [1, 2, 3, 50, 777, 999]);
+}));
+
+test('la progression se sauvegarde toute seule et survit au rechargement', { skip }, () => withPage(async p => {
+  const q = await p.eval(`(()=>{ const q=Object.keys(SC.quetes).map(Number).find(x=>qStatus(x)==='av'); sq.add(q); qState[q+1]='s'; P.state.level=88; return q; })()`);
+  await p.wait(150);
+  assert.deepEqual(await p.eval(`JSON.parse(localStorage.getItem('c200:p:default:sq'))`), [q]);
+  assert.equal(await p.eval(`JSON.parse(localStorage.getItem('c200:p:default:sLevel'))`), 88);
+  assert.ok(await p.eval(`!!localStorage.getItem('c200:p:default:savedAt')`), 'date de dernière modification posée');
+  await p.reload();
+  assert.equal(await p.eval(`sq.has(${q}) && qState[${q + 1}]==='s' && P.state.level===88`), true);
+}));
+
+test('profils : un nouveau profil est vide, chaque profil retrouve sa progression, supprimer efface ses clés', { skip }, () => withPage(async p => {
+  const q = await p.eval(`(()=>{ const q=Object.keys(SC.quetes).map(Number).find(x=>qStatus(x)==='av'); sq.add(q); return q; })()`);
+  await p.wait(150);
+  const id = await p.eval(`(()=>{ const id=PS.add('Alt'); PS.switchTo(id); return id; })()`);
+  await p.reload();
+  assert.deepEqual(await p.eval(`[PS.current(), PS.name(PS.current()), sq.size]`), [id, 'Alt', 0]);
+  await p.eval(`sq.add(${q + 5}); 1`); await p.wait(150);
+  await p.eval(`PS.switchTo('default'); 1`); await p.reload();
+  assert.deepEqual(await p.eval(`[...sq]`), [q], 'le profil par défaut a gardé sa progression');
+  assert.equal(await p.eval(`PS.remove(${JSON.stringify(id)})`), true);
+  assert.equal(await p.eval(`Object.keys(localStorage).filter(k=>k.startsWith('c200:p:${id}:')).length`), 0);
+}));
+
+test('la copie IndexedDB restaure les coches si le localStorage est vidé', { skip }, () => withPage(async p => {
+  const q = await p.eval(`(()=>{ const q=Object.keys(SC.quetes).map(Number).find(x=>qStatus(x)==='av'); sq.add(q); return q; })()`);
+  await p.wait(400);                       // le temps que la copie miroir soit écrite
+  await p.eval(`localStorage.clear(); 1`);
+  await p.reload(); await p.wait(2500);    // le rechargement détecte la perte et restaure
+  assert.equal(await p.eval(`sq.has(${q})`), true);
 }));

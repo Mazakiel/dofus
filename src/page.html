@@ -546,41 +546,32 @@ input[type=checkbox]:not(.gc){accent-color:var(--gold)}
 </nav>
 
 <script>/*__PROGRESSION__*/</script>
+<script>/*__PROGRESS_STORE__*/</script>
 <script>
 const DOFUSDB = /*__DATA__*/null;   // données DofusDB uniquement (catégories, succès, objectifs, quêtes, donjons, Dofus)
-// Sauvegarde : localStorage (lecture immédiate) + copie miroir dans IndexedDB (mêmes clés, sans le préfixe c200:).
-// Profils (un par personnage) : coches et niveau rangés sous c200:p:<profil>:<clé> ; l'affichage (thème, cases, catégorie) est commun.
-// Migration : au premier chargement, les anciennes coches (c200:sdone…) sont copiées dans le profil « Défaut » ; les anciennes clés restent en secours.
-const PKEYS = ['sdone','sq','sodone','sLevel','sdzState','sdzGoals','qState','savedAt'];
+// Stockage du navigateur : adapter du module ProgressStore (src/progress-store.js), qui possède les profils et les clés.
+// localStorage (lecture immédiate) + copie miroir dans IndexedDB (mêmes clés, sans le préfixe).
+// Noms historiques, à ne pas changer : ils portent des données déjà enregistrées (l'application a commencé comme un suivi du niveau 200).
+const STORAGE_PREFIX = 'c200:', IDB_NAME = 'contenu200';
 const TRACK_RE = /(^|:)(sdone|sq|sodone)$/;
 const idb = {
-  open(){ return new Promise((res, rej) => { try { const r = indexedDB.open('contenu200', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch(e){ rej(e); } }); },
+  open(){ return new Promise((res, rej) => { try { const r = indexedDB.open(IDB_NAME, 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch(e){ rej(e); } }); },
   async put(k, v){ try { const db = await this.open(); db.transaction('kv','readwrite').objectStore('kv').put(v, k); } catch(e){} },
   async del(k){ try { const db = await this.open(); db.transaction('kv','readwrite').objectStore('kv').delete(k); } catch(e){} },
   async all(){ try { const db = await this.open(); return await new Promise(res => { const out = {}; const st = db.transaction('kv').objectStore('kv'); const c = st.openCursor();
     c.onsuccess = () => { const cur = c.result; if (cur) { out[cur.key] = cur.value; cur.continue(); } else res(out); }; c.onerror = () => res(out); }); } catch(e){ return {}; } }
 };
-const raw = {
-  get(k, d){ try{ const v = localStorage.getItem('c200:'+k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
-  set(k, v){ try{ localStorage.setItem('c200:'+k, JSON.stringify(v)); }catch(e){} idb.put(k, v); },
-  del(k){ try{ localStorage.removeItem('c200:'+k); }catch(e){} idb.del(k); }
+const browserStorage = {
+  get(k, d){ try{ const v = localStorage.getItem(STORAGE_PREFIX + k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(STORAGE_PREFIX + k, JSON.stringify(v)); }catch(e){} idb.put(k, v); },
+  del(k){ try{ localStorage.removeItem(STORAGE_PREFIX + k); }catch(e){} idb.del(k); }
 };
-let profiles = raw.get('profiles', null);
-if (!Array.isArray(profiles) || !profiles.length) {
-  profiles = [{ id: 'default', n: 'Défaut' }];
-  for (const k of PKEYS) { const v = raw.get(k, undefined); if (v !== undefined && raw.get('p:default:' + k, undefined) === undefined) raw.set('p:default:' + k, v); }
-  raw.set('profiles', profiles); raw.set('profile', 'default');
-}
-let profile = raw.get('profile', profiles[0].id);
-if (!profiles.some(p => p.id === profile)) profile = profiles[0].id;
-const pkey = k => PKEYS.includes(k) ? `p:${profile}:${k}` : k;
-const store = {
-  get(k, d){ return raw.get(pkey(k), d); },
-  set(k, v){ raw.set(pkey(k), v); if (PKEYS.includes(k) && k !== 'savedAt') { raw.set(pkey('savedAt'), new Date().toISOString()); if (typeof syncSoon === 'function') syncSoon(); } }
-};
+const PS = ProgressStore.create(browserStorage);
+// préférences d'affichage (thème, cases, catégorie…), communes à tous les profils
+const store = { get: (k, d) => PS.pref(k, d), set: (k, v) => PS.setPref(k, v) };
 // Restauration depuis IndexedDB si le localStorage a perdu toutes les coches ; sinon on complète le miroir.
 (async () => {
-  const lsKeys = () => { try { return Object.keys(localStorage).filter(k => k.startsWith('c200:')); } catch(e){ return []; } };
+  const lsKeys = () => { try { return Object.keys(localStorage).filter(k => k.startsWith(STORAGE_PREFIX)); } catch(e){ return []; } };
   const nonEmpty = v => Array.isArray(v) && v.length > 0;
   const saved = await idb.all();
   const savedHas = Object.keys(saved).some(k => TRACK_RE.test(k) && nonEmpty(saved[k]));
@@ -588,15 +579,15 @@ const store = {
   if (!lsHas && savedHas) {
     let ok = false;
     try {
-      if (!('profiles' in saved)) { localStorage.removeItem('c200:profiles'); localStorage.removeItem('c200:profile'); }   // anciennes données seules : la migration refera « Défaut »
-      for (const [k, v] of Object.entries(saved)) localStorage.setItem('c200:' + k, JSON.stringify(v));
+      if (!('profiles' in saved)) { localStorage.removeItem(STORAGE_PREFIX + 'profiles'); localStorage.removeItem(STORAGE_PREFIX + 'profile'); }   // anciennes données seules : la migration refera « Défaut »
+      for (const [k, v] of Object.entries(saved)) localStorage.setItem(STORAGE_PREFIX + k, JSON.stringify(v));
       ok = lsKeys().some(k => TRACK_RE.test(k));
     } catch(e){}
     if (ok) { location.reload(); return; }
-    const g = k => saved['p:' + profile + ':' + k] || saved[k] || [];
+    const g = k => saved['p:' + PS.current() + ':' + k] || saved[k] || [];
     P.load({ ...P.snapshot(), sdone: g('sdone'), sq: g('sq'), sodone: g('sodone') }); renderSucces();   // localStorage bloqué : on travaille depuis IndexedDB
   } else {
-    for (const k of lsKeys()) { const s = k.slice(5); if (!(s in saved)) { try { idb.put(s, JSON.parse(localStorage.getItem(k))); } catch(e){} } }
+    for (const k of lsKeys()) { const s = k.slice(STORAGE_PREFIX.length); if (!(s in saved)) { try { idb.put(s, JSON.parse(localStorage.getItem(k))); } catch(e){} } }
   }
 })();
 // Confirmation / message dans la page (les boîtes natives confirm() et alert() sont bloquées dans le panneau de l'application)
@@ -629,8 +620,11 @@ applyTheme();
 const SC = DOFUSDB || { categories: [], succes: [], objectifs: {}, quetes: {} };
 // Règles de progression (src/progression.js) : possède l'état suivi, ses caches et la cascade. La page ne fait que l'interroger.
 const P = Progression.create(SC);
-P.load({ sdone: store.get('sdone', []), sq: store.get('sq', []), sodone: store.get('sodone', []), sLevel: store.get('sLevel', 200),
-  sdzState: store.get('sdzState', {}), sdzGoals: store.get('sdzGoals', []), qState: store.get('qState', {}) });
+P.load(PS.load());
+// Sauvegarde automatique : toute modification de l'état déclenche l'écriture (groupée) ; plus aucun appel à penser après chaque changement.
+function persistNow(){ if (PS.save(P.snapshot())) syncSoon(); }
+let persistQueued = false;
+P.subscribe(() => { if (persistQueued) return; persistQueued = true; queueMicrotask(() => { persistQueued = false; persistNow(); }); });
 const { SACH, SDZ, QOWN, QNEXT, SPARENTS } = P.index;
 const { sdone, sq, sodone, sdzState, sdzGoals, qState } = P.state;   // états suivis : toute modification invalide les caches du module
 const { achDone, objDone, achProg, collectPrereqs, collectDependents, lockReasons } = P;
@@ -682,7 +676,7 @@ const sdzSeasonal = d => DZ_SEASONAL_SANS_LIEN.has(d.id) || [d.a, ...(d.pa || []
 const sdzVisible = d => sSeasonal || !sdzSeasonal(d);
 let sdzShowOwned = store.get('sdzShowOwned', !store.get('sdzHide', false));
 const itemImg = d => `https://api.dofusdb.fr/img/items/${d.ic}.png`;
-function setSdzOwned(d, on){ P.setDofusOwned(d, on); store.set('sdzState', sdzState); store.set('sdzGoals', [...sdzGoals]); }
+const setSdzOwned = (d, on) => P.setDofusOwned(d, on);
 const sdzSrc = d => d.pa ? `les succès « ${d.pa.map(a => SACH[a] ? SACH[a].n : a).join(" » et « ")} » (prérequis), puis un dialogue avec le PNJ — rattachement fait à la main, absent de DofusDB` : d.pre && d.a && SACH[d.a] ? `le succès « ${SACH[d.a].n} », qui n’en est qu’un prérequis : l’obtention elle-même n’est pas décrite dans DofusDB` : d.a && SACH[d.a] ? `le succès « ${SACH[d.a].n} »` : d.q ? `la quête « ${qName(d.q)} »${d.src === 'remis pendant la quête' ? ' (remis pendant la quête)' : d.src && d.src.startsWith('manuel') ? ' (remis par le PNJ en fin de quête ; rattachement fait à la main, absent de DofusDB)' : ''}` : '';
 // Texte d'infobulle quand DofusDB ne dit pas comment obtenir le Dofus
 // Explication affichée au clic sur le « i » d'une carte Dofus (le survol n'existe pas sur téléphone)
@@ -763,7 +757,7 @@ function closeDlg(){ DLG = null; if (dlgEl.open) dlgEl.close(); }
 // ---- Décocher en cascade : tout ce qui dépend de l'élément décoché ----
 // Dépendances inverses : quête → quêtes qui l'exigent (QNEXT), succès qui la contiennent (QOWN), Dofus qu'elle donne ;
 // succès → succès parents, quêtes qui l'exigent (OA), Dofus qu'il donne ou dont il est prérequis ; Dofus → quêtes qui l'exigent (PO).
-function applyRemoval(rm){ P.applyRemoval(rm); store.set('sdzState', sdzState); }
+const applyRemoval = rm => P.applyRemoval(rm);
 // Décocher : directement si rien d'autre n'en dépend, sinon confirmation avec la liste de ce qui sera décoché
 function uncheck(kind, id){
   const rm = collectDependents(kind, id);
@@ -921,7 +915,7 @@ dlgEl.addEventListener('cancel', e => { e.preventDefault(); if (DLG) { closeDlg(
 function confirmCheck(msg, apply){
   askConfirm(msg, 'Valider').then(ok => { if (ok) { apply(); closeSheet(); } saveSc(); });
 }
-function saveSc(){ for (const k of Object.keys(qState)) if (qDoneS(+k)) delete qState[k]; store.set('qState', qState); store.set('sdone', [...sdone]); store.set('sq', [...sq]); store.set('sodone', [...sodone]); renderSucces(); }
+function saveSc(){ for (const k of Object.keys(qState)) if (qDoneS(+k)) delete qState[k]; renderSucces(); }
 
 // ---- Quêtes : rangées dans la catégorie du premier succès qui les demande ----
 const QOTHER = -1;   // quêtes qui ne sont objectif d'aucun succès (seulement prérequis)
@@ -1321,7 +1315,7 @@ function onScClick(e){
   if (qs && sPick && sPick.k === 'q') {   // Commencée / Bloquée : un second clic retire l'état
     const id = sPick.id, v = qs.dataset.qst;
     if (qState[id] === v) delete qState[id]; else qState[id] = v;
-    store.set('qState', qState); renderSucces(); return;
+    renderSucces(); return;
   }
   if (e.target.closest('input,label')) return;
   if (e.target.closest('[data-closedet]')) { closeSheet(); return; }
@@ -1340,7 +1334,7 @@ function onScClick(e){
     return;
   }
   const card = e.target.closest('[data-sdz]');
-  if (card && !e.target.closest('[data-sgo]')) { const d = SDZ[+card.dataset.sdz]; if (!sdzOwned(d)) { sdzGoals.has(d.id) ? sdzGoals.delete(d.id) : sdzGoals.add(d.id); store.set('sdzGoals', [...sdzGoals]); renderSucces(); } return; }
+  if (card && !e.target.closest('[data-sgo]')) { const d = SDZ[+card.dataset.sdz]; if (!sdzOwned(d)) { sdzGoals.has(d.id) ? sdzGoals.delete(d.id) : sdzGoals.add(d.id); renderSucces(); } return; }
   const go = e.target.closest('[data-sgo]'); if (go) { goToAch(+go.dataset.sgo); return; }
   const all = e.target.closest('[data-sall]');
   if (all) { const id = +all.dataset.sall, list = catIds(id).flatMap(c => SBYCAT[c] || []).filter(sVisible);
@@ -1398,7 +1392,7 @@ function setQuestDone(id, on){
 }
 function onScChange(e){
   const t = e.target;
-  if (t.dataset.sdzgoal) { const id = +t.dataset.sdzgoal; t.checked ? sdzGoals.add(id) : sdzGoals.delete(id); store.set('sdzGoals', [...sdzGoals]); renderSucces(); return; }
+  if (t.dataset.sdzgoal) { const id = +t.dataset.sdzgoal; t.checked ? sdzGoals.add(id) : sdzGoals.delete(id); renderSucces(); return; }
   if (t.id === 'sdzShowOwned') { sdzShowOwned = t.checked; store.set('sdzShowOwned', sdzShowOwned); renderScHelp(); return; }
   if (t.dataset.sach) {
     setAchDone(+t.dataset.sach, t.checked);
@@ -1413,7 +1407,7 @@ document.getElementById('scHelp').addEventListener('change', onScChange);
 document.getElementById('scDetail').addEventListener('change', onScChange);
 let scSearchT;
 document.getElementById('scSearch').addEventListener('input', e => { clearTimeout(scSearchT); scSearchT = setTimeout(() => { sSearch = e.target.value; renderScList(); if (sMode === 'donjons') renderScTree(); }, 200); });
-document.getElementById('scLevel').addEventListener('change', e => { P.state.level = Math.max(1, Math.min(200, +e.target.value || 200)); store.set('sLevel', P.state.level); renderSucces(); });
+document.getElementById('scLevel').addEventListener('change', e => { P.state.level = Math.max(1, Math.min(200, +e.target.value || 200)); renderSucces(); });
 document.getElementById('scShowDone').onchange = e => { sShowDone = e.target.checked; store.set('sShowDone', sShowDone); renderSucces(); };
 document.getElementById('scShowLocked').onchange = e => { sShowLocked = e.target.checked; store.set('sShowLocked', sShowLocked); renderSucces(); };
 document.getElementById('scSeasonal').onchange = e => { sSeasonal = e.target.checked; store.set('sSeasonal', sSeasonal); renderSucces(); };
@@ -1421,7 +1415,7 @@ document.querySelectorAll('[data-smode]').forEach(b => b.onclick = () => { if (s
 
 
 // ---- Mobile : onglets en bas, fiche en feuille ----
-let mTab = raw.get('mTab', sMode);
+let mTab = store.get('mTab', sMode);
 if (mTab !== 'dofus' && mTab !== 'plus') mTab = sMode;
 function showTab(){
   document.body.dataset.tab = mTab;
@@ -1431,7 +1425,7 @@ function openSheet(){ document.body.classList.add('sheet-open'); document.getEle
 function closeSheet(){ document.body.classList.remove('sheet-open'); }
 document.getElementById('tabbar').addEventListener('click', e => {
   const b = e.target.closest('[data-tab]'); if (!b) return;
-  closeSheet(); mTab = b.dataset.tab; raw.set('mTab', mTab);
+  closeSheet(); mTab = b.dataset.tab; store.set('mTab', mTab);
   if (['succes', 'quetes', 'donjons'].includes(mTab) && sMode !== mTab) { sPick = null; sMode = mTab; store.set('sMode', sMode); }
   renderSucces(); window.scrollTo({ top: 0 });
 });
@@ -1446,35 +1440,14 @@ document.getElementById('mProf').onclick = () => document.getElementById('profBt
 
 // ---- Synchronisation entre appareils (Firebase : connexion Google + Firestore) ----
 // Les coches restent d'abord dans le navigateur ; la synchro est un plus et la page marche sans elle.
-// Un document par utilisateur : users/{uid} = { profiles: { <id>: { n, sdone, sq, sodone, sLevel, sdzState (JSON), sdzGoals, savedAt } } }.
-// Par profil : « syncBase » est la valeur de savedAt sur laquelle les deux côtés étaient d'accord à la dernière synchro.
-// Seul le local a changé → envoi ; seul le cloud → réception ; les deux → fusion (union des coches, après confirmation).
+// La décision (envoyer, recevoir, fusionner) est dans src/progress-store.js ; la page fournit seulement l'adapter Firestore.
+// Un document par utilisateur : users/{uid} = { profiles: { <id>: payload } }.
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDKocCOiSELHAmqLldebqBoYtJIwOrjO6c", authDomain: "dofus-fc9d3.firebaseapp.com", projectId: "dofus-fc9d3",
   storageBucket: "dofus-fc9d3.firebasestorage.app", messagingSenderId: "983982346718", appId: "1:983982346718:web:0020d7637b4e22ca5e0d4f"
 };   // clé publique par conception : l'accès est protégé par les règles Firestore (firestore.rules) et les domaines autorisés
 const FB_URL = n => `https://www.gstatic.com/firebasejs/13.2.0/firebase-${n}.js`;
 var fb = null, fbLoading = null, syncBusy = false, syncAgain = false, syncTimer = null, syncMsg = '', syncLast = null, syncSeen = 0;
-const pget = (id, k, d) => raw.get(`p:${id}:${k}`, d);
-const pset = (id, k, v) => raw.set(`p:${id}:${k}`, v);
-function localPayload(id){
-  const p = profiles.find(x => x.id === id);
-  return { n: p ? p.n : id, sdone: pget(id, 'sdone', []), sq: pget(id, 'sq', []), sodone: pget(id, 'sodone', []), sLevel: pget(id, 'sLevel', 200),
-    sdzState: JSON.stringify(pget(id, 'sdzState', {})), sdzGoals: pget(id, 'sdzGoals', []), qState: JSON.stringify(pget(id, 'qState', {})), savedAt: pget(id, 'savedAt', '') || '' };
-}
-function applyPayload(id, pl){
-  const p = profiles.find(x => x.id === id);
-  if (p) p.n = pl.n || p.n; else profiles.push({ id, n: pl.n || id });
-  raw.set('profiles', profiles);
-  for (const k of ['sdone', 'sq', 'sodone', 'sdzGoals']) pset(id, k, pl[k] || []);
-  pset(id, 'sLevel', pl.sLevel || 200); pset(id, 'sdzState', JSON.parse(pl.sdzState || '{}')); pset(id, 'qState', JSON.parse(pl.qState || '{}')); pset(id, 'savedAt', pl.savedAt || '');
-}
-const sortedJson = pl => JSON.stringify([pl.n, [...(pl.sdone || [])].sort(), [...(pl.sq || [])].sort(), [...(pl.sodone || [])].sort(), pl.sLevel, [...(pl.sdzGoals || [])].sort(), pl.sdzState, pl.qState || '{}']);
-function mergePayload(a, b){
-  const u = (x, y) => [...new Set([...(x || []), ...(y || [])])];
-  return { n: a.n, sdone: u(a.sdone, b.sdone), sq: u(a.sq, b.sq), sodone: u(a.sodone, b.sodone), sdzGoals: u(a.sdzGoals, b.sdzGoals),
-    sLevel: Math.max(a.sLevel || 1, b.sLevel || 1), sdzState: JSON.stringify({ ...JSON.parse(b.sdzState || '{}'), ...JSON.parse(a.sdzState || '{}') }), qState: JSON.stringify({ ...JSON.parse(b.qState || '{}'), ...JSON.parse(a.qState || '{}') }), savedAt: new Date().toISOString() };
-}
 function fbLoad(){
   if (fbLoading) return fbLoading;
   fbLoading = (async () => {
@@ -1503,35 +1476,15 @@ async function syncNow(manual){
   let refresh = false;
   try {
     const ref = fb.fs.doc(fb.db, 'users', fb.user.uid);
-    const snap = await fb.fs.getDoc(ref), rp = (snap.exists() && snap.data().profiles) || {};
-    const push = {}; let conflicts = 0;
-    for (const id of new Set([...profiles.map(p => p.id), ...Object.keys(rp)])) {
-      const hasL = profiles.some(p => p.id === id), r = rp[id];
-      if (hasL && !r) { push[id] = localPayload(id); continue; }                                        // profil seulement ici : on l'envoie
-      if (!hasL && r) { applyPayload(id, r); pset(id, 'syncBase', r.savedAt || ''); refresh = true; continue; }   // profil seulement dans le cloud : on le reçoit
-      const l = localPayload(id), base = pget(id, 'syncBase', '') || '';
-      const lc = l.savedAt !== base, rc = (r.savedAt || '') !== base;
-      if (lc && !rc) push[id] = l;
-      else if (!lc && rc) { applyPayload(id, r); pset(id, 'syncBase', r.savedAt || ''); refresh = true; }
-      else if (lc && rc) {
-        if (sortedJson(l) === sortedJson(r)) { pset(id, 'syncBase', l.savedAt); pset(id, 'savedAt', r.savedAt || l.savedAt); }
-        else if (manual && await askConfirm(`Le profil « ${l.n} » a changé sur cet appareil et dans le cloud. Fusionner ? Les coches des deux côtés sont gardées (une coche retirée d’un côté peut revenir).`, 'Fusionner', 'Plus tard')) {
-          const m = mergePayload(l, r); applyPayload(id, m); push[id] = m; refresh = true;
-        } else conflicts++;
-      }
-    }
-    if (Object.keys(push).length) {
-      await fb.fs.setDoc(ref, { profiles: push, updatedAt: fb.fs.serverTimestamp() }, { merge: true });
-      for (const [id, pl] of Object.entries(push)) pset(id, 'syncBase', pl.savedAt || '');
-    }
-    syncLast = new Date(); syncMsg = conflicts ? 'Conflit : appuie sur « Synchroniser » pour fusionner' : '';
+    const remote = {   // adapter Firestore
+      read: async () => { const snap = await fb.fs.getDoc(ref); return (snap.exists() && snap.data().profiles) || {}; },
+      write: profiles => fb.fs.setDoc(ref, { profiles, updatedAt: fb.fs.serverTimestamp() }, { merge: true }),
+    };
+    const r = await ProgressStore.sync(PS, remote, { manual, confirmMerge: name => askConfirm(`Le profil « ${name} » a changé sur cet appareil et dans le cloud. Fusionner ? Les coches des deux côtés sont gardées (une coche retirée d’un côté peut revenir).`, 'Fusionner', 'Plus tard') });
+    refresh = r.refresh; syncLast = new Date(); syncMsg = r.conflicts ? 'Conflit : appuie sur « Synchroniser » pour fusionner' : '';
   } catch (e) { syncMsg = syncErr(e); }
   syncBusy = false;
-  if (refresh) {   // le profil actif a pu changer : on recharge l'état en mémoire
-    P.load({ sdone: store.get('sdone', []), sq: store.get('sq', []), sodone: store.get('sodone', []), sLevel: store.get('sLevel', 200),
-      sdzState: store.get('sdzState', {}), sdzGoals: store.get('sdzGoals', []), qState: store.get('qState', {}) });
-    renderProfiles(); renderSucces();
-  }
+  if (refresh) { P.load(PS.load()); renderProfiles(); renderSucces(); }   // le profil actif a pu changer : on recharge l'état en mémoire
   renderSync();
   if (syncAgain) { syncAgain = false; syncNow(false); }
 }
@@ -1555,9 +1508,9 @@ document.addEventListener('click', async e => {
     if (act === 'login') {
       await fbLoad();   // normalement déjà préchargé : la fenêtre de connexion doit s'ouvrir dans le geste de l'utilisateur
       await fb.au.signInWithPopup(fb.auth, new fb.au.GoogleAuthProvider());
-      raw.set('sync:on', true); await syncNow(true);
+      store.set('sync:on', true); await syncNow(true);
     } else if (act === 'now') { await syncNow(true); }
-    else if (act === 'logout') { await fb.au.signOut(fb.auth); raw.set('sync:on', false); syncMsg = ''; syncLast = null; renderSync(); }
+    else if (act === 'logout') { await fb.au.signOut(fb.auth); store.set('sync:on', false); syncMsg = ''; syncLast = null; renderSync(); }
   } catch (err) { if (err && err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') { syncMsg = syncErr(err); renderSync(); } }
 });
 // préchargement du SDK dès qu'on voit le bouton (sinon le navigateur peut bloquer la fenêtre de connexion), puis reprises automatiques
@@ -1568,45 +1521,38 @@ document.getElementById('tabbar').addEventListener('click', e => { if (e.target.
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && fb && fb.user && Date.now() - syncSeen > 30000) { syncSeen = Date.now(); syncNow(false); } });
 window.addEventListener('online', () => syncNow(false));
 renderSync();
-if (raw.get('sync:on', false)) preloadSync();   // déjà connecté : on reprend la session et on récupère les changements
+if (store.get('sync:on', false)) preloadSync();   // déjà connecté : on reprend la session et on récupère les changements
 
 // ---- Export / import des coches ----
 document.getElementById('exportBtn').onclick = () => {
-  const payload = { format: 'succes-dofus-coches', version: 2, exporteLe: new Date().toISOString(), profil: profName(profile), niveau: P.state.level,
-    succesObtenus: [...sdone], succesQuetes: [...sq], succesObjectifs: [...sodone], succesDofusEtat: sdzState, succesDofusObjectifs: [...sdzGoals], succesQuetesEtat: qState };
+  const payload = ProgressStore.exportFile(P.snapshot(), PS.name(PS.current()));
   const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
-  const a = Object.assign(document.createElement('a'), { href: url, download: `coches-${profName(profile).replace(/[^\w\u00C0-\u017F-]+/g, '_')}-${new Date().toISOString().slice(0, 10)}.json` });
+  const a = Object.assign(document.createElement('a'), { href: url, download: `coches-${PS.name(PS.current()).replace(/[^\w\u00C0-\u017F-]+/g, '_')}-${new Date().toISOString().slice(0, 10)}.json` });
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
 document.getElementById('importFile').onchange = async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
   try {
-    const j = JSON.parse(await f.text());
-    const n = ['succesObtenus', 'succesQuetes', 'succesObjectifs'].reduce((s, k) => s + (Array.isArray(j[k]) ? j[k].length : 0), 0);
-    if (!n && !j.succesDofusEtat) { uiAlert('Aucune coche reconnue dans ce fichier.'); return; }
-    if (!(await askConfirm(`Le fichier contient ${n} coche(s) de succès, quêtes et objectifs${j.profil ? ` (profil « ${j.profil} »)` : ''}. Les ajouter au profil « ${profName(profile)} » ?`, 'Importer'))) return;
-    for (const [k, set] of [['succesObtenus', sdone], ['succesQuetes', sq], ['succesObjectifs', sodone]]) if (Array.isArray(j[k])) j[k].forEach(x => set.add(+x));
-    if (j.succesDofusEtat && typeof j.succesDofusEtat === 'object') for (const [k, v] of Object.entries(j.succesDofusEtat)) if (SDZ[k] && (v === 'owned' || v === 'missing')) sdzState[k] = v;
-    if (Array.isArray(j.succesDofusObjectifs)) j.succesDofusObjectifs.forEach(id => SDZ[id] && sdzGoals.add(+id));
-    if (j.succesQuetesEtat && typeof j.succesQuetesEtat === 'object') for (const [k, v] of Object.entries(j.succesQuetesEtat)) if (SC.quetes[k] && (v === 's' || v === 'b')) qState[k] = v;
-    store.set('qState', qState);
-    store.set('sdzState', sdzState); store.set('sdzGoals', [...sdzGoals]); saveSc();
+    const j = JSON.parse(await f.text()), info = ProgressStore.inspectImport(j);
+    if (!info.count && !info.hasDofus) { uiAlert('Aucune coche reconnue dans ce fichier.'); return; }
+    if (!(await askConfirm(`Le fichier contient ${info.count} coche(s) de succès, quêtes et objectifs${info.profil ? ` (profil « ${info.profil} »)` : ''}. Les ajouter au profil « ${PS.name(PS.current())} » ?`, 'Importer'))) return;
+    P.load(ProgressStore.importInto(P.snapshot(), j, { dofus: id => !!SDZ[id], quest: id => !!SC.quetes[id] }));
+    persistNow(); saveSc();
   } catch (err) { uiAlert('Fichier illisible : ' + err.message); }
 };
 
 // ---- Profils : bouton dans l'en-tête + fenêtre de gestion ----
-const profName = id => (profiles.find(p => p.id === id) || {}).n || id;
+const profName = id => PS.name(id);
 const pfDlg = document.getElementById('pfDialog');
 let pfEdit = null;   // profil en cours de renommage
 function renderProfiles(){
-  document.getElementById('profBtn').textContent = `${profName(profile)} ▾`;
-  document.getElementById('mProfName').textContent = profName(profile);
-  const one = profiles.length < 2;
-  document.getElementById('pfList').innerHTML = profiles.map(p => {
-    const g = (k, d) => p.id === profile ? store.get(k, d) : raw.get(`p:${p.id}:${k}`, d);
-    const nq = g('sq', []).length, na = g('sdone', []).length, lv = g('sLevel', 200);
-    const cur = p.id === profile;
+  document.getElementById('profBtn').textContent = `${profName(PS.current())} ▾`;
+  document.getElementById('mProfName').textContent = profName(PS.current());
+  const one = PS.profiles().length < 2;
+  document.getElementById('pfList').innerHTML = PS.profiles().map(p => {
+    const sm = PS.summary(p.id), nq = sm.quests, na = sm.achievements, lv = sm.level;
+    const cur = p.id === PS.current();
     const name = pfEdit === p.id
       ? `<input type="text" data-pfname="${esc(p.id)}" value="${esc(p.n)}" maxlength="40" aria-label="Nom du profil">`
       : `<div class="pf-n">${esc(p.n)}${cur ? ' <span class="badge avail">actif</span>' : ''}</div>`;
@@ -1620,10 +1566,10 @@ function renderProfiles(){
   const inp = pfDlg.querySelector('[data-pfname]'); if (inp) { inp.focus(); inp.select(); }
 }
 const renderSub = () => { document.getElementById('sub').textContent = `DofusDB du ${new Date(SC.genereLe || Date.now()).toLocaleDateString('fr-FR')}`; };
-const switchProfile = id => { raw.set('profile', id); location.reload(); };
+const switchProfile = id => { PS.switchTo(id); location.reload(); };
 const saveName = id => {
   const inp = pfDlg.querySelector(`[data-pfname="${CSS.escape(id)}"]`); const n = inp ? inp.value.trim() : '';
-  if (n) { profiles.find(p => p.id === id).n = n; raw.set('profiles', profiles); }
+  if (n) PS.rename(id, n);
   pfEdit = null; renderProfiles();
 };
 document.getElementById('profBtn').onclick = () => { pfEdit = null; renderProfiles(); pfDlg.showModal(); };
@@ -1636,11 +1582,11 @@ pfDlg.addEventListener('click', async e => {
   else if (b.dataset.pfsave) saveName(b.dataset.pfsave);
   else if ('pfcancel' in b.dataset) { pfEdit = null; renderProfiles(); }
   else if (b.dataset.pfdel) {
-    const id = b.dataset.pfdel; if (profiles.length < 2) return;
+    const id = b.dataset.pfdel; if (PS.profiles().length < 2) return;
     if (!(await askConfirm(`Supprimer le profil « ${profName(id)} » et toutes ses coches ? Exporte-le avant si tu veux garder une copie.`, 'Supprimer'))) return;
-    for (const k of PKEYS) raw.del(`p:${id}:${k}`);
-    profiles = profiles.filter(p => p.id !== id); raw.set('profiles', profiles); syncDelete(id);
-    if (id === profile) switchProfile(profiles[0].id); else renderProfiles();
+    const wasCurrent = id === PS.current();
+    PS.remove(id); syncDelete(id);
+    if (wasCurrent) location.reload(); else renderProfiles();
   }
 });
 pfDlg.addEventListener('keydown', e => {
@@ -1651,8 +1597,7 @@ pfDlg.addEventListener('keydown', e => {
 document.getElementById('pfNewForm').onsubmit = e => {
   e.preventDefault();
   const n = document.getElementById('pfNewName').value.trim(); if (!n) { document.getElementById('pfNewName').focus(); return; }
-  const id = 'p' + Date.now().toString(36);
-  profiles.push({ id, n }); raw.set('profiles', profiles); switchProfile(id);
+  switchProfile(PS.add(n));
 };
 renderProfiles();
 renderSub();

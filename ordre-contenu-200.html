@@ -266,6 +266,14 @@ dialog::backdrop{background:rgba(8,6,4,.6)}
 
 /* ---------- icônes de quêtes (dessinées pour cette page, dans l'esprit de celles du jeu) ---------- */
 .qi{display:inline-flex;vertical-align:-4px;width:20px;height:20px;margin-right:6px;flex:none}
+.ti{display:inline-flex;flex:none}
+.ti img{width:100%;height:100%;object-fit:contain}
+.ti svg{display:none;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ti.fb img{display:none} .ti.fb svg{display:block}
+.ti.c-trophy{color:var(--gold)} .ti.c-quest{color:var(--green)} .ti.c-dj{color:var(--red)} .ti.c-dofus{color:var(--green)}
+.sc-mode .ti{width:30px;height:30px}
+.sc-mode:not([aria-pressed="true"]) .ti{opacity:.55;filter:saturate(.7)}
+.sc-mode:hover .ti{opacity:1}
 .ri{display:inline-flex;width:20px;height:20px;color:var(--muted)}
 .qi svg,.ri svg,.pts svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .qi.t0,.qi.t1,.qi.t3{color:var(--green)} .qi.t2{color:var(--gold)}
@@ -358,7 +366,9 @@ input.gc:focus-visible{outline-offset:3px}
   /* onglets */
   .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--win);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -4px 16px rgba(0,0,0,.12)}
   .tabbar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:58px;border:0;background:none;color:var(--muted);font-weight:800;font-size:.64rem;cursor:pointer}
-  .tabbar svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .tabbar .ti{width:34px;height:34px}
+  .tabbar button.plain svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .tabbar button:not([aria-selected="true"]) .ti{opacity:.6;filter:saturate(.7)}
   .tabbar button[aria-selected="true"]{color:var(--gold-txt);box-shadow:inset 0 3px 0 var(--gold)}
   body[data-tab="dofus"] .sum,body[data-tab="plus"] .sum,
   body[data-tab="succes"] .dz-sec,body[data-tab="quetes"] .dz-sec,body[data-tab="donjons"] .dz-sec,body[data-tab="plus"] .dz-sec,
@@ -462,7 +472,7 @@ input[type=checkbox]:not(.gc){accent-color:var(--gold)}
 
   <section class="win body" id="viewSucces">
     <aside class="side">
-      <div class="sc-modes" role="tablist"><button class="sc-mode" data-smode="succes">Succès</button><button class="sc-mode" data-smode="quetes">Quêtes</button><button class="sc-mode" data-smode="donjons">Donjons</button></div>
+      <div class="sc-modes" role="tablist"><button class="sc-mode" data-smode="succes" aria-label="Succès" title="Succès"><span class="ti c-trophy"><img src="https://api.dofusdb.fr/img/achievements/82.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 20h8"/></svg></span></button><button class="sc-mode" data-smode="quetes" aria-label="Quêtes" title="Quêtes"><span class="ti c-quest"><img src="https://dofusdb.fr/icons/effects/quete.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10M12 19.5v.5" stroke-width="3.4"/></svg></span></button><button class="sc-mode" data-smode="donjons" aria-label="Donjons" title="Donjons"><span class="ti c-dj"><img src="https://dofusdb.fr/icons/dungeon.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5c0 4 2 5 4 5.5M21 5c0 4-2 5-4 5.5M7.5 10.5a4.5 4.5 0 0 1 9 0v3.5l-1 1v3h-7v-3l-1-1z"/></svg></span></button></div>
       <div class="search"><input type="search" id="scSearch" placeholder="Rechercher…"></div>
       <button class="cat-btn" id="catBtn" aria-expanded="false" aria-controls="scTree"></button>
       <div id="scTree"></div>
@@ -508,11 +518,11 @@ input[type=checkbox]:not(.gc){accent-color:var(--gold)}
 
 <div class="scrim" id="scrim"></div>
 <nav class="tabbar" id="tabbar" role="tablist" aria-label="Sections">
-  <button role="tab" data-tab="succes" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></svg>Succès</button>
-  <button role="tab" data-tab="quetes" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10M12 19v1" stroke-width="3"/></svg>Quêtes</button>
-  <button role="tab" data-tab="donjons" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5c0 4 2 5 4 5.5M21 5c0 4-2 5-4 5.5M7.5 10.5a4.5 4.5 0 0 1 9 0v3.5l-1 1v3h-7v-3l-1-1z"/></svg>Donjons</button>
-  <button role="tab" data-tab="dofus" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4 0 7 6 7 11a7 7 0 0 1-14 0C5 9 8 3 12 3z"/></svg>Dofus</button>
-  <button role="tab" data-tab="plus" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Réglages</button>
+  <button role="tab" data-tab="succes" aria-selected="false" aria-label="Succès" title="Succès"><span class="ti c-trophy"><img src="https://api.dofusdb.fr/img/achievements/82.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 20h8"/></svg></span></button>
+  <button role="tab" data-tab="quetes" aria-selected="false" aria-label="Quêtes" title="Quêtes"><span class="ti c-quest"><img src="https://dofusdb.fr/icons/effects/quete.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10M12 19.5v.5" stroke-width="3.4"/></svg></span></button>
+  <button role="tab" data-tab="donjons" aria-selected="false" aria-label="Donjons" title="Donjons"><span class="ti c-dj"><img src="https://dofusdb.fr/icons/dungeon.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5c0 4 2 5 4 5.5M21 5c0 4-2 5-4 5.5M7.5 10.5a4.5 4.5 0 0 1 9 0v3.5l-1 1v3h-7v-3l-1-1z"/></svg></span></button>
+  <button role="tab" data-tab="dofus" aria-selected="false" aria-label="Dofus" title="Dofus"><span class="ti c-dofus"><img src="https://api.dofusdb.fr/img/achievements/459.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4 0 7 6 7 11a7 7 0 0 1-14 0C5 9 8 3 12 3z"/></svg></span></button>
+  <button role="tab" data-tab="plus" aria-selected="false" aria-label="Réglages" title="Réglages" class="plain"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
 </nav>
 
 <script>
@@ -1020,8 +1030,8 @@ function questStats(cid){
   return { n: list.length, d: list.filter(qDoneS).length };
 }
 // ce que la liste affichera avec les cases « Afficher les obtenus / indisponibles »
-const qShown = id => qDoneS(id) ? sShowDone : (sShowLocked || qAvailNow(id) || !!GOALQ[id]);   // ce qui sert un objectif Dofus reste visible
-const aShown = a => achDone(a.id) ? sShowDone : (sShowLocked || achAvailNow(a.id) || !!GOALA[a.id]);
+const qShown = id => qDoneS(id) ? sShowDone : (sShowLocked || qAvailNow(id));
+const aShown = a => achDone(a.id) ? sShowDone : (sShowLocked || achAvailNow(a.id));
 const catHasShown = cid => cid === QGOAL || cid === SALL || (sMode === 'quetes' ? qIdsOf(cid).some(qShown) : catIds(cid).some(id => (SBYCAT[id] || []).some(a => sVisible(a) && aShown(a))));
 // Menu de gauche : liste plate — sous-catégories de Quêtes, puis Événements, puis les quêtes sans succès
 function scCatList(){
@@ -1101,7 +1111,14 @@ const IC = {
 };
 // type de quête DofusDB : 0 normale, 1 anneau vert, 2 anneau jaune, 3 étoile (à confirmer avec les libellés du jeu)
 const QTYPE = { 0: ['t0', IC.t0, 'Quête'], 1: ['t1', IC.ring, 'Quête principale'], 2: ['t2', IC.ring, 'Quête primordiale'], 3: ['t3', IC.star, 'Quête spéciale'] };
-const qIcon = q => { const t = QTYPE[q.ty || 0] || QTYPE[0]; return `<span class="qi ${t[0]}" title="${t[2]}">${t[1]}</span>`; };
+// Image avec repli : si elle ne charge pas (DofusDB indisponible), le dessin prend le relais
+const iconImg = (src, svg, cls, title) => `<span class="ti ${cls}"${title ? ` title="${esc(title)}"` : ''}><img src="${src}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')">${svg}</span>`;
+const DOFUS_ACH_IC = new Set([458, 459]);   // icônes de succès des Dofus : 458 primordiaux, 459 autres
+const qIcon = (q, qid) => {
+  const own = qid != null ? (QOWN[qid] || []).map(id => SACH[id]).find(a => a && DOFUS_ACH_IC.has(a.ic)) : null;
+  if (own) return iconImg(achImg(own), QTYPE[0][1], 'qi t0', `Série du ${own.n}`);
+  const t = QTYPE[q.ty || 0] || QTYPE[0]; return `<span class="qi ${t[0]}" title="${t[2]}">${t[1]}</span>`;
+};
 const qFlags = q => `${(q.tg || []).includes('dj') ? `<span class="ri" title="Donjon">${IC.dj}</span>` : ''}${q.grp ? `<span class="ri" title="Quête de groupe">${IC.grp}</span>` : ''}`;
 const lvTxt = q => q.lv ? 'Niv. ' + q.lv + (q.lx ? '-' + q.lx : '') : '';
 
@@ -1130,7 +1147,7 @@ function questRow(qid, groupAid = null){
   const meta = [owners.map(a => esc(a.n)).join(' · '), nxt ? `débloque ${plural(nxt, 'quête')}` : '', why.length ? `Bloquée : ${esc(why[0])}${why.length > 1 ? ` (+${why.length - 1})` : ''}` : ''].filter(Boolean).join(' · ');
   return `<div class="row${dn ? ' done' : ''}${GOALQ[qid] ? ' goal' : ''}${isPick('q', qid) ? ' sel' : ''}" id="q${qid}" data-pick="q:${qid}" tabindex="0" role="button">
     <input type="checkbox" class="gc round ${dn ? '' : av ? 'av' : 'lock'}" data-sq="${qid}" ${dn ? 'checked' : ''} title="${dn ? 'Faite' : av ? 'Disponible' : 'Indisponible'} — cocher quand elle est faite" aria-label="Quête faite">
-    <div style="min-width:0"><div class="t">${qIcon(q)}${esc(qName(qid))}</div>${meta ? `<div class="m">${meta}</div>` : ''}${tagsHtml(q)}</div>
+    <div style="min-width:0"><div class="t">${qIcon(q, qid)}${esc(qName(qid))}</div>${meta ? `<div class="m">${meta}</div>` : ''}${tagsHtml(q)}</div>
     <div class="r">${goalIcons(GOALQ[qid])}${dzIcons(notGoal(DZ_REW_Q[qid], GOALQ[qid]))}${q.ev ? '<span class="grp" title="Quête d’événement">événement</span>' : ''}${qFlags(q)}<span class="lv">${lvTxt(q)}</span></div>
   </div>`;
 }
@@ -1168,10 +1185,12 @@ function renderQuestList(el){
   else if (sCat === QOTHER || (sCat && SCAT[sCat])) { cid = sCat; ids = (QBYCAT[sCat] || []).filter(qVisible); title = sCat === QOTHER ? 'Autres quêtes (prérequis)' : esc(catPath(sCat)); }
   else { el.innerHTML = '<div class="empty">Choisis une catégorie à gauche.</div>'; return; }
   const d = ids.filter(qDoneS).length, shownAll = ids.filter(qShown);
-  const hasTag = (id, c) => c === 'goal' ? !!GOALQ[id] : qTags(SC.quetes[id] || {}).includes(c);
-  const tagCount = c => shownAll.filter(id => hasTag(id, c)).length;
+  // le filtre ◆ est une demande explicite : il montre aussi les quêtes bloquées qui servent un objectif Dofus
+  const goalIds = ids.filter(id => GOALQ[id] && (qDoneS(id) ? sShowDone : true));
+  const hasTag = (id, c) => qTags(SC.quetes[id] || {}).includes(c);
+  const tagCount = c => c === 'goal' ? goalIds.length : shownAll.filter(id => hasTag(id, c)).length;
   if (sTag && !tagCount(sTag)) sTag = null;
-  const shown = sTag ? shownAll.filter(id => hasTag(id, sTag)) : shownAll;
+  const shown = sTag === 'goal' ? goalIds : sTag ? shownAll.filter(id => hasTag(id, sTag)) : shownAll;
   const chipKeys = ['goal', ...Object.keys(TAGS)].filter(tagCount);
   const chips = chipKeys.length ? `<div class="chips" role="group" aria-label="Filtrer les quêtes"><button class="chip" data-tagf="" aria-pressed="${!sTag}">Toutes<small>${shownAll.length}</small></button>${chipKeys.map(c => `<button class="chip${c === 'goal' ? ' goal' : ''}" data-tagf="${c}" aria-pressed="${sTag === c}">${c === 'goal' ? '◆ Mes objectifs' : (c === 'dj' ? `<span class="ri">${IC.dj}</span>` : c === 'gr' ? `<span class="ri">${IC.grp}</span>` : '') + TAGS[c]}<small>${tagCount(c)}</small></button>`).join('')}</div>` : '';
   const info = `${d} / ${ids.length} faites (${pctOf(d, ids.length)} %) · ${plural(shown.length, 'affichée')}${sCat === QALL && !qn ? ' · par niveau' : ''}`;
@@ -1266,9 +1285,9 @@ function renderScList(){
   else if (sCat === SALL) { list = SC.succes.filter(sVisible); title = 'Tous les succès'; }
   else if (sCat && SCAT[sCat]) { cid = sCat; list = catIds(sCat).flatMap(id => SBYCAT[id] || []).filter(sVisible); title = esc(catPath(sCat)); }
   else { el.innerHTML = '<div class="empty">Choisis une catégorie à gauche.</div>'; return; }
-  const nGoal = list.filter(a => GOALA[a.id] && aShown(a)).length;
+  const goalAs = list.filter(a => GOALA[a.id] && (achDone(a.id) ? sShowDone : true)), nGoal = goalAs.length;
   if (sAGoal && !nGoal) sAGoal = false;
-  const shown = list.filter(a => aShown(a) && (!sAGoal || GOALA[a.id])), d = list.filter(a => achDone(a.id)).length;
+  const shown = sAGoal ? goalAs : list.filter(aShown), d = list.filter(a => achDone(a.id)).length;
   const chips = nGoal ? `<div class="chips" role="group" aria-label="Filtrer les succès"><button class="chip" data-agoal="" aria-pressed="${!sAGoal}">Tous</button><button class="chip goal" data-agoal="1" aria-pressed="${sAGoal}">◆ Mes objectifs<small>${nGoal}</small></button></div>` : '';
   const btns = cid ? `<button class="btn" data-sall="${cid}" title="Marquer tous les succès de cette catégorie comme obtenus, avec leurs quêtes">Tout cocher</button><button class="btn" data-snone="${cid}" title="Décocher tous les succès de cette catégorie, avec leurs quêtes et objectifs">Tout décocher</button>` : '';
   el.innerHTML = head(title, `${d} / ${list.length} obtenus (${pctOf(d, list.length)} %) · ${plural(shown.length, 'affiché')}`, btns) + chips + (shown.length ? (sCat === SALL && !q ? achByLevel(shown) : shown.map(achCard).join('')) : EMPTY);
@@ -1311,7 +1330,7 @@ function questDetailHtml(qid){
   const owners = (QOWN[qid] || []).map(id => SACH[id]).filter(Boolean);
   const next = QNEXT[qid] || [];
   const DJN = SC.donjons || {};
-  return `<div class="hd"><h3>${qIcon(q)}${esc(qName(qid))}</h3><div class="k">${(QTYPE[q.ty || 0] || QTYPE[0])[2]}${q.lv ? ` · niveau ${q.lv}${q.lx ? ' à ' + q.lx : ''}` : ''}${q.ev ? ' · événement' : ''}</div><div class="tags" style="justify-content:center;margin-top:6px">${qTags(q).map(c => `<span class="tag ${c}">${TAGS[c]}</span>`).join('')}</div></div>
+  return `<div class="hd"><h3>${qIcon(q, qid)}${esc(qName(qid))}</h3><div class="k">${(QTYPE[q.ty || 0] || QTYPE[0])[2]}${q.lv ? ` · niveau ${q.lv}${q.lx ? ' à ' + q.lx : ''}` : ''}${q.ev ? ' · événement' : ''}</div><div class="tags" style="justify-content:center;margin-top:6px">${qTags(q).map(c => `<span class="tag ${c}">${TAGS[c]}</span>`).join('')}</div></div>
     <div class="orn">!</div>
     <div class="stat">${dn ? '<span class="badge avail">Faite</span>' : av ? '<span class="badge avail">Disponible</span>' : `<span class="badge lock">Indisponible</span><span class="muted">${esc(why.slice(0, 2).join(' · '))}${why.length > 2 ? ` (+${why.length - 2})` : ''}</span>`}</div>
     ${goalBox(GOALQ[qid], DZ_REW_Q[qid])}

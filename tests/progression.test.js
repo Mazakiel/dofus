@@ -184,8 +184,8 @@ test('les quêtes et succès qui servent des Dofus visés sont retrouvés', () =
   assert.equal(q[1][0].id, 100);
 });
 
-test('sur les vraies données : cohérence et temps de calcul', { skip: !fs.existsSync(path.join(__dirname, '..', 'succes-dofusdb.json')) }, () => {
-  const data = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'succes-dofusdb.json'), 'utf8'));
+test('sur les vraies données : cohérence et temps de calcul', { skip: !fs.existsSync(path.join(__dirname, '..', 'data', 'dofusdb.json')) }, () => {
+  const data = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'dofusdb.json'), 'utf8'));
   const P = Progression.create(data);
   const qids = Object.keys(data.quetes).map(Number);
   const t0 = Date.now();

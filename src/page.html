@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#5a2338">
-<meta name="description" content="Suivi des succès, quêtes et Dofus de Dofus, avec les données de DofusDB. Plusieurs profils, sauvegarde dans le navigateur.">
+<meta name="description" content="Suivi de ta progression dans Dofus : succès, quêtes, donjons et Dofus, avec les données de DofusDB. Plusieurs profils, sauvegarde dans le navigateur.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%235a2338'/%3E%3Cpath d='M16 5l3.4 7 7.6 1-5.5 5.3 1.3 7.7L16 22.4 9.2 26l1.3-7.7L5 13l7.6-1z' fill='%23f0c53a'/%3E%3C/svg%3E">
-<title>Succès et quêtes Dofus</title>
+<title>Progression Dofus</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -458,7 +458,7 @@ input[type=checkbox]:not(.gc){accent-color:var(--gold)}
 <div class="wrap">
   <section class="win">
     <header class="win-t">
-      <span class="ic">★</span><h1>Succès &amp; quêtes</h1><span class="sub" id="sub"></span>
+      <span class="ic">★</span><h1>Progression Dofus</h1><span class="sub" id="sub"></span>
       <span class="sp"></span>
       <button class="btn prof-btn" id="profBtn" title="Changer de personnage, gérer les profils, exporter ou importer"></button>
       <button class="btn" id="theme" title="Changer de thème"></button>
@@ -547,7 +547,7 @@ input[type=checkbox]:not(.gc){accent-color:var(--gold)}
 
 <script>/*__PROGRESSION__*/</script>
 <script>
-const SUCCES = /*__SUCCES__*/null;   // données DofusDB uniquement (catégories, succès, objectifs, quêtes, Dofus)
+const DOFUSDB = /*__DATA__*/null;   // données DofusDB uniquement (catégories, succès, objectifs, quêtes, donjons, Dofus)
 // Sauvegarde : localStorage (lecture immédiate) + copie miroir dans IndexedDB (mêmes clés, sans le préfixe c200:).
 // Profils (un par personnage) : coches et niveau rangés sous c200:p:<profil>:<clé> ; l'affichage (thème, cases, catégorie) est commun.
 // Migration : au premier chargement, les anciennes coches (c200:sdone…) sont copiées dans le profil « Défaut » ; les anciennes clés restent en secours.
@@ -626,7 +626,7 @@ document.getElementById('mTheme').onclick = cycleTheme;
 applyTheme();
 
 // ===================== Succès et quêtes — DofusDB uniquement =====================
-const SC = SUCCES || { categories: [], succes: [], objectifs: {}, quetes: {} };
+const SC = DOFUSDB || { categories: [], succes: [], objectifs: {}, quetes: {} };
 // Règles de progression (src/progression.js) : possède l'état suivi, ses caches et la cascade. La page ne fait que l'interroger.
 const P = Progression.create(SC);
 P.load({ sdone: store.get('sdone', []), sq: store.get('sq', []), sodone: store.get('sodone', []), sLevel: store.get('sLevel', 200),
@@ -658,7 +658,7 @@ for (let changed = true; changed;) { changed = false;
 const sQuestOnly = true;   // seuls les succès liés aux quêtes sont gérés dans cet onglet
 let sMode = store.get('sMode', 'succes');   // 'succes' | 'quetes'
 // Catégories gérées : les sous-catégories de Quêtes (sauf « Général » : compteurs « terminer N quêtes » et tutoriel),
-// puis Événements, regroupé en une seule catégorie en fin de liste. (« Général » racine et Temporis sont retirés.)
+// puis Événements, regroupé en une seule catégorie en fin de liste. (« Général » racine est retiré.)
 const QUETES = 8, QGEN = 118, GEN = 15;
 const catAllowed = cid => { const t = topOf(cid); return cid !== QGEN && cid !== GEN && (t === QUETES || t === EVENTS); };
 const catIds = cid => cid === EVENTS ? [cid, ...(SKIDS[cid] || []).map(c => c.id)] : [cid];

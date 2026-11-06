@@ -2,6 +2,8 @@
 
 Vocabulaire du projet, tel qu'il apparaît dans le code et dans la page. À mettre à jour quand un terme change.
 
+**Périmètre.** Suivi de la progression dans Dofus : succès de quêtes, quêtes, donjons et Dofus, tous niveaux. L'application a commencé comme un suivi du contenu de niveau 200 ; ce n'est plus le cas. Deux noms historiques subsistent et ne doivent pas changer, car ils portent des données déjà enregistrées : le préfixe de stockage `c200:` et la base IndexedDB `contenu200`.
+
 - **Succès** : réalisation du jeu, avec des objectifs. Seuls les *succès de quêtes* sont suivis (catégorie Quêtes et Événements, hors « Général »).
 - **Objectif (d'un succès)** : une quête, un sous-succès, un niveau à atteindre, ou un autre objectif coché à la main (type `x`).
 - **Quête** : étape du jeu, avec prérequis (quêtes, succès, Dofus à posséder, niveau).
@@ -9,10 +11,10 @@ Vocabulaire du projet, tel qu'il apparaît dans le code et dans la page. À mett
 - **Dofus** : objet obtenu via un succès ou une quête. Il peut être **objectif** (visé), et **forcé** à la main (`owned` / `missing`).
 - **Objectif Dofus** (« Mes objectifs ») : les quêtes et succès qui restent à faire pour obtenir un Dofus visé.
 - **Cascade** : ce que valider un élément entraîne (ses prérequis) ou ce que le décocher entraîne (ce qui en dépend).
-- **Profil** : un personnage ; ses coches, son niveau et ses Dofus lui sont propres. Chaque donnée suivie est stockée sous `c200:p:<profil>:<clé>` (le préfixe `c200:` est historique : ne pas le renommer, il porte les coches déjà enregistrées).
+- **Profil** : un personnage ; ses coches, son niveau et ses Dofus lui sont propres. Chaque donnée suivie est stockée sous `c200:p:<profil>:<clé>` (préfixe historique, voir le périmètre).
 - **Donjon** : fiche DofusDB (niveau optimal, boss) à laquelle des quêtes se rattachent.
 
 ## Modules
 
 - **Module progression** (`src/progression.js`) : possède l'état suivi et ses caches, et toutes les règles ci-dessus. Son état est suivi : toute modification, même directe, invalide les caches. Il ne connaît ni le DOM, ni le stockage, ni les options d'affichage (celles-ci sont passées en paramètre à `questShown` / `achShown`).
-- **La page** (`scripts/template-succes.html`) : vues, fiches, onglets, profils et synchro. Elle interroge le module progression et persiste son état.
+- **La page** (`src/page.html`) : vues, fiches, onglets, profils et synchro. Elle interroge le module progression et persiste son état.

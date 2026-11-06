@@ -1,6 +1,8 @@
-# Succès et quêtes Dofus
+# Progression Dofus
 
-Page autonome pour suivre ses succès de quêtes, ses quêtes et ses Dofus, avec plusieurs profils (un par personnage).
+Page autonome pour suivre sa progression dans Dofus : succès de quêtes, quêtes, donjons et Dofus, avec plusieurs profils (un par personnage).
+Elle est née pour suivre le contenu de niveau 200 ; elle couvre désormais tout le contenu, tous niveaux confondus. Le niveau du personnage (200 par défaut) sert seulement à savoir quelles quêtes sont disponibles.
+
 Données issues uniquement de l'API DofusDB. Les coches sont enregistrées dans le navigateur (localStorage + copie IndexedDB).
 
 Etats d'une quête : faite (cochée), commencée ou bloquée (à indiquer dans la fiche), disponible ou indisponible (déduit du niveau et des prérequis). La pastille de la liste le montre : vert disponible, jaune commencée, rouge bloquée, vide pointillé indisponible, coche verte faite.
@@ -8,11 +10,11 @@ Etats d'une quête : faite (cochée), commencée ou bloquée (à indiquer dans l
 ## Fichiers
 
 - `dist/index.html` : la page finale, données incluses, générée par `npm run build` (non versionnée : la CI la reconstruit à chaque publication). S'ouvre directement dans un navigateur.
-- `succes-dofusdb.json` : les données DofusDB préparées (catégories, succès, objectifs, quêtes, Dofus).
-- `scripts/achievements.js` : télécharge les données DofusDB (avec cache dans `cache/`) et écrit le JSON.
-- `scripts/enrich-quetes.js` : complète le JSON avec, pour chaque quête, les étiquettes (donjon, combat, farm, craft, exploration), le type (icône), la tranche de niveau, les donjons concernés et ce qu'il y a à faire ; ajoute aussi la fiche des donjons (niveau optimal, boss). Mêmes données DofusDB, avec cache dans `cache/`.
-- `scripts/build-succes.js` : injecte le JSON dans `scripts/template-succes.html` pour produire la page.
-- `scripts/template-succes.html` : le modèle de la page (style, vues, profils, synchro).
+- `data/dofusdb.json` : les données DofusDB préparées (catégories, succès, objectifs, quêtes, donjons, Dofus).
+- `scripts/fetch-dofusdb.js` : télécharge les données DofusDB (avec cache dans `cache/`) et écrit le JSON.
+- `scripts/enrich-dofusdb.js` : complète le JSON avec, pour chaque quête, les étiquettes (donjon, combat, farm, craft, exploration), le type (icône), la tranche de niveau, les donjons concernés et ce qu'il y a à faire ; ajoute aussi la fiche des donjons (niveau optimal, boss). Mêmes données DofusDB, avec cache dans `cache/`.
+- `scripts/build.js` : assemble la page (`dist/index.html`) depuis le modèle `src/page.html`, le module `src/progression.js` et le JSON.
+- `src/page.html` : le modèle de la page (style, vues, profils, synchro).
 - `src/progression.js` : le module de règles de progression (statuts, disponibilité, cascade, objectifs). Il possède l'état suivi et ses caches ; le build l'insère dans la page, et les tests le chargent directement.
 - `tests/` : tests du module (`npm test`) et contrôles de bout en bout dans Chrome (`npm run test:e2e`).
 - `docs/maquettes/style.html` : maquette statique de la direction visuelle.
@@ -24,11 +26,11 @@ Etats d'une quête : faite (cochée), commencée ou bloquée (à indiquer dans l
 ## Régénérer
 
 ```bash
-npm run data    # rafraîchit les données DofusDB (achievements.js puis enrich-quetes.js)
+npm run data    # rafraîchit les données DofusDB (fetch-dofusdb.js puis enrich-dofusdb.js)
 npm run build   # assemble dist/index.html depuis le modèle et le JSON
 ```
 
-`npm run data` ne sert qu'à rafraîchir les données DofusDB (sans le dossier `cache/`, elles retéléchargent tout). `enrich-quetes.js` doit être relancé après `achievements.js`, qui réécrit le JSON.
+`npm run data` ne sert qu'à rafraîchir les données DofusDB (sans le dossier `cache/`, elles retéléchargent tout). `enrich-dofusdb.js` doit être relancé après `fetch-dofusdb.js`, qui réécrit le JSON.
 
 ## Tests
 

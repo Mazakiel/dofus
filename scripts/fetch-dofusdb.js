@@ -1,4 +1,5 @@
-// Onglet « Succès » (test) : uniquement DofusDB, sans aucune donnée Ganymede.
+// Télécharge les données de progression depuis DofusDB (succès, objectifs, quêtes, Dofus) et écrit le JSON.
+// Usage : node scripts/fetch-dofusdb.js data/dofusdb.json   (cache dans cache/ ; à suivre de scripts/enrich-dofusdb.js)
 // Télécharge (avec cache) catégories, succès, objectifs et niveaux des quêtes, et écrit succes.json (format compact).
 const fs = require('fs'), path = require('path');
 const S = path.resolve(__dirname, '..');

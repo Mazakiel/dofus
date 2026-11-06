@@ -1,8 +1,8 @@
-// Enrichit succes-dofusdb.json avec, pour chaque quête : étiquettes (donjon, combat, farm, craft, exploration),
+// Enrichit data/dofusdb.json avec, pour chaque quête : étiquettes (donjon, combat, farm, craft, exploration),
 // donjons concernés et liste lisible de ce qu'il y a à faire. Source : DofusDB uniquement.
-// Usage : node scripts/enrich-quetes.js succes-dofusdb.json   (réécrit le fichier ; à relancer après achievements.js)
+// Usage : node scripts/enrich-dofusdb.js data/dofusdb.json   (réécrit le fichier ; à relancer après fetch-dofusdb.js)
 const fs = require('fs'), path = require('path');
-const FILE = process.argv[2] || 'succes-dofusdb.json';
+const FILE = process.argv[2] || 'data/dofusdb.json';
 const CACHE = path.join(__dirname, '..', 'cache');
 const API = 'https://api.dofusdb.fr/';
 const sleep = ms => new Promise(r => setTimeout(r, ms));

@@ -1,10 +1,10 @@
 {
-  "name": "dofus-succes-quetes",
+  "name": "dofus-progression",
   "private": true,
-  "description": "Suivi des succès, quêtes et Dofus (données DofusDB)",
+  "description": "Suivi de la progression Dofus : succès, quêtes, donjons et Dofus (données DofusDB)",
   "scripts": {
-    "data": "node scripts/achievements.js succes-dofusdb.json && node scripts/enrich-quetes.js succes-dofusdb.json",
-    "build": "node scripts/build-succes.js succes-dofusdb.json dist/index.html",
+    "data": "node scripts/fetch-dofusdb.js data/dofusdb.json && node scripts/enrich-dofusdb.js data/dofusdb.json",
+    "build": "node scripts/build.js data/dofusdb.json dist/index.html",
     "test": "node --test tests/*.test.js",
     "test:e2e": "node --test tests/browser/*.test.js"
   }

@@ -805,7 +805,7 @@ function renderScDofus(el){
       <div class="dz-ctl">${own ? '<span class="dz-ok">✓ obtenu</span>' : `<label><input type="checkbox" data-sdzgoal="${d.id}" ${goal ? 'checked' : ''}> objectif</label>`}
         <button class="dz-tg" data-sdzown="${d.id}" title="${own ? 'Marquer comme non obtenu' : 'Marquer comme obtenu (avec la cascade de ses quêtes)'}">${own ? '↺' : '✓'}</button></div></div>`;
   };
-  const help = 'Clique sur un Dofus pour en faire un objectif : les quêtes et succès qui y mènent sont repérés dans les listes, et regroupés dans « Mes objectifs Dofus ». ✓ le marque obtenu et valide en cascade le succès ou la quête qui le donne, puis leurs prérequis. Rangés dans l’ordre d’obtention. Au survol : ce qui le donne et les quêtes qui restent.';
+  const help = 'Clique sur un Dofus pour en faire un objectif : les quêtes et succès qui y mènent sont repérés dans les listes, et regroupés dans « Mes objectifs ». ✓ le marque obtenu et valide en cascade le succès ou la quête qui le donne, puis leurs prérequis. Rangés dans l’ordre d’obtention. Au survol : ce qui le donne et les quêtes qui restent.';
   el.innerHTML = `<div class="dz-head"><h2>Dofus</h2><span class="cnt">${owned} / ${shownDz.length} obtenus${goals.length ? ` · ${goals.length} objectif${goals.length > 1 ? 's' : ''}` : ''}</span><span class="help" title="${esc(help)}">?</span><span class="sp"></span>${goals.length ? '<button class="btn" data-goalview>Voir mes objectifs</button>' : ''}
       <label class="chk"><input type="checkbox" class="gc" id="sdzShowOwned" ${sdzShowOwned ? 'checked' : ''}> Afficher les obtenus</label></div>
     <div class="dz-wrap"><div class="dz-grid">${SDZ_ORDER.filter(d => sdzVisible(d) && (sdzShowOwned || !sdzOwned(d))).map(card).join('')}</div></div>`;
@@ -1066,7 +1066,7 @@ const aShown = a => achDone(a.id) ? sShowDone : (sShowLocked || achAvailNow(a.id
 const catHasShown = cid => cid === QGOAL || cid === SALL || (sMode === 'quetes' ? qIdsOf(cid).some(qShown) : catIds(cid).some(id => (SBYCAT[id] || []).some(a => sVisible(a) && aShown(a))));
 // Menu de gauche : liste plate — sous-catégories de Quêtes, puis Événements, puis les quêtes sans succès
 function scCatList(){
-  const l = GOALD.length ? [{ id: QGOAL, n: 'Mes objectifs Dofus' }] : [];
+  const l = GOALD.length ? [{ id: QGOAL, n: 'Mes objectifs' }] : [];
   l.push(sMode === 'quetes' ? { id: QALL, n: 'Toutes les quêtes' } : { id: SALL, n: 'Tous les succès' });
   l.push(...(SKIDS[QUETES] || []).filter(c => catAllowed(c.id)).map(c => ({ id: c.id, n: c.n })));
   l.push({ id: EVENTS, n: (SCAT[EVENTS] || {}).n || 'Événements' });
@@ -1116,7 +1116,7 @@ function lockReasons(qid){
 }
 
 // ---------- objectifs Dofus : quêtes et succès qui y mènent ----------
-const QGOAL = -3;   // entrée « Mes objectifs Dofus » du menu de gauche
+const QGOAL = -3;   // entrée « Mes objectifs » du menu de gauche
 const SALL = -4;    // entrée « Tous les succès » (mode Succès), par niveau
 var GOALQ = {}, GOALA = {}, GOALD = [];
 function computeGoals(){
@@ -1199,7 +1199,7 @@ function progBar(list){
   const chips = `<div class="chips" role="group" aria-label="Filtrer par avancement">${[['av', 'Disponible'], ['st', 'Commencé'], ['bl', 'Bloqué']].map(([c, l]) => `<button class="chip p-${c}" data-progf="${c}" aria-pressed="${sProg === c}">${l}<small>${cnt(c)}</small></button>`).join('')}</div>`;
   return { chips, keep: id => !sProg || qStatus(id) === sProg };
 }
-// Vue « Mes objectifs Dofus » : une section par Dofus visé, avec les quêtes qui restent (disponibles d'abord).
+// Vue « Mes objectifs » : une section par Dofus visé, avec les quêtes qui restent (disponibles d'abord).
 // Mêmes cases que les autres listes : les indisponibles ne s'affichent que si « Afficher les indisponibles » est coché.
 const hiddenTxt = n => n ? ` · ${n} masquée${n > 1 ? 's' : ''}` : '';
 function renderGoalQuests(){
@@ -1215,7 +1215,7 @@ function renderGoalQuests(){
   }).join('');
   const all = Object.keys(GOALQ).length, av = Object.keys(GOALQ).map(Number).filter(q => qStatus(q) === 'av').length;
   const hint = !shownAll && hiddenAll ? '<div class="empty">Les quêtes qui restent sont indisponibles. Coche « Afficher les indisponibles » pour les voir.</div>' : '';
-  return head('Mes objectifs Dofus', `${plural(GOALD.length, 'Dofus visé')} · ${plural(all, 'quête')} à faire, ${av} disponible${av > 1 ? 's' : ''}${hiddenTxt(hiddenAll)}`) + bar.chips + (secs || EMPTY) + hint;
+  return head('Mes objectifs', `${plural(GOALD.length, 'Dofus visé')} · ${plural(all, 'quête')} à faire, ${av} disponible${av > 1 ? 's' : ''}${hiddenTxt(hiddenAll)}`) + bar.chips + (secs || EMPTY) + hint;
 }
 function renderGoalAchs(){
   let hiddenAll = 0, shownAll = 0;
@@ -1226,7 +1226,7 @@ function renderGoalAchs(){
     return `<div class="sec dzsec"><img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer"><span>${esc(d.n)}</span><span class="sp"></span>${mine.length ? `${plural(mine.length, 'succès', 'succès')}${hiddenTxt(hidden)}` : 'aucun succès à faire'}</div>${as.map(achCard).join('')}`;
   }).join('');
   const hint = !shownAll && hiddenAll ? '<div class="empty">Les succès qui restent sont indisponibles. Coche « Afficher les indisponibles » pour les voir.</div>' : '';
-  return head('Mes objectifs Dofus', `${plural(GOALD.length, 'Dofus visé')} · ${plural(Object.keys(GOALA).length, 'succès', 'succès')} à finir${hiddenTxt(hiddenAll)}`) + (secs || EMPTY) + hint;
+  return head('Mes objectifs', `${plural(GOALD.length, 'Dofus visé')} · ${plural(Object.keys(GOALA).length, 'succès', 'succès')} à finir${hiddenTxt(hiddenAll)}`) + (secs || EMPTY) + hint;
 }
 function renderQuestList(el){
   const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');

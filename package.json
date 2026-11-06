@@ -6,6 +6,6 @@
     "data": "node scripts/update-data.js data/dofusdb.json",
     "build": "node scripts/build.js data/dofusdb.json dist/index.html",
     "test": "node --test tests/*.test.js",
-    "test:e2e": "node --test tests/browser/*.test.js"
+    "test:e2e": "node --test --test-timeout=120000 tests/browser/*.test.js"
   }
 }

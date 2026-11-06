@@ -25,13 +25,20 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function open(url, { width = 1440, height = 900, mobile = false } = {}) {
   const bin = findChrome(); if (!bin) throw new Error('Chrome introuvable (CHROME_BIN)');
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'dofus-e2e-'));
-  const args = ['--no-sandbox', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--hide-scrollbars', 'about:blank'];
+  // options des conteneurs et de la CI : sans /dev/shm ni GPU, Chrome démarre parfois sans jamais annoncer son port
+  const args = ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--hide-scrollbars', 'about:blank'];
   if (!/headless-shell/.test(bin)) args.unshift('--headless=new');
   const chrome = spawn(bin, args, { stdio: ['ignore', 'ignore', 'pipe'] });
+  let buf = '';
+  chrome.stderr.on('data', d => { buf += d; });
   const port = await new Promise((res, rej) => {
-    let buf = ''; const t = setTimeout(() => rej(new Error('Chrome ne répond pas')), 15000);
-    chrome.stderr.on('data', d => { buf += d; const m = buf.match(/ws:\/\/127\.0\.0\.1:(\d+)\//); if (m) { clearTimeout(t); res(m[1]); } });
-    chrome.on('exit', () => rej(new Error('Chrome arrêté')));
+    const t = setTimeout(() => rej(new Error('Chrome ne répond pas')), 20000);
+    const poll = setInterval(() => { const m = buf.match(/ws:\/\/127\.0\.0\.1:(\d+)\//); if (m) { clearTimeout(t); clearInterval(poll); res(m[1]); } }, 100);
+    chrome.on('exit', code => { clearTimeout(t); clearInterval(poll); rej(new Error('Chrome arrêté (code ' + code + ')')); });
+  }).catch(e => {
+    chrome.kill();   // sans ça, le processus reste vivant et Node ne se termine plus
+    fs.rmSync(profile, { recursive: true, force: true });
+    throw new Error(`${e.message} — ${bin}\n${buf.slice(-600)}`);
   });
   const tabs = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
   const ws = new WebSocket(tabs.find(t => t.type === 'page').webSocketDebuggerUrl);

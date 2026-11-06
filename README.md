@@ -12,7 +12,9 @@ Etats d'une quête : faite (cochée), commencée ou bloquée (à indiquer dans l
 - `scripts/achievements.js` : télécharge les données DofusDB (avec cache dans `cache/`) et écrit le JSON.
 - `scripts/enrich-quetes.js` : complète le JSON avec, pour chaque quête, les étiquettes (donjon, combat, farm, craft, exploration), le type (icône), la tranche de niveau, les donjons concernés et ce qu'il y a à faire ; ajoute aussi la fiche des donjons (niveau optimal, boss). Mêmes données DofusDB, avec cache dans `cache/`.
 - `scripts/build-succes.js` : injecte le JSON dans `scripts/template-succes.html` pour produire la page.
-- `scripts/template-succes.html` : le modèle de la page (style, logique, profils).
+- `scripts/template-succes.html` : le modèle de la page (style, vues, profils, synchro).
+- `src/progression.js` : le module de règles de progression (statuts, disponibilité, cascade, objectifs). Il possède l'état suivi et ses caches ; le build l'insère dans la page, et les tests le chargent directement.
+- `tests/` : tests du module (`npm test`) et contrôles de bout en bout dans Chrome (`npm run test:e2e`).
 - `docs/maquettes/style.html` : maquette statique de la direction visuelle.
 - `docs/maquettes/mobile.html` : maquette des deux navigations mobile étudiées (la version à onglets a été retenue).
 - `docs/maquettes/donjons.html` : maquette de la vue Donjons.
@@ -27,6 +29,16 @@ npm run build   # assemble dist/index.html depuis le modèle et le JSON
 ```
 
 `npm run data` ne sert qu'à rafraîchir les données DofusDB (sans le dossier `cache/`, elles retéléchargent tout). `enrich-quetes.js` doit être relancé après `achievements.js`, qui réécrit le JSON.
+
+## Tests
+
+```bash
+npm test             # règles de progression, sans navigateur (lancé par la CI avant chaque publication)
+npm run build && npm run test:e2e   # bout en bout dans Chrome ; CHROME_BIN pour indiquer le binaire
+UPDATE_GOLDEN=1 npm run test:e2e    # après un `npm run data` ou un changement voulu des règles : refait tests/browser/golden.json
+```
+
+`tests/browser/golden.json` est la « photo » des règles sur les vraies données (statut de chaque quête, cascades dans les deux sens, objectifs…) : elle a été prise avant l'extraction du module et sert de référence.
 
 ## Mobile
 

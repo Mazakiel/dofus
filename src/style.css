@@ -432,6 +432,17 @@ input.gc:focus-visible{outline-offset:3px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:40;display:flex;align-items:center;gap:14px;max-width:min(92vw,520px);background:var(--win);color:var(--text);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow),0 8px 24px rgba(0,0,0,.25);padding:10px 12px 10px 16px;font-weight:700}
 .toast[hidden]{display:none}
 @media (max-width:760px){.toast{bottom:calc(70px + env(safe-area-inset-bottom,0px))}}
+.copy{display:inline-grid;place-items:center;width:24px;height:24px;margin-left:8px;padding:0;vertical-align:-5px;border:1px solid var(--line);border-radius:6px;background:var(--win2);color:var(--muted);cursor:pointer}
+.copy svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2}
+.copy:hover,.copy:focus-visible{color:var(--gold-txt);border-color:var(--gold)}
+.copy.copied,.coord.copied{background:var(--green);border-color:var(--green);color:#fff}
+.copy.copyfail,.coord.copyfail{border-color:var(--red);color:var(--red)}
+.coord{font:inherit;font-size:.8rem;font-weight:800;color:var(--gold-txt);background:none;border:1px dashed var(--line);border-radius:5px;padding:0 6px;cursor:pointer}
+.coord:hover,.coord:focus-visible{border-color:var(--gold)}
+.ddb-row{text-align:center;padding:12px 16px 0}
+.ddb{font-size:.78rem;font-weight:700;color:var(--gold-txt);text-decoration:none;border-bottom:1px dotted currentColor}
+.ddb:hover,.ddb:focus-visible{border-bottom-style:solid}
+@media (max-width:700px){.copy{width:34px;height:34px}.coord{padding:4px 8px}}
 /* ---- Récompenses : sélecteur de type, lignes de titres et d'ornements, case objectif ---- */
 .seg{display:flex;margin:10px 14px 0;border:1px solid var(--line);border-radius:7px;overflow:hidden}
 .seg-b{flex:1;border:0;background:var(--win2);color:var(--muted);font:inherit;font-weight:800;font-size:.8rem;padding:6px 0;cursor:pointer}

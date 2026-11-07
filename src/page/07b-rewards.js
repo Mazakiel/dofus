@@ -79,13 +79,14 @@ function rwDetailHtml(r) {
   }
   const acc = own ? null : rwNeeds(r), avail = acc ? [...acc.q].filter(q => qStatus(q) === 'av').length : 0;
   const left = acc && (acc.q.size || acc.a.size) ? `${[acc.q.size ? plural(acc.q.size, 'quête') : '', acc.a.size ? plural(acc.a.size, 'succès', 'succès') : ''].filter(Boolean).join(' et ')} à faire${avail ? `, dont ${plural(avail, 'quête')} disponible${avail > 1 ? 's' : ''}` : ''}` : '';
-  return `<div class="hd">${big}<h3>${esc(r.n)}</h3><div class="k">${rwKindLbl(r)}${lvl}${a ? ' · donné par un succès' : ''}</div></div>
+  return `<div class="hd">${big}<h3>${esc(r.n)}${copyBtn(r.n)}</h3><div class="k">${rwKindLbl(r)}${lvl}${a ? ' · donné par un succès' : ''}</div></div>
     <div class="stat"><span class="badge ${st}">${st === 'done' ? 'Obtenu' : st === 'lock' ? 'Indisponible' : 'À obtenir'}</span></div>
     <div class="acts prog">${own ? '' : `<button class="btn" data-rgoal="${k}:${r.id}" aria-pressed="${goal}">Objectif</button>`}${r.kind ? '' : `<button class="btn" data-sdzown="${r.id}" aria-pressed="${own}">Obtenu</button>`}</div>
     ${a && a.d ? `<div class="quote${own ? ' ok' : ''}">${esc(a.d)}</div>` : ''}
     <div class="lab">Pour l’obtenir</div>${src}
     ${left ? `<div class="lab">Il reste</div><div class="ob"><span>${left}</span></div>` : ''}
-    ${a ? `<div class="path">${esc(catPath(a.c))}</div>` : ''}`;
+    ${a ? `<div class="path">${esc(catPath(a.c))}</div>` : ''}
+    <div class="ddb-row">${r.kind ? ddbLink('a', r.a, 'Succès sur DofusDB') : ddbLink('d', r.id)}</div>`;
 }
 
 // Aller à une quête depuis une fiche (la fiche d'un Dofus cite la quête qui le donne)

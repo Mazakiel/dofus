@@ -15,7 +15,7 @@ function achDetailHtml(a){
     return `<div class="ob${ok ? ' done' : ''}"><input type="checkbox" class="gc" data-so="${oid}" ${ok ? 'checked' : ''}><span>${esc((o.n || '').trim() || a.d || a.n)}</span></div>`;
   };
   const parents = (SPARENTS[a.id] || []).map(id => SACH[id]).filter(Boolean);
-  return `<div class="hd"><img src="${achImg(a)}" alt="" referrerpolicy="no-referrer"><h3>${esc(a.n)}</h3><div class="k">Succès · niveau ${a.lv}${a.pts ? ` · <span class="pts">${a.pts}${iconImg(DBI('icon_cup.png'), IC.cup, 'cup', '')}</span>` : ''}</div></div>
+  return `<div class="hd"><img src="${achImg(a)}" alt="" referrerpolicy="no-referrer"><h3>${esc(a.n)}${copyBtn(a.n)}</h3><div class="k">Succès · niveau ${a.lv}${a.pts ? ` · <span class="pts">${a.pts}${iconImg(DBI('icon_cup.png'), IC.cup, 'cup', '')}</span>` : ''}</div></div>
     <div class="orn">${n ? `${d} / ${n}` : '✦'}</div>
     <div class="stat">${(() => { const st = dn ? 'done' : achAvailNow(a.id) ? 'av' : 'lock'; return `<span class="badge ${st}">${dn ? 'Obtenu' : st === 'av' ? 'Disponible' : 'Indisponible'}</span>`; })()}</div>
     <div class="acts prog"><button class="btn" data-adone aria-pressed="${dn}">Obtenu</button></div>
@@ -24,7 +24,8 @@ function achDetailHtml(a){
     ${a.ob.length ? `<div class="lab">Objectifs</div>${a.ob.map(line).join('')}` : ''}
     ${parents.length ? `<div class="lab">Fait partie de</div>${parents.map(p => `<div class="ob${achDone(p.id) ? ' done' : ''}">${okx(achDone(p.id))}<span><span class="sgo" data-pick="a:${p.id}">${esc(p.n)}</span></span></div>`).join('')}` : ''}
     ${DZ_REW_A[a.id] || a.ti || a.or ? `<div class="rwd"><div class="lab">Récompense</div>${(DZ_REW_A[a.id] || []).map(d => dzChip(d, (GOALA[a.id] || []).includes(d))).join('')}${achRewardChips(a)}</div>` : ''}
-    <div class="path">${esc(catPath(a.c))}</div>`;
+    <div class="path">${esc(catPath(a.c))}</div>
+    <div class="ddb-row">${ddbLink('a', a.id)}</div>`;
 }
 function questDetailHtml(qid){
   const q = SC.quetes[qid] || {}, dn = qDoneS(qid), av = !dn && qAvailNow(qid), why = lockReasons(qid);
@@ -36,16 +37,18 @@ function questDetailHtml(qid){
   const owners = (QOWN[qid] || []).map(id => SACH[id]).filter(Boolean);
   const next = QNEXT[qid] || [];
   const DJN = SC.donjons || {};
-  return `<div class="hd"><h3>${qIcon(q, qid)}${esc(qName(qid))}</h3><div class="k">${(QTYPE[q.ty || 0] || QTYPE[0])[2]}${q.lv ? ` · niveau ${q.lv}${q.lx ? ' à ' + q.lx : ''}` : ''}${q.ev ? ' · événement' : ''}</div><div class="tags" style="justify-content:center;margin-top:6px">${qTags(q).map(c => `<span class="tag ${c}">${TAGS[c]}</span>`).join('')}</div></div>
+  return `<div class="hd"><h3>${qIcon(q, qid)}${esc(qName(qid))}${copyBtn(qName(qid))}</h3><div class="k">${(QTYPE[q.ty || 0] || QTYPE[0])[2]}${q.lv ? ` · niveau ${q.lv}${q.lx ? ' à ' + q.lx : ''}` : ''}${q.ev ? ' · événement' : ''}</div><div class="tags" style="justify-content:center;margin-top:6px">${qTags(q).map(c => `<span class="tag ${c}">${TAGS[c]}</span>`).join('')}</div></div>
     <div class="orn">!</div>
     <div class="stat"><span class="badge ${qStatus(qid)}">${QSTAT_LBL[qStatus(qid)]}</span>${qStatus(qid) === 'lock' ? `<span class="muted">${esc(why.slice(0, 2).join(' · '))}${why.length > 2 ? ` (+${why.length - 2})` : ''}</span>` : ''}</div>
     <div class="acts prog">${dn ? '' : `<button class="btn" data-qst="s" aria-pressed="${qState[qid] === 's'}">Commencée</button><button class="btn" data-qst="b" aria-pressed="${qState[qid] === 'b'}">Bloquée</button>`}<button class="btn" data-qdone aria-pressed="${dn}">Faite</button></div>
     ${goalBox(GOALQ[qid], DZ_REW_Q[qid])}
     ${(q.dj || []).length ? `<div class="lab">${(q.dj || []).length > 1 ? 'Donjons' : 'Donjon'}</div>${q.dj.map(id => `<div class="ob"><span class="tag dj">DJ</span><span>${esc((DJN[id] || {}).n || 'Donjon ' + id)}${(DJN[id] || {}).lv ? ` <span class="muted">· niveau ${DJN[id].lv}</span>` : ''}</span></div>`).join('')}` : ''}
+    ${(q.sp || []).length ? `<div class="lab">${q.sp.length > 1 ? 'Débuts possibles' : 'Début'}</div>${q.sp.map(p => `<div class="ob"><span class="x">•</span><span>${esc(p.n || 'PNJ')}${p.z ? ` <span class="muted">· ${esc(p.z)}</span>` : ''}</span><span class="lv">${coordBtn(p)}</span></div>`).join('')}` : ''}
     ${(q.ft || []).length ? `<div class="lab">À faire</div>${q.ft.map(l => `<div class="ob"><span class="x">•</span><span>${esc(l)}</span></div>`).join('')}` : ''}
     ${pre.length ? `<div class="lab">Prérequis</div>${pre.join('')}` : ''}
     ${owners.length ? `<div class="lab">Succès</div>${owners.map(a => `<div class="ob${achDone(a.id) ? ' done' : ''}">${okx(achDone(a.id))}<span><span class="sgo" data-pick="a:${a.id}">${esc(a.n)}</span></span></div>`).join('')}` : ''}
     ${next.length ? `<div class="lab">Débloque</div>${next.map(n => `<div class="ob${qDoneS(n) ? ' done' : ''}">${okx(qDoneS(n))}<span>${qLink(n)}</span><span class="lv">${SC.quetes[n] && SC.quetes[n].lv ? 'Niv. ' + SC.quetes[n].lv : ''}</span></div>`).join('')}` : ''}
+    <div class="ddb-row">${ddbLink('q', qid)}</div>
     ${DZ_REW_Q[qid] || owners.some(a => a.ti || a.or) ? `<div class="rwd"><div class="lab">Récompense</div>${(DZ_REW_Q[qid] || []).map(d => dzChip(d, (GOALQ[qid] || []).includes(d))).join('')}${owners.map(a => achRewardChips(a, a.n)).join('')}</div>` : ''}`;
 }
 function renderDetail(){

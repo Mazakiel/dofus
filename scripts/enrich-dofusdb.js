@@ -11,6 +11,9 @@ async function run(client, FILE) {
 
   // 1. quêtes complètes (étapes + objectifs)
   const full = await client.cached('quetes-full.json', () => client.byIds('quests', qids, [], { chunk: 20 }));
+  // un cache plus ancien que les données ne connaît pas les quêtes ajoutées depuis : on les complète
+  const missing = qids.filter(id => !full[id]);
+  if (missing.length) { Object.assign(full, await client.byIds('quests', missing, [], { chunk: 20 })); client.cache.write('quetes-full.json', full); }
 
   // 2. identifiants à résoudre : objets, monstres, zones
   const want = { item: new Set(), monster: new Set(), subarea: new Set() };
@@ -32,6 +35,18 @@ async function run(client, FILE) {
     const miss = [...want[kind]].filter(id => !store[id]);
     if (miss.length) Object.assign(store, await client.byIds(kind + 's', miss, sel));
   }
+
+  // Début des quêtes : PNJ à qui parler et position sur la carte (DofusDB : startPosition = [{ mapId, npcId }])
+  const npcIds = new Set(), mapIds = new Set();
+  for (const qid of qids) for (const p of (full[qid] && full[qid].startPosition) || []) { if (p.npcId) npcIds.add(p.npcId); if (p.mapId) mapIds.add(p.mapId); }
+  const npcs = await client.cached('npcs-min.json', () => client.byIds('npcs', [...npcIds], ['id', 'name']));
+  const maps = await client.cached('maps-min.json', () => client.byIds('map-positions', [...mapIds], ['id', 'posX', 'posY', 'subAreaId', 'worldMap']));
+  for (const [kind, store, ids, sel] of [['npcs', npcs, npcIds, ['id', 'name']], ['map-positions', maps, mapIds, ['id', 'posX', 'posY', 'subAreaId', 'worldMap']]]) {
+    const miss = [...ids].filter(id => !store[id]);
+    if (miss.length) { Object.assign(store, await client.byIds(kind, miss, sel)); client.cache.write(`${kind === 'map-positions' ? 'maps' : kind}-min.json`, store); }
+  }
+  const zoneMiss = [...new Set(Object.values(maps).map(m => m.subAreaId))].filter(id => id != null && !subareas[id]);
+  if (zoneMiss.length) Object.assign(subareas, await client.byIds('subareas', zoneMiss, ['id', 'name']));
 
   const nameOf = { item: id => fr((items[id] || {}).name), monster: id => fr((monsters[id] || {}).name), subarea: id => fr((subareas[id] || {}).name) };
   const clean = t => t
@@ -80,6 +95,10 @@ async function run(client, FILE) {
     if (souls.length > 5) { const i = lines.findIndex(l => SOUL.test(l)); lines.splice(i, 0, `Rapporter l’âme de ${souls.length} monstres différents`); for (let j = lines.length - 1; j > i; j--) if (SOUL.test(lines[j])) lines.splice(j, 1); }
     const seen = new Set(), uniq = lines.filter(l => l && !seen.has(l) && seen.add(l));
     d.tg = [...tg]; if (!d.tg.length) delete d.tg;
+    // début : « PNJ · [x,y] · zone » (jusqu'à 3 endroits) ; les maps d'intérieur (worldMap -1) donnent les coordonnées de l'extérieur
+    const sp = ((q.startPosition || []).map(p => { const m = maps[p.mapId], n = npcs[p.npcId]; if (!m && !n) return null;
+      return { n: fr(n && n.name), ...(m ? { x: m.posX, y: m.posY } : {}), ...(m && subareas[m.subAreaId] ? { z: fr(subareas[m.subAreaId].name) } : {}) }; }).filter(Boolean)).slice(0, 3);
+    if (sp.length) d.sp = sp; else delete d.sp;
     if (q.type) d.ty = q.type;                                         // 0 normale, 1 / 2 anneau vert / jaune, 3 étoile (icônes du jeu)
     if (q.levelMax && q.levelMax !== q.levelMin) d.lx = q.levelMax;    // « Niv. 40-200 »
     d.dj = [...dj]; if (!d.dj.length) delete d.dj; else d.dj.forEach(id => used.add(id));

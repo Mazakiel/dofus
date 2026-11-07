@@ -307,3 +307,28 @@ test('onglet Récompenses : les Dofus y sont, avec leur fiche ; lien direct vers
   assert.deepEqual(await p.eval(`({ k: rKind, p: sPick })`), { k: 't', p: { k: 't', id: 9002 } });
   assert.match(await p.eval(`document.title`), /^Récompenses/);
 }, {}, REWARDS && REWARDS.page));
+
+test('fiches : copier le nom, début de la quête avec coordonnées, liens DofusDB', { skip }, () => withPage(async p => {
+  await p.eval(`window.__copied = []; Object.defineProperty(navigator, 'clipboard', { value: { writeText: t => { window.__copied.push(t); return Promise.resolve(); } }, configurable: true }); 1`);
+  const r = await p.eval(`(() => {
+    const qid = +Object.keys(SC.quetes)[0], q = SC.quetes[qid];
+    q.sp = [{ n: 'Domie Natrix', x: -63, y: -93, z: 'Tannerie Écarlate' }];
+    sMode = 'quetes'; sPick = { k: 'q', id: qid }; renderDetail();
+    const d = document.getElementById('scDetail');
+    return { qid, name: qName(qid), debut: /Début[\\s\\S]*Domie Natrix[\\s\\S]*Tannerie Écarlate/.test(d.textContent), coord: !!d.querySelector('.coord[data-copy="-63,-93"]'),
+      copy: d.querySelector('h3 .copy').dataset.copy, link: d.querySelector('a.ddb').href };
+  })()`);
+  assert.equal(r.copy, r.name);
+  assert.equal(r.debut, true); assert.equal(r.coord, true);
+  assert.equal(r.link, 'https://dofusdb.fr/fr/database/quest/' + r.qid);
+  await p.eval(`document.querySelector('#scDetail h3 .copy').click(); document.querySelector('#scDetail .coord').click(); 1`); await p.wait(200);
+  assert.deepEqual(await p.eval(`window.__copied`), [r.name, '-63,-93']);
+  assert.equal(await p.eval(`document.querySelector('#scDetail h3 .copy').classList.contains('copied')`), true);
+  // succès et Dofus
+  const l = await p.eval(`(() => { const a = SC.succes.find(x => x.t); sMode = 'succes'; sPick = { k: 'a', id: a.id }; renderDetail();
+    const s = document.querySelector('#scDetail a.ddb').href, n = document.querySelector('#scDetail h3 .copy').dataset.copy;
+    const d = SC.dofus[0]; sMode = 'recomp'; sPick = { k: 'd', id: d.id }; renderDetail();
+    return { a: a.id, an: a.n, s, n, d: d.id, dl: document.querySelector('#scDetail a.ddb').href }; })()`);
+  assert.equal(l.s, 'https://dofusdb.fr/fr/database/achievements/' + l.a); assert.equal(l.n, l.an);
+  assert.equal(l.dl, 'https://dofusdb.fr/fr/database/item/' + l.d);
+}));

@@ -41,10 +41,10 @@ const pName = n => n.id === 'prim' ? 'les 6 primordiaux' : n.d ? n.d.replace(/^D
 function pCard(d, id, pos, after, ready) {
   const own = sdzOwned(d), goal = !own && sdzGoals.has(d.id), left = own ? 0 : pLeft(d), lv = SDZLV[d.id];
   const lvTxt = lv ? (lv[0] === lv[1] ? `niv. ${lv[0]}` : `niv. ${lv[0]}–${lv[1]}`) : '', link = d.a || d.q || d.pa;
-  const sub = [lvTxt, left ? `${left} q.` : (!own && !link ? 'à cocher' : '')].filter(Boolean).join(' · ');
+  const eff = left ? `${plural(left, 'quête')}` : (!own && !link ? 'à cocher' : '');
   return `<div class="cz${own ? ' own' : ''}${goal ? ' goal' : ''}${ready ? ' ready' : ''}${isPick('d', d.id) ? ' sel' : ''}" id="cz-${id}" style="${pos}" data-pick="d:${d.id}" tabindex="0" role="button" title="${esc(d.n)}">
     <img src="${itemImg(d)}" alt="" loading="lazy" referrerpolicy="no-referrer">
-    <span class="cz-t"><b>${esc(d.n.replace(/^Dofus (?=\S)/, 'Dofus '))}</b><small>${esc(sub)}</small>${after ? `<small class="cz-after">${esc(after)}</small>` : ''}</span>
+    <span class="cz-t"><b>${esc(d.n.replace(/^Dofus (?=\S)/, 'Dofus '))}</b><small>${esc(lvTxt)}</small>${eff ? `<small>${esc(eff)}</small>` : ''}${after ? `<small class="cz-after">${esc(after)}</small>` : ''}</span>
     <span class="cz-c">${own ? '' : `<button type="button" class="tgt${goal ? ' on' : ''}" data-rgoal="d:${d.id}" aria-pressed="${goal}" title="${goal ? 'Retirer des objectifs' : 'En faire un objectif'}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></button>`}<button type="button" class="cz-ok" data-sdzown="${d.id}" title="${own ? 'Marquer comme non obtenu' : 'Marquer comme obtenu (avec la cascade de ses quêtes)'}">${own ? '↺' : '✓'}</button></span>
   </div>`;
 }
@@ -95,15 +95,15 @@ function pRound(pts, r = 8) {
 function pDrawEdges() {
   const g = document.getElementById('pgrid'), svg = document.getElementById('pedges'); if (!g || !svg) return;
   const R = id => { const e = document.getElementById('cz-' + id); if (!e) return null; const o = { l: e.offsetLeft, t: e.offsetTop, w: e.offsetWidth, h: e.offsetHeight }; o.r = o.l + o.w; o.b = o.t + o.h; o.cx = o.l + o.w / 2; o.cy = o.t + o.h / 2; return o; };
-  let h = '<defs><marker id="pah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 1L9 5L0 9z" fill="currentColor"/></marker></defs>';
+  let h = '<defs><marker id="pah" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M0 0.5L10 5L0 9.5z" fill="currentColor"/></marker></defs>';
   for (const [a, b, kind] of PE) {
     const A = R(a), B = R(b); if (!A || !B) continue;
     let pts;
-    if (kind === 'r') pts = [[A.r, A.cy], [B.l - 2, B.cy]];
-    else if (kind === 'l') pts = [[A.l, A.cy], [B.r + 2, B.cy]];
-    else if (kind === 'el') pts = [[A.l, A.b - 20], [B.cx, A.b - 20], [B.cx, B.t - 2]];
-    else if (Math.abs(A.cx - B.cx) < 3) pts = [[A.cx, A.b], [B.cx, B.t - 2]];
-    else { const ym = A.b + (B.t - A.b) / 2; pts = [[A.cx, A.b], [A.cx, ym], [B.cx, ym], [B.cx, B.t - 2]]; }
+    if (kind === 'r') pts = [[A.r, A.cy], [B.l - 3, A.cy]];
+    else if (kind === 'l') pts = [[A.l, A.cy], [B.r + 3, A.cy]];
+    else if (kind === 'el') pts = [[A.l, A.b - 20], [B.cx, A.b - 20], [B.cx, B.t - 3]];
+    else if (Math.abs(A.cx - B.cx) < 3) pts = [[A.cx, A.b], [B.cx, B.t - 3]];
+    else { const ym = A.b + (B.t - A.b) / 2; pts = [[A.cx, A.b], [A.cx, ym], [B.cx, ym], [B.cx, B.t - 3]]; }
     h += `<path class="pe" d="${pRound(pts)}" marker-end="url(#pah)"/>`;
   }
   svg.setAttribute('width', g.scrollWidth); svg.setAttribute('height', g.scrollHeight); svg.innerHTML = h;

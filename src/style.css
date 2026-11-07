@@ -467,13 +467,13 @@ input.gc:focus-visible{outline-offset:3px}
 @media (max-width:700px){.copy{width:34px;height:34px}.coord{padding:4px 8px}}
 /* ---- Parcours des Dofus : grille lue de haut en bas, une colonne par famille ---- */
 .pwrap{overflow-x:auto;padding:8px 0 16px}
-.pgrid{position:relative;display:grid;grid-template-columns:repeat(6,172px);column-gap:30px;row-gap:46px;padding:16px 18px 22px;width:max-content;align-items:start}
-.pband{align-self:start;margin-top:-23px;height:0;border-top:1px dashed var(--line);position:relative;z-index:0;pointer-events:none}
+.pgrid{position:relative;margin:14px 16px 22px}
+.pband{position:absolute;left:0;right:0;height:0;border-top:1px dashed var(--line);z-index:0;pointer-events:none}
 .pband span{position:absolute;left:0;top:-9px;background:var(--win);padding:0 6px 0 0;font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
 .pedges{position:absolute;left:0;top:0;pointer-events:none;color:var(--muted);overflow:visible;z-index:0}
 .pe{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;opacity:.75}
-.pbox{border:2px dashed var(--line);border-radius:12px;margin:-9px;z-index:0;align-self:stretch}
-.cz{position:relative;z-index:1;display:flex;align-items:center;gap:9px;min-height:60px;padding:5px 6px 5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--win2);cursor:pointer}
+.pbox{position:absolute;border:2px dashed var(--line);border-radius:12px;z-index:0}
+.cz{position:absolute;z-index:1;box-sizing:border-box;display:flex;align-items:center;gap:9px;min-height:60px;padding:5px 6px 5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--win2);cursor:pointer}
 .cz:hover,.cz:focus-visible{border-color:var(--gold)}
 .cz img{width:30px;height:32px;object-fit:contain;flex:none}
 .cz.own{border-color:color-mix(in srgb,var(--green) 70%,var(--line));background:var(--t1s)}
@@ -511,9 +511,9 @@ input.gc:focus-visible{outline-offset:3px}
 }
 @media (max-width:700px){
   .pwrap{overflow:visible}
-  .pgrid{display:flex;flex-direction:column;width:auto;gap:8px;padding:6px 14px}
+  .pgrid{display:flex;flex-direction:column;width:auto !important;height:auto !important;gap:8px;margin:6px 14px}
   .pedges,.pbox,.pband{display:none}
-  .cz{width:100%;min-height:54px}
+  .cz{position:relative;left:auto !important;top:auto !important;width:100% !important;min-height:54px}
   .cz-after{display:block !important}
   .cz-c .tgt,.cz-ok{width:34px;height:34px}
 }

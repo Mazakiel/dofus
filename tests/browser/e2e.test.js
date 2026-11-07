@@ -400,3 +400,21 @@ test('parcours des Dofus : grille par familles, Dofawa masqué, flèches, « Sui
   await p.eval(`sShowDone = false; renderSucces(); 1`);
   assert.equal(await p.eval(`!!document.querySelector('#scList .cz[title="Domakuro"]')`), false);
 }));
+
+test('parcours : aucune flèche ne traverse une carte, aucune carte n’en chevauche une autre', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(700);
+  const r = await p.eval(`(() => {
+    const cards = [...document.querySelectorAll('#pgrid .cz')].map(e => ({ id: e.id, l: e.offsetLeft, t: e.offsetTop, r: e.offsetLeft + e.offsetWidth, b: e.offsetTop + e.offsetHeight }));
+    const overlaps = [];
+    for (let i = 0; i < cards.length; i++) for (let j = i + 1; j < cards.length; j++) { const a = cards[i], b = cards[j];
+      if (a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t) overlaps.push(a.id + ' / ' + b.id); }
+    const cut = [];
+    document.querySelectorAll('#pedges .pe').forEach((path, k) => { const len = path.getTotalLength();
+      for (let s = 6; s < len - 6; s += 3) { const pt = path.getPointAtLength(s);
+        for (const c of cards) if (pt.x > c.l + 1 && pt.x < c.r - 1 && pt.y > c.t + 1 && pt.y < c.b - 1) cut.push('flèche ' + k + ' traverse ' + c.id); } });
+    return { n: cards.length, overlaps, cut: [...new Set(cut)] };
+  })()`);
+  assert.ok(r.n > 15);
+  assert.deepEqual(r.overlaps, [], 'cartes qui se chevauchent');
+  assert.deepEqual(r.cut, [], 'flèches qui traversent une carte');
+}));

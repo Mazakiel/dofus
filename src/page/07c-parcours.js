@@ -12,10 +12,9 @@ const PN = [
   { id: 'scint', d: 'Dofus Argenté Scintillant', r: 8, c: 2 },          // demande Argenté et presque tout « Six sur six » (il lui manque ses deux dernières quêtes)
   { id: 'domakuro', d: 'Domakuro', r: 2, c: 4 },
   { id: 'dorigami', d: 'Dorigami', r: 3, c: 4 },
-  { id: 'mdlm', q: 2200, r: 4, c: 4 },                                  // « Main dans la main » : première quête de Tacheté (demande Domakuro et Dorigami)
-  { id: 'tach', d: 'Dofus Tacheté', r: 5, c: 4 },                       // la chaîne de Cauchemar passe par « En ce jardin qui nous unit », sa dernière quête sur le chemin
-  { id: 'cauch', d: 'Dofus du Cauchemar', r: 6, c: 4 },                 // la quête de Verdoyant exige « Un héritage tourmenté » (3 des 4 quêtes de Cauchemar)
-  { id: 'verd', d: 'Dofus Verdoyant', r: 7, c: 4 },                     // la chaîne de Sylvestre passe par la quête de Verdoyant
+  { id: 'tach', d: 'Dofus Tacheté', r: 4, c: 4 },                       // la chaîne de Cauchemar passe par « En ce jardin qui nous unit », sa dernière quête sur le chemin
+  { id: 'cauch', d: 'Dofus du Cauchemar', r: 5, c: 4 },                 // la quête de Verdoyant exige « Un héritage tourmenté » (3 des 4 quêtes de Cauchemar)
+  { id: 'verd', d: 'Dofus Verdoyant', r: 6, c: 4 },                     // la chaîne de Sylvestre passe par la quête de Verdoyant
   { id: 'pin', d: 'Dom de Pin', r: 7, c: 5 },                           // exigé par la quête « Flovoraison » (Sylvestre) ; à cocher à la main
   { id: 'sylv', d: 'Dofus Sylvestre', r: 8, c: 4 },
   { id: 'veill', d: 'Dofus des Veilleurs', r: 2, c: 5 },                // Dimensions Divines : entre la série Pandala et les indépendants
@@ -27,7 +26,7 @@ const PBOX = { id: 'prim', r: 4, c: 2, rows: 3 };
 // Flèches : ['de', 'vers']. Une flèche va toujours vers le bas (ce qui est dessous dépend de ce qui est dessus), à angles droits :
 // droite si les cartes sont alignées, sinon elle descend, longe l'espace juste au-dessus de la cible, puis descend dedans.
 const PE = [['deb', 'arg'], ['deb', 'mais'], ['mais', 'prim'], ['prim', 'six'], ['arg', 'scint'], ['six', 'scint'],
-  ['domakuro', 'dorigami'], ['dorigami', 'mdlm'], ['mdlm', 'tach'], ['tach', 'cauch'], ['cauch', 'verd'], ['verd', 'sylv'],
+  ['domakuro', 'dorigami'], ['dorigami', 'tach'], ['tach', 'cauch'], ['cauch', 'verd'], ['verd', 'sylv'],
   ['six', 'sylv'], ['pin', 'sylv'], ['veill', 'neb']];
 const pDofus = name => SDZL.find(d => d.n === name);
 const pNode = id => (id === 'prim' ? PBOX : PN.find(n => n.id === id));
@@ -76,7 +75,8 @@ function parcoursHtml() {
     prim.forEach((d, i) => { if (shown.includes(d)) out.push(pCard(d, 'p' + i, pPos(PRIM_SLOTS[i][0], PRIM_SLOTS[i][1]), 'après ' + pName(PN.find(n => n.id === 'mais')), false)); });
   }
   const alone = SDZ_ORDER.filter(d => !pPlaced.has(d.n) && sdzVisible(d) && rwShown(d))
-    .sort((a, b) => { const k = d => (SDZLV[d.id] || [999, 999])[1]; return k(a) - k(b) || pLeft(a) - pLeft(b); });
+    .sort((a, b) => { const hi = d => (SDZLV[d.id] || [999, 999])[1], lo = d => (SDZLV[d.id] || [999, 999])[0];
+      return hi(a) - hi(b) || lo(a) - lo(b) || pLeft(a) - pLeft(b); });   // niveau de fin, puis de départ, puis effort
   alone.forEach((d, i) => out.push(pCard(d, 'a' + d.id, `${pPos(2 + i, 6)};order:${1000 + i}`, '', false)));
   return `<div class="pwrap"><div class="pgrid" id="pgrid"><svg class="pedges" id="pedges" aria-hidden="true"></svg>${out.join('')}</div></div>`;
 }
@@ -94,13 +94,21 @@ function pRound(pts, r = 8) {
 }
 function pDrawEdges() {
   const g = document.getElementById('pgrid'), svg = document.getElementById('pedges'); if (!g || !svg) return;
-  const R = id => { const e = document.getElementById('cz-' + id); if (!e) return null; const o = { l: e.offsetLeft, t: e.offsetTop, w: e.offsetWidth, h: e.offsetHeight }; o.r = o.l + o.w; o.b = o.t + o.h; o.cx = o.l + o.w / 2; o.cy = o.t + o.h / 2; return o; };
+  const R = id => { const e = document.getElementById('cz-' + id); if (!e) return null; const o = { l: e.offsetLeft, t: e.offsetTop, w: e.offsetWidth, h: e.offsetHeight }; o.r = o.l + o.w; o.b = o.t + o.h; o.cx = o.l + o.w / 2; return o; };
+  const es = PE.map(([a, b]) => ({ a, b, A: R(a), B: R(b) })).filter(e => e.A && e.B);
+  // Chaque flèche a son propre point de départ sous la carte source et son propre point d'arrivée sur la carte cible,
+  // répartis sur la largeur dans l'ordre des cartes : les flèches ne se rejoignent jamais et ne se croisent pas.
+  const spread = (list, key, other, side) => {
+    const by = {}; for (const e of list) (by[e[key]] = by[e[key]] || []).push(e);
+    for (const arr of Object.values(by)) { arr.sort((x, y) => x[other].cx - y[other].cx); const n = arr.length;
+      arr.forEach((e, i) => { const c = e[key === 'a' ? 'A' : 'B']; e[side] = c.l + c.w * (i + 1) / (n + 1); e[side + 'Rank'] = i; }); }
+  };
+  spread(es, 'a', 'B', 'x1'); spread(es, 'b', 'A', 'x2');
   let h = '<defs><marker id="pah" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M0 0.5L10 5L0 9.5z" fill="currentColor"/></marker></defs>';
-  for (const [a, b, kind] of PE) {
-    const A = R(a), B = R(b); if (!A || !B) continue;
-    let pts;
-    if (Math.abs(A.cx - B.cx) < 3) pts = [[A.cx, A.b], [B.cx, B.t - 3]];
-    else { const ym = B.t - 24; pts = [[A.cx, A.b], [A.cx, ym], [B.cx, ym], [B.cx, B.t - 3]]; }
+  for (const e of es) {
+    const { A, B } = e; let pts;
+    if (Math.abs(e.x1 - e.x2) < 3) pts = [[e.x1, A.b], [e.x2, B.t - 3]];
+    else { const ym = B.t - 16 - e.x2Rank * 12; pts = [[e.x1, A.b], [e.x1, ym], [e.x2, ym], [e.x2, B.t - 3]]; }
     h += `<path class="pe" d="${pRound(pts)}" marker-end="url(#pah)"/>`;
   }
   svg.setAttribute('width', g.scrollWidth); svg.setAttribute('height', g.scrollHeight); svg.innerHTML = h;

@@ -111,7 +111,13 @@ function pDrawEdges() {
     const lo = Math.max(A.l, B.l) + 12, hi = Math.min(A.r, B.r) - 12;
     if (lo <= hi) { const x = Math.min(Math.max(e.x2, lo), hi); e.x1 = e.x2 = x; }
     if (Math.abs(e.x1 - e.x2) < 3) pts = [[e.x1, A.b], [e.x2, B.t - 3]];
-    else { const ym = B.t - 16 - e.x2Rank * 12; pts = [[e.x1, A.b], [e.x1, ym], [e.x2, ym], [e.x2, B.t - 3]]; }
+    else {
+      // le palier horizontal laisse toujours de la place à la pointe (au moins 20 px au-dessus de la cible) et un trait droit sous la source ;
+      // plusieurs flèches vers la même carte étagent leurs paliers de 14 px
+      const lo = A.b + 14, hi = B.t - 20, want = B.t - 30 - e.x2Rank * 14;
+      const ym = lo > hi ? (A.b + B.t) / 2 : Math.min(Math.max(want, lo), hi);
+      pts = [[e.x1, A.b], [e.x1, ym], [e.x2, ym], [e.x2, B.t - 3]];
+    }
     h += `<path class="pe" d="${pRound(pts)}" marker-end="url(#pah)"/>`;
   }
   svg.setAttribute('width', g.scrollWidth); svg.setAttribute('height', g.scrollHeight); svg.innerHTML = h;

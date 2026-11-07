@@ -184,15 +184,18 @@ test('la copie IndexedDB restaure les coches si le localStorage est vidé', { sk
 
 test('la page construite avec les données actuelles se charge et affiche du contenu', { skip }, () => withPage(async p => {
   const r = await p.eval(`({ quetes: Object.keys(SC.quetes).length, succes: SC.succes.length, dofus: SC.dofus.length, menu: SC.menu.length,
-    arbre: document.querySelectorAll('#scTree .sc-cat').length, lignes: document.querySelectorAll('#scList .row').length, titre: document.title })`);
+    cartes: document.querySelectorAll('#scList .dz').length, titre: document.title })`);
+  await p.eval(`mTab = 'succes'; sMode = 'succes'; renderSucces(); 1`);
+  r.arbre = await p.eval(`document.querySelectorAll('#scTree .sc-cat').length`); r.lignes = await p.eval(`document.querySelectorAll('#scList .row').length`);
   assert.ok(r.quetes > 500 && r.succes > 100 && r.dofus > 10 && r.menu > 5, JSON.stringify(r));
+  assert.ok(r.cartes > 10, 'la vue d’entrée (Récompenses) montre les Dofus : ' + JSON.stringify(r));
   assert.ok(r.arbre > 5 && r.lignes > 0, 'le menu et une liste s’affichent : ' + JSON.stringify(r));
   assert.match(r.titre, /Progression Dofus$/);
 }, {}, buildPage(path.join(__dirname, '..', '..', 'data', 'dofusdb.json'))));
 
 test('navigation : l\'adresse suit la vue, un lien collé ouvre la bonne vue, retour revient en arrière', { skip }, () => withPage(async p => {
   const hash = () => p.eval('location.hash'), view = () => p.eval('mTab');
-  assert.match(await hash(), /^#\/succes/);
+  assert.match(await hash(), /^#\/recompenses\/dofus/, 'la vue d’entrée est Récompenses');
   await p.eval(`document.querySelector('#scTree [data-cat]') ? document.querySelector('#scTree [data-cat]').click() : 0; 1`);
   const q = await p.eval(`Object.keys(SC.quetes)[0]`);
   await p.eval(`mTab='quetes'; sMode='quetes'; renderSucces(); 1`);
@@ -200,7 +203,7 @@ test('navigation : l\'adresse suit la vue, un lien collé ouvre la bonne vue, re
   await p.eval(`sPick={k:'q',id:${q}}; renderScList(); renderDetail(); routeSync(); 1`);
   assert.equal(await hash(), `#/quetes${(await hash()).match(/^#\/quetes(\/[^/]+)?/)[1] || ''}/q${q}`);
   await p.eval(`history.back(); 1`); await p.wait(400);
-  assert.equal(await view(), 'succes', 'retour revient à la vue précédente');
+  assert.equal(await view(), 'recomp', 'retour revient à la vue précédente');
   // lien collé
   await p.eval(`location.hash = '#/quetes/tous/q${q}'; 1`); await p.wait(400);
   assert.equal(await view(), 'quetes');

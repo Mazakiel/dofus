@@ -21,7 +21,7 @@ let sCat = store.get('sCat', null);
 // « Afficher les obtenus » (ancien « Masquer les obtenus », repris dans l'autre sens) et « Afficher les indisponibles »
 let sShowDone = store.get('sShowDone', !store.get('sHideDone', false)), sShowLocked = store.get('sShowLocked', false);
 let sSearch = '';
-let sMode = store.get('sMode', 'succes');   // 'succes' | 'quetes'
+let sMode = store.get('sMode', 'recomp');   // 'recomp' (Récompenses, la vue d'entrée) | 'succes' | 'quetes' | 'donjons'
 // Ce qui est suivi n'est plus décidé ici : le build (scripts/lib/tracked-content.js) marque les succès suivis (`t`), le contenu
 // saisonnier (`s`) et fournit les entrées du menu. Les sous-catégories de Quêtes (sauf « Général ») puis Événements, regroupé en une seule entrée.
 const MENU_BY_ID = Object.fromEntries((SC.menu || []).map(m => [m.id, m]));

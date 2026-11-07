@@ -315,14 +315,14 @@ test('fiches : copier le nom, début de la quête avec coordonnées, liens Dofus
     q.sp = [{ n: 'Domie Natrix', x: -63, y: -93, z: 'Tannerie Écarlate' }];
     sMode = 'quetes'; sPick = { k: 'q', id: qid }; renderDetail();
     const d = document.getElementById('scDetail');
-    return { qid, name: qName(qid), debut: /Début[\\s\\S]*Domie Natrix[\\s\\S]*Tannerie Écarlate/.test(d.textContent), coord: !!d.querySelector('.coord[data-copy="-63,-93"]'),
+    return { qid, name: qName(qid), debut: /Début[\\s\\S]*Domie Natrix[\\s\\S]*Tannerie Écarlate/.test(d.textContent), coord: !!d.querySelector('.coord[data-copy="/travel -63 -93"]'),
       copy: d.querySelector('h3 .copy').dataset.copy, link: d.querySelector('a.ddb').href };
   })()`);
   assert.equal(r.copy, r.name);
   assert.equal(r.debut, true); assert.equal(r.coord, true);
   assert.equal(r.link, 'https://dofusdb.fr/fr/database/quest/' + r.qid);
   await p.eval(`document.querySelector('#scDetail h3 .copy').click(); document.querySelector('#scDetail .coord').click(); 1`); await p.wait(200);
-  assert.deepEqual(await p.eval(`window.__copied`), [r.name, '-63,-93']);
+  assert.deepEqual(await p.eval(`window.__copied`), [r.name, '/travel -63 -93']);
   assert.equal(await p.eval(`document.querySelector('#scDetail h3 .copy').classList.contains('copied')`), true);
   // succès et Dofus
   const l = await p.eval(`(() => { const a = SC.succes.find(x => x.t); sMode = 'succes'; sPick = { k: 'a', id: a.id }; renderDetail();

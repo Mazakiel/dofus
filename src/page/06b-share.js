@@ -1,8 +1,9 @@
 // ===== Copier un nom pour le chercher en jeu, ouvrir la fiche DofusDB.
 const COPY_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>';
 const copyBtn = (text, what = 'le nom') => `<button type="button" class="copy" data-copy="${esc(text)}" title="Copier ${what}" aria-label="Copier ${what}">${COPY_ICON}</button>`;
-// Coordonnées d'une carte : se copient telles quelles ([-63,-93] → « -63,-93 »)
-const coordBtn = p => p.x == null ? '' : `<button type="button" class="coord" data-copy="${p.x},${p.y}" title="Copier les coordonnées" aria-label="Copier les coordonnées ${p.x}, ${p.y}">[${p.x},${p.y}]</button>`;
+// Coordonnées d'une carte : le bouton copie la commande de déplacement du jeu ([-63,-93] → « /travel -63 -93 »), à coller dans le chat
+const travelCmd = p => `/travel ${p.x} ${p.y}`;
+const coordBtn = p => p.x == null ? '' : `<button type="button" class="coord" data-copy="${travelCmd(p)}" title="Copier ${travelCmd(p)}" aria-label="Copier la commande ${travelCmd(p)}">[${p.x},${p.y}]</button>`;
 // Fiche DofusDB (adresses du site : quêtes et objets au singulier, succès au pluriel)
 const DDB = 'https://dofusdb.fr/fr/database/';
 const ddbUrl = { q: id => `${DDB}quest/${id}`, a: id => `${DDB}achievements/${id}`, d: id => `${DDB}item/${id}` };

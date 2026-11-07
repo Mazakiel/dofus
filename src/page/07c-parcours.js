@@ -7,10 +7,10 @@ const PRIM = ['Dofus Ocre', 'Dofus Émeraude', 'Dofus Pourpre', 'Dofus Turquoise
 // horizontalement, pas de colonnes régulières : chaque famille a son décalage (PLANES, en pixels). Ce qui dépend d'un autre Dofus est toujours plus bas.
 // Les Dofus sont désignés par leur nom, les succès et quêtes par leur identifiant. r = ligne, lane = position horizontale, s = largeur en cartes.
 const PW = 156, PSTEP = 172, PNH = 72, PGAP = 40, PGAP_STRAIGHT = 28, PGAP_MIN = 16;   // largeur d'une carte, pas entre deux cartes voisines, hauteur d'une ligne, espace avant une ligne où arrive un coude / une flèche droite / rien
-const PLANES = { A: 0, M1: 100, M2: 272, P: 460, D: 632, I1: 804, I2: 976 };   // Argenté ; les deux colonnes des primordiaux (décalées pour laisser passer la flèche d'Argenté) ; Pandala ; Dimensions Divines ; indépendants
+const PLANES = { A: 0, M1: 172, M2: 344, P: 532, D: 704, I1: 876, I2: 1048 };   // Argenté ; les deux colonnes des primordiaux ; Pandala ; Dimensions Divines ; indépendants
 const PBANDS = [[3, 50], [4, 100], [6, 150], [7, 200]];   // [première ligne du palier, niveau où il commence] : un trait « niv. N » veut dire « niveau N ou plus » (un Dofus de niveau 100 est sous le trait 100)
 const PN = [
-  { id: 'arg', d: 'Dofus Argenté', lane: 'A', r: 1 },                              // niv. 2–40
+  { id: 'arg', d: 'Dofus Argenté', lane: 'A', r: 2 },                              // niv. 2–40
   { id: 'mais', ach: 1036, lane: 'M1', s: 2, r: 2 },                              // « Mais où sont les Dofus ? » : les quêtes d'introduction des Dofus (niv. 30–40), tronc commun des six primordiaux
   { id: 'cawotte', d: 'Dofus Cawotte', lane: 'I1', r: 3 },                        // niv. 60 ; rattaché à l'introduction des Dofus (indication du joueur : DofusDB ne donne pas ce lien)
   { id: 'veill', d: 'Dofus des Veilleurs', lane: 'D', r: 4 },                    // niv. 100 ; Dimensions Divines : entre la série Pandala et les indépendants
@@ -27,7 +27,7 @@ const PN = [
 // Les six primordiaux : deux par ligne (lignes 4, 6 et 7, selon leur niveau), dans un cadre commun, sans lien entre eux (ils dépendent tous du tronc commun)
 const PRIM_SLOTS = [[4, 'M1'], [4, 'M2'], [6, 'M1'], [6, 'M2'], [7, 'M1'], [7, 'M2']];
 const PBOX = { id: 'prim' };
-const PALONE_FIRST = [1, 3, 4, 6, 7];   // première ligne des indépendants pour : < 50, 50–99, 100–149, 150–199, 200
+const PALONE_FIRST = [2, 3, 4, 6, 7];   // première ligne des indépendants pour : < 50, 50–99, 100–149, 150–199, 200
 // Flèches : ['de', 'vers']. Une flèche va toujours vers le bas (ce qui est dessous dépend de ce qui est dessus).
 const PE = [['mais', 'cawotte'], ['mais', 'prim'], ['prim', 'six'], ['arg', 'scint'], ['six', 'scint'],
   ['domakuro', 'dorigami'], ['dorigami', 'tach'], ['tach', 'cauch'], ['cauch', 'sylv'],

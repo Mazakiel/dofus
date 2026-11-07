@@ -276,7 +276,7 @@ test('onglet Récompenses : titres et ornements suivent leur succès, objectif p
   assert.equal(await p.eval(`rwGoals.has('t9001')`), true);
   assert.equal(await p.eval(`GOALR.length`), 1);
   assert.ok(await p.eval(`Object.keys(GOALA).length + Object.keys(GOALQ).length`) > 0, 'ce qu’il reste à faire est calculé');
-  assert.match(await p.eval(`document.getElementById('scTree').textContent`), /Mes objectifs/);
+  assert.match(await p.eval(`document.querySelector('#scList [data-goalview]').textContent`), /Mes objectifs \(1\)/);
   // l'objectif est sauvegardé
   await p.wait(300);
   assert.deepEqual(await p.eval(`PS.load().rwGoals`), ['t9001']);

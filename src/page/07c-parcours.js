@@ -40,7 +40,7 @@ const pDoneNode = n => n.id === 'prim' ? PRIM.map(pDofus).filter(Boolean).every(
   : n.d ? (pDofus(n.d) ? sdzOwned(pDofus(n.d)) : true) : n.ach ? achDone(n.ach) : qDoneS(n.q);
 const pName = n => n.id === 'prim' ? 'les 6 primordiaux' : n.d ? n.d.replace(/^Dofus /, '') : n.ach ? (SACH[n.ach] || {}).n : qName(n.q);
 
-// Carte compacte d'un Dofus : image, nom, niveau et effort, case objectif, obtenu. Un clic ouvre la fiche.
+// Carte compacte d'un Dofus : image, nom, niveau et effort. Un clic ouvre la fiche, qui porte les actions (objectif, obtenu) ; l'état se lit sur la carte (verte : obtenu, contour orange : objectif).
 function pCard(d, id, pos, after, ready) {
   const own = sdzOwned(d), goal = !own && sdzGoals.has(d.id), left = own ? 0 : pLeft(d), lv = SDZLV[d.id];
   const lvTxt = lv ? (lv[0] === lv[1] ? `niv. ${lv[0]}` : `niv. ${lv[0]}–${lv[1]}`) : '', link = d.a || d.q || d.pa;
@@ -48,7 +48,6 @@ function pCard(d, id, pos, after, ready) {
   return `<div class="cz${own ? ' own' : ''}${goal ? ' goal' : ''}${ready ? ' ready' : ''}${isPick('d', d.id) ? ' sel' : ''}" id="cz-${id}" style="${pos}" data-pick="d:${d.id}" tabindex="0" role="button" title="${esc(d.n)}">
     <img src="${itemImg(d)}" alt="" loading="lazy" referrerpolicy="no-referrer">
     <span class="cz-t"><b>${esc(d.n.replace(/^Dofus (?=\S)/, 'Dofus '))}</b><small>${esc(lvTxt)}</small>${eff ? `<small>${esc(eff)}</small>` : ''}${after ? `<small class="cz-after">${esc(after)}</small>` : ''}</span>
-    <span class="cz-c">${own ? '' : `<button type="button" class="tgt${goal ? ' on' : ''}" data-rgoal="d:${d.id}" aria-pressed="${goal}" title="${goal ? 'Retirer des objectifs' : 'En faire un objectif'}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></button>`}<button type="button" class="cz-ok" data-sdzown="${d.id}" title="${own ? 'Marquer comme non obtenu' : 'Marquer comme obtenu (avec la cascade de ses quêtes)'}">${own ? '↺' : '✓'}</button></span>
   </div>`;
 }
 // Carte d'un succès ou d'une quête qui sert de passage (tronc commun, départ commun, « Six sur six »)

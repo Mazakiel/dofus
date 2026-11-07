@@ -60,6 +60,5 @@ function dofusCard(d){
     <span class="dz-lv">${(() => { const l = SDZLV[d.id]; return l ? (l[0] === l[1] ? l[0] : `${l[0]} - ${l[1]}`) : ''; })()}</span>${!own && (!link || d.pre) ? `<button class="dz-hors" data-dzinfo="${d.id}" aria-label="Comment obtenir ${esc(d.n)}" title="${esc(dzWho(d))}">i</button>` : ''}
     <img src="${itemImg(d)}" alt="" loading="lazy" referrerpolicy="no-referrer">
     <div class="dz-n">${esc(d.n)}</div>
-    <div class="dz-ctl">${own ? '<span class="dz-ok">✓ obtenu</span>' : `<label><input type="checkbox" data-sdzgoal="${d.id}" ${goal ? 'checked' : ''}> objectif</label>`}
-      <button class="dz-tg" data-sdzown="${d.id}" title="${own ? 'Marquer comme non obtenu' : 'Marquer comme obtenu (avec la cascade de ses quêtes)'}">${own ? '↺' : '✓'}</button></div></div>`;
+  </div>`;
 }

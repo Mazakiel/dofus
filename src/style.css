@@ -92,11 +92,7 @@ button,select,input{font:inherit;color:inherit}
 .dz-lv{position:absolute;top:3px;left:0;right:0;font-size:.62rem;font-weight:800;color:var(--gold-txt)}
 .dz-hors{position:absolute;top:3px;right:4px;width:18px;height:18px;padding:0;border-radius:50%;border:1px solid var(--dim);background:var(--win);font:italic 800 .68rem/1 Georgia,serif;color:var(--muted);cursor:pointer}
 .dz-hors:hover{border-color:var(--gold);color:var(--text)}
-.dz-ctl{display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:.66rem;gap:2px}
-.dz-ctl label{display:flex;align-items:center;gap:2px;cursor:pointer;color:var(--muted)}
 .dz-ok{color:var(--green);font-weight:800}
-.dz-tg{border:1px solid var(--line);background:var(--win);border-radius:4px;font-size:.7rem;padding:0 5px;cursor:pointer;color:var(--muted)}
-.dz-tg:hover{border-color:var(--gold);color:var(--text)}
 .goalchips{display:inline-flex;gap:2px;vertical-align:middle;margin-left:4px}
 .goalchips img{width:18px;height:18px;object-fit:contain}
 .goalchips b{font-size:.68rem;color:var(--tg-cb);margin-left:2px;align-self:center}
@@ -435,9 +431,7 @@ input.gc:focus-visible{outline-offset:3px}
   .foot .note{margin-left:0;font-size:.74rem}
   .btn{min-height:40px}
   .dz-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .dz-tg{min-height:30px;padding:0 8px}
-  .dz-ctl{margin-top:6px}
-
+    
   /* fiche en feuille */
   .scrim{display:block;position:fixed;inset:0;z-index:25;background:rgba(8,6,4,.55);opacity:0;visibility:hidden;transition:opacity .2s,visibility 0s .2s}
   body.sheet-open .scrim{opacity:1;visibility:visible;transition:opacity .2s}
@@ -487,12 +481,7 @@ input.gc:focus-visible{outline-offset:3px}
 .cz-t b{display:block;font-size:.8rem;font-weight:800;overflow-wrap:break-word;hyphens:manual}
 .cz-t small{display:block;font-size:.68rem;color:var(--muted);font-weight:600;white-space:nowrap}
 .cz-after{display:none !important}
-.cz-c{display:flex;flex-direction:column;gap:3px;flex:none}
-.cz-c .tgt{width:22px;height:22px}.cz-c .tgt svg{width:12px;height:12px}
-.cz-ok{width:22px;height:22px;padding:0;border:1px solid var(--line);border-radius:5px;background:var(--win);color:var(--muted);font-size:.78rem;font-weight:800;cursor:pointer;line-height:1}
-.cz-ok:hover{border-color:var(--green);color:var(--green)}
-.cz.own .cz-ok{color:var(--green)}
-.cz.pv{border-style:dashed;background:var(--detail1)}
+.cz.own .cz.pv{border-style:dashed;background:var(--detail1)}
 .cz.pv img{width:28px;height:28px}
 /* Fiche (quête, succès, Dofus…) : n'occupe de place que quand quelque chose est choisi.
    Une colonne à droite des listes ; en tiroir par-dessus quand la vue a besoin de la largeur (parcours) ou que l'écran est étroit. */
@@ -515,7 +504,6 @@ input.gc:focus-visible{outline-offset:3px}
   .pedges,.pbox,.pband{display:none}
   .cz{position:relative;left:auto !important;top:auto !important;width:100% !important;min-height:54px}
   .cz-after{display:block !important}
-  .cz-c .tgt,.cz-ok{width:34px;height:34px}
 }
 /* ---- Récompenses : sélecteur de type, lignes de titres et d'ornements, case objectif ---- */
 .seg{display:flex;margin:10px 14px 0;border:1px solid var(--line);border-radius:7px;overflow:hidden}

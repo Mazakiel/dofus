@@ -72,7 +72,8 @@ function renderSucces(){
   document.body.classList.remove('pc-wide');   // (remis par la vue Récompenses › Dofus quand elle s'affiche en parcours)
   const vis = SC.succes.filter(sVisible), dn = vis.filter(a => achDone(a.id));
   const qv = Object.keys(SC.quetes).map(Number).filter(qVisible), qd = qv.filter(qDoneS).length;
-  document.getElementById('plN').textContent = qd; document.getElementById('plS').textContent = `/ ${qv.length} quêtes`;
+  // cadre doré : progression globale (quêtes et succès ensemble) ; le détail est dans les deux barres juste dessous
+  document.getElementById('plN').textContent = `${pctOf(qd + dn.length, qv.length + vis.length)} %`;
   const pq = pctOf(qd, qv.length), pa = pctOf(dn.length, vis.length);
   document.getElementById('progQ').innerHTML = `<div class="l"><span>Quêtes</span><span><b>${qd}</b> / ${qv.length} · ${pq} %</span></div><div class="bar" role="progressbar" aria-label="Quêtes faites" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pq}"><i style="width:${pq}%"></i></div>`;
   document.getElementById('progA').innerHTML = `<div class="l"><span>Succès de quêtes</span><span><b>${dn.length}</b> / ${vis.length} · ${pa} %</span></div><div class="bar gold" role="progressbar" aria-label="Succès de quêtes obtenus" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pa}"><i style="width:${pa}%"></i></div>`;

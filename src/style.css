@@ -67,7 +67,6 @@ button,select,input{font:inherit;color:inherit}
 .plaque-wrap:before{content:"";position:absolute;left:16px;right:16px;top:50%;margin-top:7px;height:2px;background:linear-gradient(90deg,transparent,#a07b22 25%,#e9c25a 50%,#a07b22 75%,transparent)}
 .plaque{position:relative;display:flex;align-items:baseline;gap:8px;padding:6px 36px;background:linear-gradient(180deg,#f7dc7a,#d9a92e 55%,#b9861a);color:#3a2808;clip-path:polygon(14px 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,14px 100%,0 50%)}
 .pl-n{font-weight:900;font-size:1.45rem;font-variant-numeric:tabular-nums}
-.pl-s{font-weight:700;font-size:.85rem;opacity:.8}
 .sum{display:grid;grid-template-columns:auto 1fr 1fr;gap:22px;align-items:center;padding:12px 18px 16px}
 .lvl{position:relative;display:grid;place-items:center;width:62px;height:62px;border-radius:50%;background:radial-gradient(circle at 50% 35%,var(--win2),var(--win));border:2px solid var(--gold);cursor:text}
 .lvl input{width:46px;border:0;background:none;text-align:center;font-weight:900;font-size:1.15rem;color:var(--gold-txt);padding:0;margin-top:-6px;-moz-appearance:textfield}

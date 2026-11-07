@@ -107,6 +107,9 @@ function pDrawEdges() {
   let h = '<defs><marker id="pah" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M0 0.5L10 5L0 9.5z" fill="currentColor"/></marker></defs>';
   for (const e of es) {
     const { A, B } = e; let pts;
+    // Si les deux cartes se recouvrent à l'horizontale, la flèche descend tout droit : pas de petit décrochage qui se tord
+    const lo = Math.max(A.l, B.l) + 12, hi = Math.min(A.r, B.r) - 12;
+    if (lo <= hi) { const x = Math.min(Math.max(e.x2, lo), hi); e.x1 = e.x2 = x; }
     if (Math.abs(e.x1 - e.x2) < 3) pts = [[e.x1, A.b], [e.x2, B.t - 3]];
     else { const ym = B.t - 16 - e.x2Rank * 12; pts = [[e.x1, A.b], [e.x1, ym], [e.x2, ym], [e.x2, B.t - 3]]; }
     h += `<path class="pe" d="${pRound(pts)}" marker-end="url(#pah)"/>`;

@@ -5,9 +5,9 @@
 const PRIM = ['Dofus Ocre', 'Dofus Émeraude', 'Dofus Pourpre', 'Dofus Turquoise', 'Dofus Ébène', 'Dofus Ivoire'];
 // r = ligne (à partir de 2), c = colonne (1 à 6), s = nombre de colonnes occupées.
 const PN = [
-  { id: 'deb', q: 1962, r: 2, c: 1 },                                  // « Ça sent le gaz » puis « Balade en forêt » : départ d'Argenté et de la série primordiale
-  { id: 'arg', d: 'Dofus Argenté', r: 3, c: 1 },
-  { id: 'mais', ach: 1036, r: 3, c: 2, s: 2 },                          // « Mais où sont les Dofus ? » : le tronc commun des six primordiaux
+  { id: 'arg', d: 'Dofus Argenté', r: 2, c: 1 },
+  { id: 'mais', ach: 1036, r: 2, c: 2, s: 2 },                          // « Mais où sont les Dofus ? » : les quêtes d'introduction des Dofus, tronc commun des six primordiaux
+  { id: 'cawotte', d: 'Dofus Cawotte', r: 3, c: 2 },                    // rattaché à l'introduction des Dofus (indication du joueur : DofusDB ne donne pas ce lien)
   { id: 'six', ach: 1705, r: 7, c: 2, s: 2 },                           // « Six sur six » (6/6) : les six primordiaux et leurs quêtes finales ; ouvre Scintillant et Sylvestre
   { id: 'scint', d: 'Dofus Argenté Scintillant', r: 8, c: 2 },          // demande Argenté et presque tout « Six sur six » (il lui manque ses deux dernières quêtes)
   { id: 'domakuro', d: 'Domakuro', r: 2, c: 4 },
@@ -25,7 +25,7 @@ const PRIM_SLOTS = [[4, 2], [4, 3], [5, 2], [5, 3], [6, 2], [6, 3]];
 const PBOX = { id: 'prim', r: 4, c: 2, rows: 3 };
 // Flèches : ['de', 'vers']. Une flèche va toujours vers le bas (ce qui est dessous dépend de ce qui est dessus), à angles droits :
 // droite si les cartes sont alignées, sinon elle descend, longe l'espace juste au-dessus de la cible, puis descend dedans.
-const PE = [['deb', 'arg'], ['deb', 'mais'], ['mais', 'prim'], ['prim', 'six'], ['arg', 'scint'], ['six', 'scint'],
+const PE = [['mais', 'cawotte'], ['mais', 'prim'], ['prim', 'six'], ['arg', 'scint'], ['six', 'scint'],
   ['domakuro', 'dorigami'], ['dorigami', 'tach'], ['tach', 'cauch'], ['cauch', 'verd'], ['verd', 'sylv'],
   ['six', 'sylv'], ['pin', 'sylv'], ['veill', 'neb']];
 const pDofus = name => SDZL.find(d => d.n === name);

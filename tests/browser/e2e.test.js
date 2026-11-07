@@ -371,7 +371,7 @@ test('parcours des Dofus : grille par familles, Dofawa masqué, flèches, « Sui
   assert.equal(r.titres, 0, 'ni titres de colonne ni texte d’aide : le parcours se lit seul');
   assert.ok(r.ready >= 1, '« Suivant » marque ce qui se fait maintenant');
   assert.ok(r.edges >= 10, 'les flèches sont tracées : ' + r.edges);
-  assert.equal(r.wide, true); assert.ok(r.pivots >= 3, 'tronc commun, départ commun, Six sur six');
+  assert.equal(r.wide, true); assert.ok(r.pivots >= 2, 'tronc commun et Six sur six');
   // les six primordiaux sont dans un cadre commun, sans flèche entre eux
   assert.equal(await p.eval(`!!document.getElementById('cz-prim') && PRIM.every(n => document.querySelector('#scList .cz[title="' + n + '"]'))`), true);
   // fiche en tiroir : fermée tant que rien n'est choisi, ouverte au clic, refermée par ✕

@@ -60,7 +60,9 @@ const plural = (n, s, p) => `${n} ${n > 1 ? (p || s + 's') : s}`;
 const dzChip = (d, goal) => `<span class="rew${goal ? ' goalrew' : ''}"${goal ? ' title="Récompense, et ton objectif"' : ''}><img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer">${esc(d.n)}</span>`;
 // Titres et ornements donnés par un succès (ti : noms, or : { n, i }) ; `via` : nom du succès, pour la fiche d'une quête
 const titleChip = (t, via) => `<span class="rew rew-t"${via ? ` title="Titre du succès « ${esc(via)} »"` : ''}><span class="rew-k">Titre</span>${esc(t)}</span>`;
-const ornChip = (o, via) => `<span class="rew rew-o"${via ? ` title="Ornement du succès « ${esc(via)} »"` : ''}><img src="https://api.dofusdb.fr/img/ornaments/${o.i}.png" alt="" referrerpolicy="no-referrer"><span class="rew-k">Ornement</span>${esc(o.n)}</span>`;
+const ornImg = o => `https://api.dofusdb.fr/img/ornaments/${o.i}.png`;
+// L'ornement est un bouton : il s'ouvre en grand dans une fenêtre (voir openOrnament)
+const ornChip = (o, via) => `<button type="button" class="rew rew-o" data-orn="${o.i}" data-orn-n="${esc(o.n)}"${via ? ` data-orn-via="${esc(via)}"` : ''} title="Voir l'ornement en grand"><img src="${ornImg(o)}" alt="" referrerpolicy="no-referrer"><span class="rew-k">Ornement</span>${esc(o.n)}</button>`;
 const achRewardChips = (a, via) => [...(a.ti || []).map(t => titleChip(t, via)), ...(a.or || []).map(o => ornChip(o, via))].join('');
 const dzIcons = list => (list || []).map(d => `<img class="rew-ic" src="${itemImg(d)}" alt="" title="Récompense : ${esc(d.n)}" referrerpolicy="no-referrer">`).join('');
 

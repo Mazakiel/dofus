@@ -250,3 +250,12 @@ test('récompenses : titres et ornements apparaissent sur la fiche du succès et
   assert.deepEqual(r, { s: true, q: true });
   assert.equal(await p.eval(`(() => { const a = SC.succes.find(x => !x.ti && !x.or); sMode='succes'; sPick={k:'a',id:a.id}; renderDetail(); return /rew-t|rew-o/.test(document.getElementById('scDetail').innerHTML); })()`), false, 'rien si le succès ne donne rien');
 }));
+
+test('ornement : le bouton ouvre une fenêtre avec l\'image en grand, qui se ferme', { skip }, () => withPage(async p => {
+  await p.eval(`(() => { const a = SC.succes.find(x => x.ob.length); a.or = [{ n: 'Cadre de test', i: 5 }]; sMode = 'succes'; sPick = { k: 'a', id: a.id }; renderDetail(); document.querySelector('#scDetail [data-orn]').click(); })()`);
+  assert.equal(await p.eval(`document.getElementById('ornDialog').open`), true);
+  assert.equal(await p.eval(`document.getElementById('ornTitle').textContent`), 'Cadre de test');
+  assert.match(await p.eval(`document.getElementById('ornImg').src`), /ornaments\/5\.png$/);
+  await p.eval(`document.querySelector('[data-orn-close]').click(); 1`);
+  assert.equal(await p.eval(`document.getElementById('ornDialog').open`), false);
+}));

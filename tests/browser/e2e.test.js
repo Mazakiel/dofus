@@ -184,7 +184,7 @@ test('la copie IndexedDB restaure les coches si le localStorage est vidé', { sk
 
 test('la page construite avec les données actuelles se charge et affiche du contenu', { skip }, () => withPage(async p => {
   const r = await p.eval(`({ quetes: Object.keys(SC.quetes).length, succes: SC.succes.length, dofus: SC.dofus.length, menu: SC.menu.length,
-    cartes: document.querySelectorAll('#scList .dz').length, titre: document.title })`);
+    cartes: document.querySelectorAll('#scList .cz').length, titre: document.title })`);
   await p.eval(`mTab = 'succes'; sMode = 'succes'; renderSucces(); 1`);
   r.arbre = await p.eval(`document.querySelectorAll('#scTree .sc-cat').length`); r.lignes = await p.eval(`document.querySelectorAll('#scList .row').length`);
   assert.ok(r.quetes > 500 && r.succes > 100 && r.dofus > 10 && r.menu > 5, JSON.stringify(r));
@@ -298,9 +298,9 @@ test('onglet Récompenses : titres et ornements suivent leur succès, objectif p
 test('onglet Récompenses : les Dofus y sont, avec leur fiche ; lien direct vers un titre', { skip }, () => withPage(async p => {
   await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(500);
   assert.equal(await p.eval(`mTab`), 'recomp');
-  assert.ok(await p.eval(`document.querySelectorAll('#scList .dz').length`) > 5, 'la grille des Dofus');
+  assert.ok(await p.eval(`document.querySelectorAll('#scList .cz').length`) > 5, 'le parcours des Dofus');
   assert.equal(await p.eval(`!!document.getElementById('scHelp')`), false, 'plus de bande Dofus en haut');
-  await p.eval(`document.querySelector('#scList .dz').click(); 1`);
+  await p.eval(`document.querySelector('#scList .cz:not(.pv)').click(); 1`);
   assert.match(await p.eval(`location.hash`), /^#\/recompenses\/dofus\/d\d+$/);
   assert.match(await p.eval(`document.getElementById('scDetail').textContent`), /Dofus[\s\S]*Pour l’obtenir/);
   await p.eval(`location.hash = '#/recompenses/titres/t9002'; 1`); await p.wait(500);
@@ -358,24 +358,33 @@ test('suggestions : la fenêtre propose du faisable, change de critère et ouvre
   assert.ok(first);
 }));
 
-test('parcours des Dofus : familles en arbre, Dofawa masqué, indépendants à part, « Suivant »', { skip }, () => withPage(async p => {
+test('parcours des Dofus : grille par familles, Dofawa masqué, flèches, « Suivant », fiche en tiroir', { skip }, () => withPage(async p => {
   await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(500);
   const r = await p.eval(`(() => {
-    const names = [...document.querySelectorAll('#scList .parcours .dz .dz-n')].map(e => e.textContent.trim());
-    return { n: names.length, dofawa: names.includes('Dofawa'), titres: [...document.querySelectorAll('#scList .pg h3')].map(h => h.textContent.trim()),
-      next: document.querySelectorAll('#scList .pn.next').length, famille: !!document.querySelector('#scList .pt-k .pt-c'),
-      hasHidden: SDZL.some(d => d.n === 'Dofawa') };
+    const names = [...document.querySelectorAll('#scList .pgrid .cz:not(.pv) b')].map(e => e.textContent.trim());
+    return { n: names.length, dofawa: names.includes('Dofawa'), titres: [...document.querySelectorAll('#scList .pl-h')].map(h => h.textContent.trim()),
+      ready: document.querySelectorAll('#scList .cz.ready').length, edges: document.querySelectorAll('#pedges .pe').length, wide: document.body.classList.contains('pc-wide'),
+      hasHidden: SDZL.some(d => d.n === 'Dofawa'), pivots: document.querySelectorAll('#scList .cz.pv').length };
   })()`);
-  assert.ok(r.n > 10, 'les Dofus sont là : ' + r.n);
+  assert.ok(r.n > 15, 'les Dofus sont là : ' + r.n);
   assert.equal(r.dofawa, false); assert.equal(r.hasHidden, false);
-  assert.ok(r.titres.includes('Indépendants'));
-  assert.ok(r.famille, 'les familles ont des branches');
-  assert.ok(r.next >= 1, '« Suivant » marque un Dofus');
-  // un Dofus obtenu : sa carte passe en « obtenu », et il n'est plus « Suivant »
-  const own = await p.eval(`(() => { const d = pDofus(PARCOURS.groups[1].lanes[0].tree.d); setSdzOwned(d, true); renderSucces(); return d.n; })()`);
-  assert.equal(await p.eval(`!!document.querySelector('#scList .pn .dz.own')`), true, own + ' obtenu');
-  assert.equal(await p.eval(`[...document.querySelectorAll('#scList .pn.next .dz-n')].some(e => e.textContent.trim() === ${JSON.stringify(own)})`), false);
-  // « Afficher les obtenus » décoché : il disparaît, l'arbre garde ses enfants
+  assert.ok(['Argenté', 'Série primordiale', 'Série Pandala', 'Indépendants'].every(t => r.titres.includes(t)), JSON.stringify(r.titres));
+  assert.ok(r.ready >= 1, '« Suivant » marque ce qui se fait maintenant');
+  assert.ok(r.edges >= 10, 'les flèches sont tracées : ' + r.edges);
+  assert.equal(r.wide, true); assert.ok(r.pivots >= 3, 'tronc commun, départ commun, Six sur six');
+  // les six primordiaux sont dans un cadre commun, sans flèche entre eux
+  assert.equal(await p.eval(`!!document.getElementById('cz-prim') && PRIM.every(n => document.querySelector('#scList .cz[title="' + n + '"]'))`), true);
+  // fiche en tiroir : fermée tant que rien n'est choisi, ouverte au clic, refermée par ✕
+  assert.equal(await p.eval(`document.body.classList.contains('has-pick')`), false);
+  await p.eval(`document.querySelector('#scList .cz:not(.pv)').click(); 1`);
+  assert.equal(await p.eval(`document.body.classList.contains('has-pick')`), true);
+  await p.eval(`document.querySelector('#scDetail [data-closedet]').click(); 1`); await p.wait(200);
+  assert.equal(await p.eval(`document.body.classList.contains('has-pick')`), false);
+  // un Dofus obtenu : sa carte passe en « obtenu » et il n'est plus « Suivant »
+  const own = await p.eval(`(() => { const d = pDofus('Domakuro'); setSdzOwned(d, true); renderSucces(); return d.n; })()`);
+  assert.equal(await p.eval(`!!document.querySelector('#scList .cz.own[title="Domakuro"]')`), true, own + ' obtenu');
+  assert.equal(await p.eval(`!!document.querySelector('#scList .cz.ready[title="Domakuro"]')`), false);
+  // « Afficher les obtenus » décoché : sa carte disparaît
   await p.eval(`sShowDone = false; renderSucces(); 1`);
-  assert.equal(await p.eval(`[...document.querySelectorAll('#scList .parcours .dz .dz-n')].some(e => e.textContent.trim() === ${JSON.stringify(own)})`), false);
+  assert.equal(await p.eval(`!!document.querySelector('#scList .cz[title="Domakuro"]')`), false);
 }));

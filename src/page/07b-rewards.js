@@ -62,6 +62,8 @@ function renderRwMain(el) {
     + (parcours && shown.length ? '<div class="dz-hint">Chaque famille se lit de haut en bas : ce qui est au-dessus se fait d’abord. « Suivant » marque le prochain Dofus de la famille. Clique un Dofus pour voir comment l’obtenir, « objectif » le suit dans tes listes.</div>' : '')
     + (shown.length ? body : EMPTY);
   imgErr(el);
+  document.body.classList.toggle('pc-wide', parcours);   // le parcours prend toute la largeur : la fiche passe en tiroir
+  if (parcours) pDrawEdges();
 }
 
 // Fiche d'un Dofus, d'un titre ou d'un ornement

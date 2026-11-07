@@ -59,6 +59,7 @@ function renderDetail(){
   else if (sPick && ['d', 't', 'o'].includes(sPick.k) && rwOf(sPick.k, sPick.id)) el.innerHTML = CLOSE + rwDetailHtml(rwOf(sPick.k, sPick.id));
   else el.innerHTML = `<div class="det-empty"><div class="orn">✦</div>Choisis ${sMode === 'quetes' ? 'une quête' : sMode === 'recomp' ? 'une récompense' : 'un succès'} dans la liste pour voir ses objectifs, ses prérequis et ce qu’il rapporte.</div>`;
   imgErr(el);
+  document.body.classList.toggle('has-pick', !el.querySelector('.det-empty'));
 }
 function ensureCat(){
   const l = scCatList(); if (l.some(c => c.id === sCat)) return;
@@ -68,6 +69,7 @@ function ensureCat(){
 function renderSucces(){
   if (!SC.succes.length) { document.getElementById('scList').innerHTML = '<div class="panel muted">Données des succès absentes.</div>'; return; }
   computeGoals();
+  document.body.classList.remove('pc-wide');   // (remis par la vue Récompenses › Dofus quand elle s'affiche en parcours)
   const vis = SC.succes.filter(sVisible), dn = vis.filter(a => achDone(a.id));
   const qv = Object.keys(SC.quetes).map(Number).filter(qVisible), qd = qv.filter(qDoneS).length;
   document.getElementById('plN').textContent = qd; document.getElementById('plS').textContent = `/ ${qv.length} quêtes`;

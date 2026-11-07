@@ -15,7 +15,7 @@ document.getElementById('tabbar').addEventListener('click', e => {
   renderSucces(); window.scrollTo({ top: 0 });
 });
 document.getElementById('scrim').addEventListener('click', dismissSheet);
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('sheet-open') && !document.querySelector('dialog[open]')) dismissSheet(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && (document.body.classList.contains('sheet-open') || (document.body.classList.contains('pc-wide') && document.body.classList.contains('has-pick'))) && !document.querySelector('dialog[open]')) dismissSheet(); });
 window.matchMedia('(max-width:700px)').addEventListener('change', e => { if (!e.matches) closeSheet(); });
 document.getElementById('catBtn').addEventListener('click', () => {
   const side = document.querySelector('.side'), on = side.classList.toggle('open');

@@ -236,7 +236,6 @@ dialog::backdrop{background:rgba(8,6,4,.6)}
 .sug-row:hover,.sug-row:focus-visible{background:var(--row-h)}
 .sug-rk{grid-row:span 2;font-weight:800;font-size:1.05rem;color:var(--gold-txt);text-align:center}
 .sug-name{font-weight:800;font-size:.92rem;overflow-wrap:anywhere}
-.sug-kind{font-size:.66rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:1px}
 .sug-go{grid-row:span 2;font-size:.72rem;color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
 .sug-why-r{grid-column:2;display:flex;gap:5px;flex-wrap:wrap}
 .sug-why-r i{font-style:normal;font-size:.72rem;font-weight:800;border-radius:4px;padding:0 6px;border:1px solid var(--line);color:var(--muted);background:var(--win2)}

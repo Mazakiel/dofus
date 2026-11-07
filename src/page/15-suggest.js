@@ -1,4 +1,4 @@
-// ===== Suggestions : la fenêtre « Que faire maintenant ? ». Le calcul est dans le module de règles (P.suggest) ; ici l'affichage.
+// ===== Suggestions (quêtes seulement) : la fenêtre « Que faire maintenant ? ». Le calcul est dans le module de règles (P.suggest) ; ici l'affichage.
 const SUG_PRESETS = [['mix', 'Mix'], ['goals', 'Mes objectifs'], ['level', 'Mon niveau'], ['unlock', 'Débloquer'], ['rewards', 'Récompenses']];
 let sugPreset = store.get('sugPreset', 'mix');
 if (!SUG_PRESETS.some(p => p[0] === sugPreset)) sugPreset = 'mix';
@@ -34,14 +34,13 @@ function sugWhyHtml() {
 }
 function renderSuggest() {
   computeGoals();
-  const list = P.suggest({ preset: sugPreset, goalQ: GOALQ, goalA: GOALA, questVisible: qVisible, achVisible: sVisible, limit: 12 });
+  const list = P.suggest({ preset: sugPreset, goalQ: GOALQ, questVisible: qVisible, limit: 12 });
   document.getElementById('sugLvl').textContent = `Niveau ${P.state.level} · ${sq.size} quête${sq.size > 1 ? 's' : ''} faite${sq.size > 1 ? 's' : ''}`;
   document.getElementById('sugPre').innerHTML = SUG_PRESETS.map(([k, l]) => `<button type="button" class="chip${sugPreset === k ? ' on' : ''}" data-sugp="${k}" aria-pressed="${sugPreset === k}">${l}</button>`).join('');
   document.getElementById('sugWhy').innerHTML = sugWhyHtml();
   document.getElementById('sugList').innerHTML = list.length ? list.map((s, i) => {
-    const name = s.k === 'q' ? qName(s.id) : SACH[s.id].n;
-    return `<button type="button" class="sug-row" data-sug="${s.k}:${s.id}"><span class="sug-rk">${i + 1}</span>
-      <span class="sug-name">${esc(name)}${s.k === 'a' ? '<span class="sug-kind">Succès</span>' : ''}</span><span class="sug-go">score ${s.score}</span>
+    return `<button type="button" class="sug-row" data-sug="${s.id}"><span class="sug-rk">${i + 1}</span>
+      <span class="sug-name">${esc(qName(s.id))}</span><span class="sug-go">score ${s.score}</span>
       <span class="sug-why-r">${s.reasons.map(sugReason).join('')}</span></button>`;
   }).join('') : '<div class="empty">Rien à proposer : tout ce qui est faisable est fait, bloqué ou masqué par les options d’affichage.</div>';
 }
@@ -52,5 +51,5 @@ sugDlg.addEventListener('click', e => {
   const p = e.target.closest('[data-sugp]');
   if (p) { sugPreset = p.dataset.sugp; store.set('sugPreset', sugPreset); renderSuggest(); return; }
   const r = e.target.closest('[data-sug]');
-  if (r) { const [k, id] = r.dataset.sug.split(':'); sugDlg.close(); if (k === 'q') goToQuest(+id); else goToAch(+id); if (isMobile()) openSheet(); }
+  if (r) { sugDlg.close(); goToQuest(+r.dataset.sug); if (isMobile()) openSheet(); }
 });

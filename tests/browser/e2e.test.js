@@ -340,20 +340,20 @@ test('suggestions : la fenêtre propose du faisable, change de critère et ouvre
   const rows = await p.eval(`document.querySelectorAll('#sugList .sug-row').length`);
   assert.ok(rows >= 5, 'des suggestions : ' + rows);
   // rien d'indisponible, de fait ni de bloqué
-  assert.equal(await p.eval(`[...document.querySelectorAll('#sugList [data-sug^="q:"]')].every(b => ['av', 'st'].includes(qStatus(+b.dataset.sug.slice(2))))`), true);
+  assert.equal(await p.eval(`[...document.querySelectorAll('#sugList [data-sug]')].every(b => ['av', 'st'].includes(qStatus(+b.dataset.sug)))`), true);
   const first = await p.eval(`document.querySelector('#sugList .sug-row').dataset.sug`);
   // un critère différent : la fenêtre se redessine, le choix est mémorisé
   await p.eval(`document.querySelector('[data-sugp="unlock"]').click(); 1`);
   assert.equal(await p.eval(`document.querySelector('[data-sugp="unlock"]').getAttribute('aria-pressed')`), 'true');
   assert.equal(await p.eval(`store.get('sugPreset')`), 'unlock');
   // une quête marquée bloquée disparaît de la liste
-  const q = await p.eval(`+document.querySelector('#sugList [data-sug^="q:"]').dataset.sug.slice(2)`);
+  const q = await p.eval(`+document.querySelector('#sugList [data-sug]').dataset.sug`);
   await p.eval(`qState[${q}] = 'b'; renderSuggest(); 1`);
-  assert.equal(await p.eval(`!!document.querySelector('#sugList [data-sug="q:${q}"]')`), false);
+  assert.equal(await p.eval(`!!document.querySelector('#sugList [data-sug="${q}"]')`), false);
   // ouvrir une suggestion : la fenêtre se ferme, la fiche s'affiche dans sa vue
-  const pick = await p.eval(`document.querySelector('#sugList [data-sug^="q:"]').dataset.sug`);
+  const pick = await p.eval(`document.querySelector('#sugList [data-sug]').dataset.sug`);
   await p.eval(`document.querySelector('#sugList [data-sug="${pick}"]').click(); 1`); await p.wait(300);
   assert.equal(await p.eval(`document.getElementById('sugDialog').open`), false);
-  assert.deepEqual(await p.eval(`({ m: sMode, k: sPick && sPick.k, id: sPick && sPick.id })`), { m: 'quetes', k: 'q', id: +pick.slice(2) });
+  assert.deepEqual(await p.eval(`({ m: sMode, k: sPick && sPick.k, id: sPick && sPick.id })`), { m: 'quetes', k: 'q', id: +pick });
   assert.ok(first);
 }));

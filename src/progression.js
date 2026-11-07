@@ -261,11 +261,11 @@
     const rewardsOfQuest = qid => (SC.dofus || []).filter(d => d.q === qid && !d.pre && d.src === 'récompense de quête').map(d => ({ kind: 'd', n: d.n }));
     const rewardPoints = (list, B, f) => Math.min(list.filter(r => r.kind !== 'd').length * B.reward.item, B.reward.itemMax) * f.reward + list.filter(r => r.kind === 'd').length * B.reward.dofus * f.reward;
 
-    // Quêtes et succès à faire maintenant, du plus conseillé au moins conseillé.
-    // Options : preset, goalQ / goalA (quêtes et succès qui servent un objectif : { id: [récompenses visées] }),
-    // questVisible(id) / achVisible(succès) (ce que la page affiche), limit.
+    // Quêtes à faire maintenant, du plus conseillée à la moins conseillée (les succès ne sont pas proposés : ce sont leurs quêtes qui le sont).
+    // Options : preset, goalQ (quêtes qui servent un objectif : { id: [récompenses visées] }),
+    // questVisible(id) (ce que la page affiche), limit.
     // Jamais proposés : le fait, ce que tu as marqué bloqué, ce qui n'est pas faisable maintenant.
-    function suggest({ preset = 'mix', goalQ = {}, goalA = {}, questVisible = () => true, achVisible = () => true, limit = 12 } = {}) {
+    function suggest({ preset = 'mix', goalQ = {}, questVisible = () => true, limit = 12 } = {}) {
       const B = SUGGEST_BASE, f = SUGGEST_PRESETS[preset] || SUGGEST_PRESETS.mix, out = [];
       const goalPts = n => Math.min(B.goal.first + B.goal.more * (n - 1), B.goal.max) * f.goal;
       for (const sid of Object.keys(SC.quetes)) {
@@ -295,21 +295,7 @@
         if (done) { score += Math.min(done * B.chain.each, B.chain.max) * f.chain; reasons.push({ t: 'chain', n: done }); }
         out.push({ k: 'q', id, score: Math.round(score), reasons });
       }
-      // Succès : proposés quand ils avancent (au moins un objectif fait) ou servent un objectif ; la quête qui les termine a déjà sa ligne
-      for (const a of SC.succes) {
-        if (achDone(a.id) || !achAvailable(a.id) || !achVisible(a)) continue;
-        const [d, n] = achProg(a), served = goalA[a.id] && goalA[a.id].length;
-        if (!served && !(d > 0 && d < n)) continue;
-        let score = 0; const reasons = [];
-        if (served) { score += goalPts(goalA[a.id].length); reasons.push({ t: 'goal', items: goalA[a.id] }); }
-        if (n > 1) { score += Math.round(B.progress * 2 * d / n) * f.completes; reasons.push({ t: 'progress', ach: a.n, d, n }); }
-        const dep = new Set(); for (const q of QBYPREA[a.id] || []) { if (!questDone(q)) dep.add(q); dependentQuests(q).forEach(x => dep.add(x)); }
-        if (dep.size) { score += Math.min(dep.size * B.unlock.each, B.unlock.max) * f.unlock; reasons.push({ t: 'unlock', n: dep.size }); }
-        const rws = rewardsOfAch(a);
-        if (rws.length) { score += rewardPoints(rws, B, f); reasons.push({ t: 'reward', items: rws }); }
-        out.push({ k: 'a', id: a.id, score: Math.round(score), reasons });
-      }
-      out.sort((x, y) => y.score - x.score || (x.k === y.k ? x.id - y.id : x.k === 'q' ? -1 : 1));
+      out.sort((x, y) => y.score - x.score || x.id - y.id);
       // Pas plus de deux quêtes d'un même succès côte à côte : sinon un seul succès à dix quêtes remplit toute la liste
       const perAch = {}, kept = [], rest = [];
       for (const s of out) {

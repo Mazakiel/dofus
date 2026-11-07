@@ -215,7 +215,8 @@ test('un objectif coché à la main, devenu une quête, rend la quête faite', (
 
 test('suggestions : seulement ce qui se fait maintenant, classé par un score dont on voit les raisons', () => {
   const P = make(); P.load({ sLevel: 100 });
-  const ids = list => list.filter(x => x.k === 'q').map(x => x.id).sort((x, y) => x - y);
+  const ids = list => list.map(x => x.id).sort((x, y) => x - y);
+  assert.ok(P.suggest().every(x => x.k === 'q'), 'des quêtes seulement');
   assert.deepEqual(ids(P.suggest()), [1, 5], 'Q2, Q3, Q4 ne sont pas faisables : pas proposées');
   P.load({ sLevel: 100, qState: { 1: 'b' } });
   assert.deepEqual(ids(P.suggest()), [5], 'une quête marquée bloquée n’est jamais proposée');
@@ -238,12 +239,10 @@ test('suggestions : objectif, quête commencée, dernière quête d’un succès
   const started = P.suggest().find(x => x.id === 5);
   assert.ok(started.reasons.some(r => r.t === 'started'));
   P.load({ sLevel: 100, sq: [1] });                          // Q2 est la dernière quête de A1, qui donne un titre
-  const q2 = P.suggest().find(x => x.k === 'q' && x.id === 2);
+  const q2 = P.suggest().find(x => x.id === 2);
   assert.ok(q2.reasons.some(r => r.t === 'completes' && r.ach === 'A1'));
   assert.ok(q2.reasons.some(r => r.t === 'reward' && r.items[0].n === 'Titre A1'));
   assert.equal(P.suggest()[0].id, 2, 'terminer un succès qui rapporte un titre passe en tête');
-  const a1 = P.suggest().find(x => x.k === 'a');
-  assert.equal(a1.id, 1, 'le succès avancé est proposé aussi');
   assert.ok(P.suggest({ preset: 'rewards' }).find(x => x.id === 2).score > q2.score, 'le préréglage Récompenses pèse plus sur le titre');
 });
 

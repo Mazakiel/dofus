@@ -8,27 +8,27 @@ const PN = [
   { id: 'deb', q: 1962, r: 2, c: 1 },                                  // « Ça sent le gaz » puis « Balade en forêt » : départ d'Argenté et de la série primordiale
   { id: 'arg', d: 'Dofus Argenté', r: 3, c: 1 },
   { id: 'mais', ach: 1036, r: 3, c: 2, s: 2 },                          // « Mais où sont les Dofus ? » : le tronc commun des six primordiaux
-  { id: 'six', ach: 1705, r: 8, c: 2, s: 2 },                           // « Six sur six » : demande les six primordiaux ; ouvre Sylvestre
-  { id: 'scint', d: 'Dofus Argenté Scintillant', r: 8, c: 1 },
+  { id: 'six', ach: 1705, r: 7, c: 2, s: 2 },                           // « Six sur six » (6/6) : les six primordiaux et leurs quêtes finales ; ouvre Scintillant et Sylvestre
+  { id: 'scint', d: 'Dofus Argenté Scintillant', r: 8, c: 2 },          // demande Argenté et presque tout « Six sur six » (il lui manque ses deux dernières quêtes)
   { id: 'domakuro', d: 'Domakuro', r: 2, c: 4 },
   { id: 'dorigami', d: 'Dorigami', r: 3, c: 4 },
   { id: 'mdlm', q: 2200, r: 4, c: 4 },                                  // « Main dans la main » : première quête de Tacheté (demande Domakuro et Dorigami)
   { id: 'tach', d: 'Dofus Tacheté', r: 5, c: 4 },                       // la chaîne de Cauchemar passe par « En ce jardin qui nous unit », sa dernière quête sur le chemin
   { id: 'cauch', d: 'Dofus du Cauchemar', r: 6, c: 4 },                 // la quête de Verdoyant exige « Un héritage tourmenté » (3 des 4 quêtes de Cauchemar)
   { id: 'verd', d: 'Dofus Verdoyant', r: 7, c: 4 },                     // la chaîne de Sylvestre passe par la quête de Verdoyant
-  { id: 'pin', d: 'Dom de Pin', r: 8, c: 5 },                           // exigé par la quête « Flovoraison » (Sylvestre) ; à cocher à la main
+  { id: 'pin', d: 'Dom de Pin', r: 7, c: 5 },                           // exigé par la quête « Flovoraison » (Sylvestre) ; à cocher à la main
   { id: 'sylv', d: 'Dofus Sylvestre', r: 8, c: 4 },
-  { id: 'veill', d: 'Dofus des Veilleurs', r: 10, c: 1 },
-  { id: 'neb', d: 'Dofus Nébuleux', r: 11, c: 1 },
+  { id: 'veill', d: 'Dofus des Veilleurs', r: 2, c: 5 },                // Dimensions Divines : entre la série Pandala et les indépendants
+  { id: 'neb', d: 'Dofus Nébuleux', r: 3, c: 5 },
 ];
 // Les six primordiaux : placés dans l'ordre (niveau puis effort), deux par ligne, dans un cadre commun (pas de chaîne entre eux)
 const PRIM_SLOTS = [[4, 2], [4, 3], [5, 2], [5, 3], [6, 2], [6, 3]];
 const PBOX = { id: 'prim', r: 4, c: 2, rows: 3 };
-// Flèches : ['de', 'vers', type]. Toutes à angles droits : par défaut elles descendent (droit si les cartes sont alignées, sinon un palier au milieu) ;
-// el = part du côté gauche du cadre ; r / l = à l'horizontale vers la droite / la gauche (cartes de la même ligne).
-const PE = [['deb', 'arg'], ['deb', 'mais'], ['mais', 'prim'], ['prim', 'six'], ['arg', 'scint'], ['prim', 'scint', 'el'],
+// Flèches : ['de', 'vers']. Une flèche va toujours vers le bas (ce qui est dessous dépend de ce qui est dessus), à angles droits :
+// droite si les cartes sont alignées, sinon elle descend, longe l'espace juste au-dessus de la cible, puis descend dedans.
+const PE = [['deb', 'arg'], ['deb', 'mais'], ['mais', 'prim'], ['prim', 'six'], ['arg', 'scint'], ['six', 'scint'],
   ['domakuro', 'dorigami'], ['dorigami', 'mdlm'], ['mdlm', 'tach'], ['tach', 'cauch'], ['cauch', 'verd'], ['verd', 'sylv'],
-  ['six', 'sylv', 'r'], ['pin', 'sylv', 'l'], ['veill', 'neb']];
+  ['six', 'sylv'], ['pin', 'sylv'], ['veill', 'neb']];
 const pDofus = name => SDZL.find(d => d.n === name);
 const pNode = id => (id === 'prim' ? PBOX : PN.find(n => n.id === id));
 const pPlaced = new Set(PN.filter(n => n.d).map(n => n.d).concat(PRIM));
@@ -99,11 +99,8 @@ function pDrawEdges() {
   for (const [a, b, kind] of PE) {
     const A = R(a), B = R(b); if (!A || !B) continue;
     let pts;
-    if (kind === 'r') pts = [[A.r, A.cy], [B.l - 3, A.cy]];
-    else if (kind === 'l') pts = [[A.l, A.cy], [B.r + 3, A.cy]];
-    else if (kind === 'el') pts = [[A.l, A.b - 20], [B.cx, A.b - 20], [B.cx, B.t - 3]];
-    else if (Math.abs(A.cx - B.cx) < 3) pts = [[A.cx, A.b], [B.cx, B.t - 3]];
-    else { const ym = A.b + (B.t - A.b) / 2; pts = [[A.cx, A.b], [A.cx, ym], [B.cx, ym], [B.cx, B.t - 3]]; }
+    if (Math.abs(A.cx - B.cx) < 3) pts = [[A.cx, A.b], [B.cx, B.t - 3]];
+    else { const ym = B.t - 24; pts = [[A.cx, A.b], [A.cx, ym], [B.cx, ym], [B.cx, B.t - 3]]; }
     h += `<path class="pe" d="${pRound(pts)}" marker-end="url(#pah)"/>`;
   }
   svg.setAttribute('width', g.scrollWidth); svg.setAttribute('height', g.scrollHeight); svg.innerHTML = h;

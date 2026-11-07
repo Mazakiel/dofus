@@ -430,3 +430,18 @@ test('Dom de Pin : conditions d\'achat (succès, quête) et PNJ avec position co
   await p.eval(`document.querySelector('#scDetail .coord[data-copy="/travel 38 -80"]').click(); 1`); await p.wait(150);
   assert.deepEqual(await p.eval(`window.__copied`), ['/travel 38 -80']);
 }, {}, buildPage(path.join(__dirname, '..', '..', 'data', 'dofusdb.json'))));
+
+test('parcours : en masquant les obtenus, les lignes vides disparaissent et la grille se resserre', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(600);
+  const full = await p.eval(`document.getElementById('pgrid').offsetHeight`);
+  // tout ce qui est avant le niveau 200 est obtenu : seules restent les lignes du palier 200
+  await p.eval(`SDZL.filter(d => (SDZLV[d.id] || [200, 200])[1] < 200 && d.n !== 'Dom de Pin').forEach(d => setSdzOwned(d, true)); sdone.add(1036); sShowDone = false; renderSucces(); 1`); await p.wait(300);
+  const r = await p.eval(`(() => { const g = document.getElementById('pgrid'); const tops = [...g.querySelectorAll('.cz')].map(e => e.offsetTop);
+    return { h: g.offsetHeight, minTop: Math.min(...tops), lines: [...g.querySelectorAll('.pband span')].map(e => e.textContent), n: tops.length }; })()`);
+  assert.ok(r.n >= 5, 'des cartes restent');
+  assert.ok(r.h < full * 0.8, 'la grille est plus courte : ' + r.h + ' contre ' + full);
+  assert.ok(r.minTop < 60, 'les premières cartes remontent en haut : ' + r.minTop);
+  assert.deepEqual(r.lines, ['niv. 200'], 'les traits des paliers vides disparaissent');
+  assert.deepEqual(await p.eval(`(() => { const cs = [...document.querySelectorAll('#pgrid .cz')].map(e => ({ id: e.id, l: e.offsetLeft, t: e.offsetTop, r: e.offsetLeft + e.offsetWidth, b: e.offsetTop + e.offsetHeight })); const bad = [];
+    for (let i = 0; i < cs.length; i++) for (let j = i + 1; j < cs.length; j++) if (cs[i].l < cs[j].r && cs[i].r > cs[j].l && cs[i].t < cs[j].b && cs[i].b > cs[j].t) bad.push(cs[i].id + '/' + cs[j].id); return bad; })()`), []);
+}));

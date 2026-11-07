@@ -71,32 +71,36 @@ function parcoursHtml() {
   const after = id => (edgeIn[id] || []).map(x => pName(pNode(x))).filter(Boolean);
   const hi = d => (SDZLV[d.id] || [200, 200])[1], lo = d => (SDZLV[d.id] || [200, 200])[0];
   const prim = PRIM.map(pDofus).filter(Boolean).sort((a, b) => SDZ_ORDER.indexOf(a) - SDZ_ORDER.indexOf(b));
-  const out = [], rects = [];
-  const put = (html, rc) => { if (html) { out.push(html); rects.push(rc); } };
+  // 1. ce qui s'affiche, et sur quelle ligne : { row, lane, span, build(style, ordre) → html }
+  const items = [];
   for (const n of PN) {
-    const rc = pRect(n.lane, n.r, n.s), st = pStyle(rc, n.r * 10 + PLANES[n.lane] / 100), aft = after(n.id).length ? 'après ' + after(n.id).join(', ') : '';
-    if (n.d) { const d = pDofus(n.d); if (d && sdzVisible(d) && rwShown(d)) put(pCard(d, n.id, st, aft, ready(n.id)), rc); }
-    else put(pPivot(n, st, aft, ready(n.id)), rc);
+    const aft = after(n.id).length ? 'après ' + after(n.id).join(', ') : '';
+    if (n.d) { const d = pDofus(n.d); if (d && sdzVisible(d) && rwShown(d)) items.push({ row: n.r, lane: n.lane, span: n.s, build: st => pCard(d, n.id, st, aft, ready(n.id)) }); }
+    else if (pPivot(n, '', '', false)) items.push({ row: n.r, lane: n.lane, span: n.s, build: st => pPivot(n, st, aft, ready(n.id)) });
   }
-  // les six primordiaux : un cadre, six cartes sans lien entre elles
-  const primShown = [], primRects = [];
-  prim.forEach((d, i) => { if (!sdzVisible(d) || !rwShown(d)) return; const [r, lane] = PRIM_SLOTS[i], rc = pRect(lane, r);
-    put(pCard(d, 'p' + i, pStyle(rc, r * 10 + PLANES[lane] / 100), 'après ' + pName(pNode('mais')), false), rc); primShown.push(d); primRects.push(rc); });
-  if (primRects.length) {
-    const l = Math.min(...primRects.map(r => r.l)) - 10, t = Math.min(...primRects.map(r => r.t)) - 10, rr = Math.max(...primRects.map(r => r.l + r.w)) + 10, b = Math.max(...primRects.map(r => r.t + r.h)) + 10;
-    out.unshift(`<div class="pbox" id="cz-prim" style="left:${l}px;top:${t}px;width:${rr - l}px;height:${b - t}px" aria-hidden="true"></div>`);
-  }
+  const primItems = [];
+  prim.forEach((d, i) => { if (!sdzVisible(d) || !rwShown(d)) return; const [row, lane] = PRIM_SLOTS[i];
+    const it = { row, lane, build: st => pCard(d, 'p' + i, st, 'après ' + pName(pNode('mais')), false) }; items.push(it); primItems.push(it); });
   // les indépendants : par niveau de fin, puis de départ, puis effort ; deux par ligne, à partir de la première ligne de leur palier
   const alone = SDZ_ORDER.filter(d => !pPlaced.has(d.n) && sdzVisible(d) && rwShown(d)).sort((a, b) => hi(a) - hi(b) || lo(a) - lo(b) || pLeft(a) - pLeft(b));
   const used = {};
   alone.forEach(d => {
     const h = hi(d), band = h < 50 ? 0 : h < 100 ? 1 : h < 150 ? 2 : h < 200 ? 3 : 4;   // un trait N = « niveau N ou plus »
-    let r = PALONE_FIRST[band]; while ((used[r] || 0) >= 2) r++;
-    const lane = (used[r] = (used[r] || 0) + 1) === 1 ? 'I1' : 'I2', rc = pRect(lane, r);
-    put(pCard(d, 'a' + d.id, pStyle(rc, r * 10 + PLANES[lane] / 100), '', false), rc);
+    let row = PALONE_FIRST[band]; while ((used[row] || 0) >= 2) row++;
+    items.push({ row, lane: (used[row] = (used[row] || 0) + 1) === 1 ? 'I1' : 'I2', build: st => pCard(d, 'a' + d.id, st, '', false) });
   });
-  out.unshift(...PBANDS.map(([r, lv]) => `<div class="pband" style="top:${pRowTop(r) - PGAP / 2}px"><span>niv. ${lv}</span></div>`));
-  const W = Math.max(...rects.map(r => r.l + r.w)) + 20, H = Math.max(...rects.map(r => r.t + r.h)) + 30;
+  // 2. les lignes sans aucune carte disparaissent : quand on masque les obtenus, la grille se resserre
+  const rows = [...new Set(items.map(it => it.row))].sort((a, b) => a - b), rowOf = r => rows.indexOf(r) + 1;
+  const out = [], rects = [];
+  for (const it of items) { const rc = pRect(it.lane, rowOf(it.row), it.span); it.rc = rc; rects.push(rc); out.push(it.build(pStyle(rc, rowOf(it.row) * 10 + PLANES[it.lane] / 100))); }
+  if (primItems.length) {
+    const l = Math.min(...primItems.map(it => it.rc.l)) - 10, t = Math.min(...primItems.map(it => it.rc.t)) - 10, rr = Math.max(...primItems.map(it => it.rc.l + it.rc.w)) + 10, b = Math.max(...primItems.map(it => it.rc.t + it.rc.h)) + 10;
+    out.unshift(`<div class="pbox" id="cz-prim" style="left:${l}px;top:${t}px;width:${rr - l}px;height:${b - t}px" aria-hidden="true"></div>`);
+  }
+  // 3. traits de niveau : un trait par palier qui a encore des cartes, juste au-dessus de sa première ligne
+  const lines = PBANDS.map(([first, lv], i) => { const next = i + 1 < PBANDS.length ? PBANDS[i + 1][0] : Infinity, r = rows.find(x => x >= first && x < next); return r ? [rowOf(r), lv] : null; }).filter(Boolean);
+  out.unshift(...lines.map(([r, lv]) => `<div class="pband" style="top:${pRowTop(r) - PGAP / 2}px"><span>niv. ${lv}</span></div>`));
+  const W = Math.max(0, ...rects.map(r => r.l + r.w)) + 20, H = Math.max(0, ...rects.map(r => r.t + r.h)) + 30;
   return `<div class="pwrap"><div class="pgrid" id="pgrid" style="width:${W}px;height:${H}px"><svg class="pedges" id="pedges" aria-hidden="true"></svg>${out.join('')}</div></div>`;
 }
 

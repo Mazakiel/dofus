@@ -59,11 +59,10 @@ function renderRwMain(el) {
   const body = rKind === 'd' ? (parcours ? parcoursHtml() : `<div class="dz-grid">${shown.map(dofusCard).join('')}</div>`) : shown.map(rwRow).join('');
   const goalBtnHead = GOALR.length ? `<button class="btn" data-goalview title="${esc(goalSummary())} : les quêtes à faire">Mes objectifs (${GOALR.length})</button>` : '';
   el.innerHTML = seg + head(title, `${d} / ${list.length} obtenus (${pctOf(d, list.length)} %) · ${plural(shown.length, 'affiché')}`, goalBtnHead)
-    + (parcours && shown.length ? '<div class="dz-hint">Chaque famille se lit de haut en bas : ce qui est au-dessus se fait d’abord. « Suivant » marque le prochain Dofus de la famille. Clique un Dofus pour voir comment l’obtenir, « objectif » le suit dans tes listes.</div>' : '')
     + (shown.length ? body : EMPTY);
   imgErr(el);
   document.body.classList.toggle('pc-wide', parcours);   // le parcours prend toute la largeur : la fiche passe en tiroir
-  if (parcours) pDrawEdges();
+  if (parcours) { pDrawEdges(); pWatch(); }
 }
 
 // Fiche d'un Dofus, d'un titre ou d'un ornement
@@ -72,12 +71,12 @@ function rwDetailHtml(r) {
   const lvl = !r.kind && SDZLV[r.id] ? ` · niveau ${SDZLV[r.id][0] === SDZLV[r.id][1] ? SDZLV[r.id][0] : SDZLV[r.id].join(' à ')}` : '';
   const big = r.kind === 't' ? `<span class="rw-ti big">${RIBBON}</span>` : rwIcon(r, 'rw-big');
   const achLine = id => { const s = SACH[id]; if (!s) return ''; const [d, n] = achProg(s), dn = achDone(id);
-    return `<div class="ob${dn ? ' done' : ''}">${okx(dn)}<span>Succès <span class="sgo" data-sgo="${id}">${esc(s.n)}</span></span>${n > 1 ? `<span class="lv">${d} / ${n}</span>` : ''}</div>`; };
+    return `<div class="ob${dn ? ' done' : ''}">${okx(dn)}<span>Succès <span class="sgo" data-pick="a:${id}">${esc(s.n)}</span></span>${n > 1 ? `<span class="lv">${d} / ${n}</span>` : ''}</div>`; };
   let src;
   if (r.kind) src = achLine(r.a);
   else {
     src = [r.a && !r.pre ? achLine(r.a) : '', ...(r.pa || []).map(achLine),
-      r.q ? `<div class="ob${qDoneS(r.q) ? ' done' : ''}">${okx(qDoneS(r.q))}<span>Quête <span class="sgo" data-goq="${r.q}">${esc(qName(r.q))}</span></span><span class="lv">${lvTxt(SC.quetes[r.q] || {})}</span></div>` : ''].join('');
+      r.q ? `<div class="ob${qDoneS(r.q) ? ' done' : ''}">${okx(qDoneS(r.q))}<span>Quête <span class="sgo" data-pick="q:${r.q}">${esc(qName(r.q))}</span></span><span class="lv">${lvTxt(SC.quetes[r.q] || {})}</span></div>` : ''].join('');
     if (!src) src = `<div class="quote">${esc(dzWho(r))}</div>`;
   }
   const acc = own ? null : rwNeeds(r), avail = acc ? [...acc.q].filter(q => qStatus(q) === 'av').length : 0;
@@ -90,15 +89,4 @@ function rwDetailHtml(r) {
     ${left ? `<div class="lab">Il reste</div><div class="ob"><span>${left}</span></div>` : ''}
     ${a ? `<div class="path">${esc(catPath(a.c))}</div>` : ''}
     <div class="ddb-row">${r.kind ? ddbLink('a', r.a, 'Succès sur DofusDB') : ddbLink('d', r.id)}</div>`;
-}
-
-// Aller à une quête depuis une fiche (la fiche d'un Dofus cite la quête qui le donne)
-function goToQuest(id) {
-  if (!SC.quetes[id]) return;
-  sSearch = ''; document.getElementById('scSearch').value = ''; mTab = 'quetes'; sMode = 'quetes'; store.set('sMode', sMode);
-  sCat = QALL; store.set('sCat', sCat);
-  if (!sShowDone && qDoneS(id)) { sShowDone = true; store.set('sShowDone', true); }
-  if (!sShowLocked && qStatus(id) === 'lock') { sShowLocked = true; store.set('sShowLocked', true); }
-  sPick = { k: 'q', id }; renderSucces();
-  const el = document.getElementById('q' + id); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1400); }
 }

@@ -30,9 +30,6 @@ function onScClick(e){
   if (rk) { rKind = rk.dataset.rkind; store.set('rKind', rKind); rCat = SALL; store.set('rCat', rCat); sPick = null; sSearch = ''; document.getElementById('scSearch').value = ''; renderSucces(); return; }
   const rg = e.target.closest('[data-rgoal]');
   if (rg) { const [k, id] = rg.dataset.rgoal.split(':'), r = rwOf(k, +id); if (r) { rwSetGoal(r, !rwIsGoal(r)); renderSucces(); } return; }
-  const gq = e.target.closest('[data-goq]');
-  if (gq) { goToQuest(+gq.dataset.goq); return; }
-  const go = e.target.closest('[data-sgo]'); if (go) { goToAch(+go.dataset.sgo); return; }
   const all = e.target.closest('[data-sall]');
   if (all) { const id = +all.dataset.sall, list = catIds(id).flatMap(c => SBYCAT[c] || []).filter(sVisible);
     askConfirm(`Marquer les ${list.length} succès de « ${SCAT[id].n} » comme obtenus, avec leurs quêtes ?`, 'Tout cocher').then(ok => { if (!ok) return;
@@ -61,7 +58,6 @@ function onScClick(e){
     renderScList(); renderDetail();
     if (fromDetail) { const r = document.getElementById((k === 'a' ? 'ach' : 'q') + id); if (r) r.scrollIntoView({ block: 'nearest' }); }
     else if (isMobile()) openSheet();
-    else if (window.innerWidth <= 1100) document.getElementById('scDetail').scrollIntoView({ behavior: 'smooth', block: 'start' });
     routeSync();
   }
 }

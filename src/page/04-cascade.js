@@ -129,8 +129,7 @@ function renderDlg(){
   document.getElementById('scDlgSum').innerHTML =
     (parts.length ? `${isA ? 'Avec ce succès' : isD ? 'Avec ce Dofus' : 'Avec cette quête'}, tu valides aussi ${parts.join(' et ')}.` : `Rien d’autre n’est sélectionné : seul${isA ? ' ce succès' : isD ? ' ce Dofus' : 'e cette quête'} sera validé${isA || isD ? '' : 'e'}.`)
     + (dzAlso.length ? `<div style="margin-top:4px">Dofus obtenus en plus (${dzAlso.length}) : ${rewChips(dzAlso)}</div>` : '')
-    + (also.length ? `<div style="margin-top:4px">Succès obtenus en plus (${also.length}) : ${also.slice(0, 10).map(a => `<b>${esc(a.n)}</b>`).join(', ')}${also.length > 10 ? ` et ${also.length - 10} autres` : ''}.</div>` : '')
-    + '<div class="muted" style="font-size:.82rem;margin-top:2px">▸ affiche ce qu’une ligne entraîne (objectifs d’un succès, prérequis d’une quête). Ce qui est déjà validé est grisé.</div>';
+    + (also.length ? `<div style="margin-top:4px">Succès obtenus en plus (${also.length}) : ${also.slice(0, 10).map(a => `<b>${esc(a.n)}</b>`).join(', ')}${also.length > 10 ? ` et ${also.length - 10} autres` : ''}.</div>` : '');
   document.getElementById('scDlgApply').textContent = 'Valider';
   document.getElementById('scDlgApply').classList.remove('danger');
   document.getElementById('scDlgBody').innerHTML = `<ul>${isA ? dlAchKids(DLG.id, new Set(['a' + DLG.id]))

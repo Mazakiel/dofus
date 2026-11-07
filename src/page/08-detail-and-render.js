@@ -57,9 +57,9 @@ function renderDetail(){
   if (sPick && sPick.k === 'a' && SACH[sPick.id]) el.innerHTML = CLOSE + achDetailHtml(SACH[sPick.id]);
   else if (sPick && sPick.k === 'q' && SC.quetes[sPick.id]) el.innerHTML = CLOSE + questDetailHtml(sPick.id);
   else if (sPick && ['d', 't', 'o'].includes(sPick.k) && rwOf(sPick.k, sPick.id)) el.innerHTML = CLOSE + rwDetailHtml(rwOf(sPick.k, sPick.id));
-  else el.innerHTML = `<div class="det-empty"><div class="orn">✦</div>Choisis ${sMode === 'quetes' ? 'une quête' : sMode === 'recomp' ? 'une récompense' : 'un succès'} dans la liste pour voir ses objectifs, ses prérequis et ce qu’il rapporte.</div>`;
+  else el.innerHTML = '';
   imgErr(el);
-  document.body.classList.toggle('has-pick', !el.querySelector('.det-empty'));
+  document.body.classList.toggle('has-pick', !!el.innerHTML);   // la fiche n'existe que quand quelque chose est choisi
 }
 function ensureCat(){
   const l = scCatList(); if (l.some(c => c.id === sCat)) return;
@@ -87,17 +87,6 @@ function renderSucces(){
   if (sMode === 'donjons') ensureDj(); else if (sMode === 'recomp') ensureRw(); else ensureCat();
   renderScTree(); renderScList(); renderDetail();
   if (typeof routeSync === 'function') routeSync();
-}
-function goToAch(id){
-  const a = SACH[id]; if (!a) return;
-  if (!a.t) return;   // succès hors quêtes : non géré dans cet onglet
-  sSearch = ''; document.getElementById('scSearch').value = ''; mTab = 'succes';
-  if (sMode !== 'succes') { sMode = 'succes'; store.set('sMode', sMode); }
-  sCat = groupOf(a.c); store.set('sCat', sCat);
-  if (!sShowDone && achDone(id)) { sShowDone = true; store.set('sShowDone', true); }
-  if (!sShowLocked && !achDone(id) && !achAvailNow(id)) { sShowLocked = true; store.set('sShowLocked', true); }
-  sPick = { k: 'a', id }; renderSucces();
-  const el = document.getElementById('ach' + id); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1400); }
 }
 document.getElementById('scTree').addEventListener('click', e => {
   const rc = e.target.closest('[data-rcat]');

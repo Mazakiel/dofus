@@ -60,7 +60,7 @@ function applyRoute(hash) {
 
 // Fermeture voulue de la feuille (✕, fond, Échap) : si elle a ajouté une entrée d'historique, on la retire en revenant en arrière
 function dismissSheet() {
-  if (document.body.classList.contains('pc-wide') && !isMobile()) { sPick = null; renderDetail(); renderScList(); routeSync(); return; }   // tiroir du parcours (ordinateur)
+  if (!isMobile()) { sPick = null; renderDetail(); renderScList(); routeSync(); return; }   // ordinateur : on ferme la fiche
   if (routing.sheetPushed && history.state && history.state.sheet) { history.back(); return; }   // popstate refermera la feuille
   closeSheet(); renderScList(); routeSync();
 }

@@ -51,5 +51,5 @@ sugDlg.addEventListener('click', e => {
   const p = e.target.closest('[data-sugp]');
   if (p) { sugPreset = p.dataset.sugp; store.set('sugPreset', sugPreset); renderSuggest(); return; }
   const r = e.target.closest('[data-sug]');
-  if (r) { sugDlg.close(); goToQuest(+r.dataset.sug); if (isMobile()) openSheet(); }
+  if (r) { sugDlg.close(); sPick = { k: 'q', id: +r.dataset.sug }; renderScList(); renderDetail(); if (isMobile()) openSheet(); routeSync(); }   // la fiche s'ouvre sur place, sans changer de vue
 });

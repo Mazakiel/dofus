@@ -350,11 +350,11 @@ test('suggestions : la fenêtre propose du faisable, change de critère et ouvre
   const q = await p.eval(`+document.querySelector('#sugList [data-sug]').dataset.sug`);
   await p.eval(`qState[${q}] = 'b'; renderSuggest(); 1`);
   assert.equal(await p.eval(`!!document.querySelector('#sugList [data-sug="${q}"]')`), false);
-  // ouvrir une suggestion : la fenêtre se ferme, la fiche s'affiche dans sa vue
+  // ouvrir une suggestion : la fenêtre se ferme, la fiche s'ouvre sur place
   const pick = await p.eval(`document.querySelector('#sugList [data-sug]').dataset.sug`);
   await p.eval(`document.querySelector('#sugList [data-sug="${pick}"]').click(); 1`); await p.wait(300);
   assert.equal(await p.eval(`document.getElementById('sugDialog').open`), false);
-  assert.deepEqual(await p.eval(`({ m: sMode, k: sPick && sPick.k, id: sPick && sPick.id })`), { m: 'quetes', k: 'q', id: +pick });
+  assert.deepEqual(await p.eval(`({ m: sMode, k: sPick && sPick.k, id: sPick && sPick.id, open: document.body.classList.contains('has-pick') })`), { m: 'recomp', k: 'q', id: +pick, open: true }, 'la fiche s’ouvre sur place, sans changer de vue');
   assert.ok(first);
 }));
 
@@ -362,13 +362,13 @@ test('parcours des Dofus : grille par familles, Dofawa masqué, flèches, « Sui
   await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(500);
   const r = await p.eval(`(() => {
     const names = [...document.querySelectorAll('#scList .pgrid .cz:not(.pv) b')].map(e => e.textContent.trim());
-    return { n: names.length, dofawa: names.includes('Dofawa'), titres: [...document.querySelectorAll('#scList .pl-h')].map(h => h.textContent.trim()),
+    return { n: names.length, dofawa: names.includes('Dofawa'), titres: document.querySelectorAll('#scList .pl-h, #scList .dz-hint').length,
       ready: document.querySelectorAll('#scList .cz.ready').length, edges: document.querySelectorAll('#pedges .pe').length, wide: document.body.classList.contains('pc-wide'),
       hasHidden: SDZL.some(d => d.n === 'Dofawa'), pivots: document.querySelectorAll('#scList .cz.pv').length };
   })()`);
   assert.ok(r.n > 15, 'les Dofus sont là : ' + r.n);
   assert.equal(r.dofawa, false); assert.equal(r.hasHidden, false);
-  assert.ok(['Argenté', 'Série primordiale', 'Série Pandala', 'Indépendants'].every(t => r.titres.includes(t)), JSON.stringify(r.titres));
+  assert.equal(r.titres, 0, 'ni titres de colonne ni texte d’aide : le parcours se lit seul');
   assert.ok(r.ready >= 1, '« Suivant » marque ce qui se fait maintenant');
   assert.ok(r.edges >= 10, 'les flèches sont tracées : ' + r.edges);
   assert.equal(r.wide, true); assert.ok(r.pivots >= 3, 'tronc commun, départ commun, Six sur six');
@@ -380,6 +380,18 @@ test('parcours des Dofus : grille par familles, Dofawa masqué, flèches, « Sui
   assert.equal(await p.eval(`document.body.classList.contains('has-pick')`), true);
   await p.eval(`document.querySelector('#scDetail [data-closedet]').click(); 1`); await p.wait(200);
   assert.equal(await p.eval(`document.body.classList.contains('has-pick')`), false);
+  // un lien de la fiche vers un succès ou une quête l'ouvre sur place : on reste dans la vue Dofus
+  await p.eval(`document.querySelector('#scList .cz:not(.pv)').click(); 1`);
+  await p.eval(`document.querySelector('#scDetail [data-pick^="a:"], #scDetail [data-pick^="q:"]').click(); 1`); await p.wait(200);
+  assert.deepEqual(await p.eval(`({ m: sMode, open: document.body.classList.contains('has-pick'), k: sPick && sPick.k })`), { m: 'recomp', open: true, k: await p.eval(`sPick.k`) });
+  assert.ok(['a', 'q'].includes(await p.eval(`sPick.k`)));
+  await p.eval(`document.querySelector('#scDetail [data-closedet]').click(); 1`); await p.wait(200);
+  // un succès ou une quête du parcours, faits : masqués tant que « Afficher les obtenus » est décoché
+  await p.eval(`sdone.add(1036); sShowDone = false; renderSucces(); 1`);
+  assert.equal(await p.eval(`!!document.querySelector('#cz-mais')`), false, 'le succès fait n’est pas affiché');
+  await p.eval(`sShowDone = true; renderSucces(); 1`);
+  assert.equal(await p.eval(`!!document.querySelector('#cz-mais.own')`), true);
+  await p.eval(`sdone.delete(1036); renderSucces(); 1`);
   // un Dofus obtenu : sa carte passe en « obtenu » et il n'est plus « Suivant »
   const own = await p.eval(`(() => { const d = pDofus('Domakuro'); setSdzOwned(d, true); renderSucces(); return d.n; })()`);
   assert.equal(await p.eval(`!!document.querySelector('#scList .cz.own[title="Domakuro"]')`), true, own + ' obtenu');

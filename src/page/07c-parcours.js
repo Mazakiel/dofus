@@ -8,27 +8,27 @@ const PRIM = ['Dofus Ocre', 'Dofus Émeraude', 'Dofus Pourpre', 'Dofus Turquoise
 // Les Dofus sont désignés par leur nom, les succès et quêtes par leur identifiant. r = ligne, lane = position horizontale, s = largeur en cartes.
 const PW = 156, PSTEP = 172, PNH = 72, PGAP = 46;   // largeur d'une carte, pas entre deux cartes voisines, hauteur d'une ligne, espace entre deux lignes
 const PLANES = { A: 0, M1: 100, M2: 272, P: 460, D: 632, I1: 804, I2: 976 };   // Argenté ; les deux colonnes des primordiaux (décalées pour laisser passer la flèche d'Argenté) ; Pandala ; Dimensions Divines ; indépendants
-const PBANDS = [[3, 50], [4, 100], [5, 150], [6, 200]];   // [première ligne du palier, niveau où il commence] : traits discrets entre les paliers
+const PBANDS = [[3, 50], [4, 100], [6, 150], [7, 200]];   // [première ligne du palier, niveau où il commence] : un trait « niv. N » veut dire « niveau N ou plus » (un Dofus de niveau 100 est sous le trait 100)
 const PN = [
   { id: 'arg', d: 'Dofus Argenté', lane: 'A', r: 1 },                              // niv. 2–40
   { id: 'mais', ach: 1036, lane: 'M1', s: 2, r: 2 },                              // « Mais où sont les Dofus ? » : les quêtes d'introduction des Dofus (niv. 30–40), tronc commun des six primordiaux
   { id: 'cawotte', d: 'Dofus Cawotte', lane: 'M2', r: 3 },                        // niv. 60 ; rattaché à l'introduction des Dofus (indication du joueur : DofusDB ne donne pas ce lien)
-  { id: 'veill', d: 'Dofus des Veilleurs', lane: 'D', r: 3 },                    // niv. 100 ; Dimensions Divines : entre la série Pandala et les indépendants
+  { id: 'veill', d: 'Dofus des Veilleurs', lane: 'D', r: 4 },                    // niv. 100 ; Dimensions Divines : entre la série Pandala et les indépendants
   { id: 'domakuro', d: 'Domakuro', lane: 'P', r: 4 },                             // niv. 30–140
-  { id: 'dorigami', d: 'Dorigami', lane: 'P', r: 5 },                              // niv. 160–170
-  { id: 'tach', d: 'Dofus Tacheté', lane: 'P', r: 6 },                            // la chaîne de Cauchemar passe par « En ce jardin qui nous unit », sa dernière quête sur le chemin
-  { id: 'neb', d: 'Dofus Nébuleux', lane: 'D', r: 6 },                            // niv. 100–200 : niveau de fin 200
-  { id: 'cauch', d: 'Dofus du Cauchemar', lane: 'P', r: 7 },                      // la quête de Verdoyant exige « Un héritage tourmenté » (3 des 4 quêtes de Cauchemar)
-  { id: 'six', ach: 1705, lane: 'M1', s: 2, r: 7 },                               // « Six sur six » (6/6) : les six primordiaux et leurs quêtes finales
-  { id: 'verd', d: 'Dofus Verdoyant', lane: 'P', r: 8 },                          // la chaîne de Sylvestre passe par la quête de Verdoyant
-  { id: 'scint', d: 'Dofus Argenté Scintillant', lane: 'M1', r: 8 },              // demande Argenté et presque tout « Six sur six » (il lui manque ses deux dernières quêtes)
-  { id: 'pin', d: 'Dom de Pin', lane: 'M2', r: 8 },                               // s'achète à un PNJ une fois « Six sur six », « L'héritage de l'île brisée » et la quête « Entretemps, une renaissance » faits ; exigé par « Flovoraison » (Sylvestre)
-  { id: 'sylv', d: 'Dofus Sylvestre', lane: 'P', r: 9 },
+  { id: 'dorigami', d: 'Dorigami', lane: 'P', r: 6 },                              // niv. 160–170
+  { id: 'tach', d: 'Dofus Tacheté', lane: 'P', r: 7 },                            // la chaîne de Cauchemar passe par « En ce jardin qui nous unit », sa dernière quête sur le chemin
+  { id: 'neb', d: 'Dofus Nébuleux', lane: 'D', r: 7 },                            // niv. 100–200 : niveau de fin 200
+  { id: 'cauch', d: 'Dofus du Cauchemar', lane: 'P', r: 8 },                      // la quête de Verdoyant exige « Un héritage tourmenté » (3 des 4 quêtes de Cauchemar)
+  { id: 'six', ach: 1705, lane: 'M1', s: 2, r: 8 },                               // « Six sur six » (6/6) : les six primordiaux et leurs quêtes finales
+  { id: 'verd', d: 'Dofus Verdoyant', lane: 'P', r: 9 },                          // la chaîne de Sylvestre passe par la quête de Verdoyant
+  { id: 'scint', d: 'Dofus Argenté Scintillant', lane: 'M1', r: 9 },              // demande Argenté et presque tout « Six sur six » (il lui manque ses deux dernières quêtes)
+  { id: 'pin', d: 'Dom de Pin', lane: 'M2', r: 9 },                               // s'achète à un PNJ une fois « Six sur six », « L'héritage de l'île brisée » et la quête « Entretemps, une renaissance » faits ; exigé par « Flovoraison » (Sylvestre)
+  { id: 'sylv', d: 'Dofus Sylvestre', lane: 'P', r: 10 },
 ];
-// Les six primordiaux : deux par ligne (lignes 4 à 6), dans un cadre commun, sans lien entre eux (ils dépendent tous du tronc commun)
-const PRIM_SLOTS = [[4, 'M1'], [4, 'M2'], [5, 'M1'], [5, 'M2'], [6, 'M1'], [6, 'M2']];
+// Les six primordiaux : deux par ligne (lignes 4, 6 et 7, selon leur niveau), dans un cadre commun, sans lien entre eux (ils dépendent tous du tronc commun)
+const PRIM_SLOTS = [[4, 'M1'], [4, 'M2'], [6, 'M1'], [6, 'M2'], [7, 'M1'], [7, 'M2']];
 const PBOX = { id: 'prim' };
-const PALONE_FIRST = [1, 3, 4, 5, 6];   // première ligne des indépendants pour : ≤ 50, 51–100, 101–150, 151–199, 200
+const PALONE_FIRST = [1, 3, 4, 6, 7];   // première ligne des indépendants pour : < 50, 50–99, 100–149, 150–199, 200
 // Flèches : ['de', 'vers']. Une flèche va toujours vers le bas (ce qui est dessous dépend de ce qui est dessus).
 const PE = [['mais', 'cawotte'], ['mais', 'prim'], ['prim', 'six'], ['arg', 'scint'], ['six', 'scint'],
   ['domakuro', 'dorigami'], ['dorigami', 'tach'], ['tach', 'cauch'], ['cauch', 'verd'], ['verd', 'sylv'],
@@ -90,7 +90,7 @@ function parcoursHtml() {
   const alone = SDZ_ORDER.filter(d => !pPlaced.has(d.n) && sdzVisible(d) && rwShown(d)).sort((a, b) => hi(a) - hi(b) || lo(a) - lo(b) || pLeft(a) - pLeft(b));
   const used = {};
   alone.forEach(d => {
-    const h = hi(d), band = h <= 50 ? 0 : h <= 100 ? 1 : h <= 150 ? 2 : h < 200 ? 3 : 4;
+    const h = hi(d), band = h < 50 ? 0 : h < 100 ? 1 : h < 150 ? 2 : h < 200 ? 3 : 4;   // un trait N = « niveau N ou plus »
     let r = PALONE_FIRST[band]; while ((used[r] || 0) >= 2) r++;
     const lane = (used[r] = (used[r] || 0) + 1) === 1 ? 'I1' : 'I2', rc = pRect(lane, r);
     put(pCard(d, 'a' + d.id, pStyle(rc, r * 10 + PLANES[lane] / 100), '', false), rc);
@@ -101,6 +101,16 @@ function parcoursHtml() {
 }
 
 // Flèches : tracées d'après la position réelle des cartes ; segments droits, coins arrondis
+function pRound(pts, r = 8) {
+  let d = `M${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const [px, py] = pts[i - 1], [x, y] = pts[i], [nx, ny] = pts[i + 1];
+    const a = Math.min(r, Math.hypot(x - px, y - py) / 2), b = Math.min(r, Math.hypot(nx - x, ny - y) / 2);
+    const ax = x - Math.sign(x - px) * a, ay = y - Math.sign(y - py) * a, bx = x + Math.sign(nx - x) * b, by = y + Math.sign(ny - y) * b;
+    d += ` L${ax} ${ay} Q${x} ${y} ${bx} ${by}`;
+  }
+  const [lx, ly] = pts[pts.length - 1]; return d + ` L${lx} ${ly}`;
+}
 function pDrawEdges() {
   const g = document.getElementById('pgrid'), svg = document.getElementById('pedges'); if (!g || !svg) return;
   const R = id => { const e = document.getElementById('cz-' + id); if (!e) return null; const o = { l: e.offsetLeft, t: e.offsetTop, w: e.offsetWidth, h: e.offsetHeight }; o.r = o.l + o.w; o.b = o.t + o.h; o.cx = o.l + o.w / 2; return o; };
@@ -115,17 +125,18 @@ function pDrawEdges() {
   spread(es, 'a', 'B', 'x1'); spread(es, 'b', 'A', 'x2');
   let h = '<defs><marker id="pah" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M0 0.5L10 5L0 9.5z" fill="currentColor"/></marker></defs>';
   for (const e of es) {
-    const { A, B } = e;
+    const { A, B } = e; let pts;
     // Si les deux cartes se recouvrent à l'horizontale, la flèche descend tout droit : pas de petit décrochage qui se tord
     const lo = Math.max(A.l, B.l) + 12, hi = Math.min(A.r, B.r) - 12;
     if (lo <= hi && Math.min(A.r, B.r) - Math.max(A.l, B.l) >= 100) { const x = Math.min(Math.max(e.x2, lo), hi); e.x1 = e.x2 = x; }   // recouvrement net seulement : sinon la droite traverserait d'autres cartes
-    // droite si les cartes sont alignées ; sinon elle descend tout droit puis se courbe en S dans les 44 derniers pixels, juste au-dessus de la cible
-    // (une courbe qui traverserait toute la hauteur croiserait des cartes)
-    const yE = B.t - 3;
-    let d;
-    if (Math.abs(e.x1 - e.x2) < 3) d = `M${e.x1} ${A.b} L${e.x2} ${yE}`;
-    else { const yb = Math.max(A.b + 10, yE - 40), k = (yE - yb) / 2; d = `M${e.x1} ${A.b} L${e.x1} ${yb} C${e.x1} ${yb + k} ${e.x2} ${yE - k} ${e.x2} ${yE}`; }
-    h += `<path class="pe" d="${d}" marker-end="url(#pah)"/>`;
+    if (Math.abs(e.x1 - e.x2) < 3) pts = [[e.x1, A.b], [e.x2, B.t - 3]];
+    else {
+      // le palier horizontal est dans l'espace libre juste au-dessus de la carte cible (jamais dans la rangée d'au-dessus), avec de la place pour la pointe ;
+      // deux flèches vers la même carte arrivent de côtés différents : leurs paliers ne se recouvrent pas
+      const lo = A.b + 14, hi = B.t - 20, ym = lo > hi ? (A.b + B.t) / 2 : Math.min(Math.max(B.t - 28, lo), hi);
+      pts = [[e.x1, A.b], [e.x1, ym], [e.x2, ym], [e.x2, B.t - 3]];
+    }
+    h += `<path class="pe" d="${pRound(pts)}" marker-end="url(#pah)"/>`;
   }
   svg.setAttribute('width', g.scrollWidth); svg.setAttribute('height', g.scrollHeight); svg.innerHTML = h;
 }

@@ -6,13 +6,13 @@ const PRIM = ['Dofus Ocre', 'Dofus Émeraude', 'Dofus Pourpre', 'Dofus Turquoise
 // Disposition : une ligne par étape de niveau, partagée par toutes les familles (ce qui est à la même hauteur se fait à peu près au même niveau) ;
 // horizontalement, pas de colonnes régulières : chaque famille a son décalage (PLANES, en pixels). Ce qui dépend d'un autre Dofus est toujours plus bas.
 // Les Dofus sont désignés par leur nom, les succès et quêtes par leur identifiant. r = ligne, lane = position horizontale, s = largeur en cartes.
-const PW = 156, PSTEP = 172, PNH = 72, PGAP = 46;   // largeur d'une carte, pas entre deux cartes voisines, hauteur d'une ligne, espace entre deux lignes
+const PW = 156, PSTEP = 172, PNH = 72, PGAP = 46, PGAP_MIN = 20;   // largeur d'une carte, pas entre deux cartes voisines, hauteur d'une ligne, espace avant une ligne où arrive une flèche / sinon
 const PLANES = { A: 0, M1: 100, M2: 272, P: 460, D: 632, I1: 804, I2: 976 };   // Argenté ; les deux colonnes des primordiaux (décalées pour laisser passer la flèche d'Argenté) ; Pandala ; Dimensions Divines ; indépendants
 const PBANDS = [[3, 50], [4, 100], [6, 150], [7, 200]];   // [première ligne du palier, niveau où il commence] : un trait « niv. N » veut dire « niveau N ou plus » (un Dofus de niveau 100 est sous le trait 100)
 const PN = [
   { id: 'arg', d: 'Dofus Argenté', lane: 'A', r: 1 },                              // niv. 2–40
   { id: 'mais', ach: 1036, lane: 'M1', s: 2, r: 2 },                              // « Mais où sont les Dofus ? » : les quêtes d'introduction des Dofus (niv. 30–40), tronc commun des six primordiaux
-  { id: 'cawotte', d: 'Dofus Cawotte', lane: 'M2', r: 3 },                        // niv. 60 ; rattaché à l'introduction des Dofus (indication du joueur : DofusDB ne donne pas ce lien)
+  { id: 'cawotte', d: 'Dofus Cawotte', lane: 'I1', r: 3 },                        // niv. 60 ; rattaché à l'introduction des Dofus (indication du joueur : DofusDB ne donne pas ce lien)
   { id: 'veill', d: 'Dofus des Veilleurs', lane: 'D', r: 4 },                    // niv. 100 ; Dimensions Divines : entre la série Pandala et les indépendants
   { id: 'domakuro', d: 'Domakuro', lane: 'P', r: 4 },                             // niv. 30–140
   { id: 'dorigami', d: 'Dorigami', lane: 'P', r: 6 },                              // niv. 160–170
@@ -60,7 +60,8 @@ function pPivot(n, pos, after, ready) {
   if (!SC.quetes[n.q]) return '';
   return `<div class="cz pv${dn ? ' own' : ''}${ready ? ' ready' : ''}${isPick('q', n.q) ? ' sel' : ''}" id="cz-${n.id}" style="${pos}" data-pick="q:${n.q}" tabindex="0" role="button" title="${esc(qName(n.q))}">${qIcon(SC.quetes[n.q], n.q)}<span class="cz-t"><b>${esc(qName(n.q))}</b><small>Quête${dn ? '' : ''}</small>${after ? `<small class="cz-after">${esc(after)}</small>` : ''}</span></div>`;
 }
-const pRowTop = r => 16 + (r - 1) * (PNH + PGAP);
+let pTops = [];   // ordonnée du haut de chaque ligne (à partir de 1) : l'espace avant une ligne n'est complet que si une flèche y arrive
+const pRowTop = r => pTops[r];
 const pRect = (lane, r, span = 1) => ({ l: PLANES[lane], t: pRowTop(r), w: span * PW + (span - 1) * (PSTEP - PW), h: PNH });
 const pStyle = (rc, order) => `left:${rc.l}px;top:${rc.t}px;width:${rc.w}px;order:${order}`;
 
@@ -74,31 +75,36 @@ function parcoursHtml() {
   const items = [];
   for (const n of PN) {
     const aft = after(n.id).length ? 'après ' + after(n.id).join(', ') : '';
-    if (n.d) { const d = pDofus(n.d); if (d && sdzVisible(d) && rwShown(d)) items.push({ row: n.r, lane: n.lane, span: n.s, build: st => pCard(d, n.id, st, aft, ready(n.id)) }); }
-    else if (pPivot(n, '', '', false)) items.push({ row: n.r, lane: n.lane, span: n.s, build: st => pPivot(n, st, aft, ready(n.id)) });
+    if (n.d) { const d = pDofus(n.d); if (d && sdzVisible(d) && rwShown(d)) items.push({ id: n.id, row: n.r, lane: n.lane, span: n.s, build: st => pCard(d, n.id, st, aft, ready(n.id)) }); }
+    else if (pPivot(n, '', '', false)) items.push({ id: n.id, row: n.r, lane: n.lane, span: n.s, build: st => pPivot(n, st, aft, ready(n.id)) });
   }
   const primItems = [];
   prim.forEach((d, i) => { if (!sdzVisible(d) || !rwShown(d)) return; const [row, lane] = PRIM_SLOTS[i];
-    const it = { row, lane, build: st => pCard(d, 'p' + i, st, 'après ' + pName(pNode('mais')), false) }; items.push(it); primItems.push(it); });
+    const it = { id: 'prim:' + i, row, lane, build: st => pCard(d, 'p' + i, st, 'après ' + pName(pNode('mais')), false) }; items.push(it); primItems.push(it); });
   // les indépendants : par niveau de fin, puis de départ, puis effort ; deux par ligne, à partir de la première ligne de leur palier
   const alone = SDZ_ORDER.filter(d => !pPlaced.has(d.n) && sdzVisible(d) && rwShown(d)).sort((a, b) => hi(a) - hi(b) || lo(a) - lo(b) || pLeft(a) - pLeft(b));
   const used = {};
   alone.forEach(d => {
     const h = hi(d), band = h < 50 ? 0 : h < 100 ? 1 : h < 150 ? 2 : h < 200 ? 3 : 4;   // un trait N = « niveau N ou plus »
     let row = PALONE_FIRST[band]; while ((used[row] || 0) >= 2) row++;
-    items.push({ row, lane: (used[row] = (used[row] || 0) + 1) === 1 ? 'I1' : 'I2', build: st => pCard(d, 'a' + d.id, st, '', false) });
+    items.push({ id: 'a' + d.id, row, lane: (used[row] = (used[row] || 0) + 1) === 1 ? 'I1' : 'I2', build: st => pCard(d, 'a' + d.id, st, '', false) });
   });
   // 2. les lignes sans aucune carte disparaissent : quand on masque les obtenus, la grille se resserre
   const rows = [...new Set(items.map(it => it.row))].sort((a, b) => a - b), rowOf = r => rows.indexOf(r) + 1;
+  // 3. espacement vertical : complet (46 px) avant une ligne où arrive une flèche, réduit (20 px) sinon
+  const rowOfId = {}; for (const it of items) rowOfId[it.id] = rowOf(it.row);
+  if (primItems.length) rowOfId.prim = Math.min(...primItems.map(it => rowOf(it.row)));
+  const arrives = new Set(); for (const [a, b] of PE) if (rowOfId[a] && rowOfId[b]) arrives.add(rowOfId[b]);
+  pTops = [0, 16]; for (let k = 2; k <= rows.length; k++) pTops[k] = pTops[k - 1] + PNH + (arrives.has(k) ? PGAP : PGAP_MIN);
   const out = [], rects = [];
   for (const it of items) { const rc = pRect(it.lane, rowOf(it.row), it.span); it.rc = rc; rects.push(rc); out.push(it.build(pStyle(rc, rowOf(it.row) * 10 + PLANES[it.lane] / 100))); }
   if (primItems.length) {
     const l = Math.min(...primItems.map(it => it.rc.l)) - 10, t = Math.min(...primItems.map(it => it.rc.t)) - 10, rr = Math.max(...primItems.map(it => it.rc.l + it.rc.w)) + 10, b = Math.max(...primItems.map(it => it.rc.t + it.rc.h)) + 10;
     out.unshift(`<div class="pbox" id="cz-prim" style="left:${l}px;top:${t}px;width:${rr - l}px;height:${b - t}px" aria-hidden="true"></div>`);
   }
-  // 3. traits de niveau : un trait par palier qui a encore des cartes, juste au-dessus de sa première ligne
+  // 4. traits de niveau : un trait par palier qui a encore des cartes, juste au-dessus de sa première ligne
   const lines = PBANDS.map(([first, lv], i) => { const next = i + 1 < PBANDS.length ? PBANDS[i + 1][0] : Infinity, r = rows.find(x => x >= first && x < next); return r ? [rowOf(r), lv] : null; }).filter(Boolean);
-  out.unshift(...lines.map(([r, lv]) => `<div class="pband" style="top:${pRowTop(r) - PGAP / 2}px"><span>niv. ${lv}</span></div>`));
+  out.unshift(...lines.map(([r, lv]) => `<div class="pband" style="top:${pRowTop(r) - (arrives.has(r) ? PGAP : PGAP_MIN) / 2}px"><span>niv. ${lv}</span></div>`));
   const W = Math.max(0, ...rects.map(r => r.l + r.w)) + 20, H = Math.max(0, ...rects.map(r => r.t + r.h)) + 30;
   return `<div class="pwrap"><div class="pgrid" id="pgrid" style="width:${W}px;height:${H}px"><svg class="pedges" id="pedges" aria-hidden="true"></svg>${out.join('')}</div></div>`;
 }
@@ -136,7 +142,7 @@ function pDrawEdges() {
     else {
       // le palier horizontal est dans l'espace libre juste au-dessus de la carte cible (jamais dans la rangée d'au-dessus), avec de la place pour la pointe ;
       // deux flèches vers la même carte arrivent de côtés différents : leurs paliers ne se recouvrent pas
-      const lo = A.b + 14, hi = B.t - 20, ym = lo > hi ? (A.b + B.t) / 2 : Math.min(Math.max(B.t - 28, lo), hi);
+      const lo = A.b + 14, hi = B.t - 20, ym = lo > hi ? (A.b + B.t) / 2 : Math.min(Math.max(B.t - 36, lo), hi);
       pts = [[e.x1, A.b], [e.x1, ym], [e.x2, ym], [e.x2, B.t - 3]];
     }
     h += `<path class="pe" d="${pRound(pts)}" marker-end="url(#pah)"/>`;

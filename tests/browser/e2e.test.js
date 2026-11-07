@@ -418,3 +418,15 @@ test('parcours : aucune flèche ne traverse une carte, aucune carte n’en cheva
   assert.deepEqual(r.overlaps, [], 'cartes qui se chevauchent');
   assert.deepEqual(r.cut, [], 'flèches qui traversent une carte');
 }));
+
+test('Dom de Pin : conditions d\'achat (succès, quête) et PNJ avec position copiable, placé sous « Six sur six »', { skip }, () => withPage(async p => {
+  await p.eval(`window.__copied = []; Object.defineProperty(navigator, 'clipboard', { value: { writeText: t => { window.__copied.push(t); return Promise.resolve(); } }, configurable: true }); localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(600);
+  const r = await p.eval(`(() => { const pin = pDofus('Dom de Pin'); sPick = { k: 'd', id: pin.id }; renderScList(); renderDetail(); const d = document.getElementById('scDetail').textContent;
+    const six = document.getElementById('cz-six'), cpin = document.getElementById('cz-pin');
+    return { d, coord: !!document.querySelector('#scDetail .coord[data-copy="/travel 38 -80"]'), below: cpin.offsetTop >= six.offsetTop + six.offsetHeight };
+  })()`);
+  assert.match(r.d, /Six sur six/); assert.match(r.d, /Entretemps, une renaissance/); assert.match(r.d, /Gobalden/); assert.match(r.d, /Gobdepin/);
+  assert.equal(r.coord, true); assert.equal(r.below, true, 'le Dom de Pin est sous « Six sur six »');
+  await p.eval(`document.querySelector('#scDetail .coord[data-copy="/travel 38 -80"]').click(); 1`); await p.wait(150);
+  assert.deepEqual(await p.eval(`window.__copied`), ['/travel 38 -80']);
+}, {}, buildPage(path.join(__dirname, '..', '..', 'data', 'dofusdb.json'))));

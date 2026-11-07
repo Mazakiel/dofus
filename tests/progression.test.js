@@ -255,6 +255,17 @@ test('suggestions : un même succès ne remplit pas toute la liste', () => {
   assert.equal(ids.indexOf(6) < 3, true, 'la quête de l’autre succès remonte devant les quêtes en trop du premier');
 });
 
+test('un Dofus à acheter à un PNJ demande ses succès et ses quêtes prérequis (pa, pq)', () => {
+  const D = DATA(); D.dofus.push({ id: 200, n: 'Dofus Acheté', pre: 1, pa: [2], pq: [5] });
+  const P = Progression.create(D); P.load({ sLevel: 100 });
+  const acc = P.collectPrereqs('d', 200);
+  assert.deepEqual([...acc.a].sort(), [1, 2], 'le succès prérequis et son sous-succès');
+  assert.deepEqual([...acc.q], [5], 'la quête prérequise');
+  P.state.sq.add(5);
+  assert.deepEqual([...P.collectPrereqs('d', 200).q], [], 'faite : elle ne figure plus');
+  assert.ok(P.collectDependents('q', 5).d.has(200) === false, 'tant que le Dofus n’est pas obtenu, rien à décocher');
+});
+
 test('sur les données figées : cohérence et temps de calcul', { skip: !fs.existsSync(path.join(__dirname, 'fixtures', 'dofusdb.json')) }, () => {
   const data = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'dofusdb.json'), 'utf8'));
   const P = Progression.create(data);

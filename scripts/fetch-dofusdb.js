@@ -95,8 +95,13 @@ async function run(client, OUT) {
   // Seuls rattachements faits à la main : DofusDB n'enregistre pas l'objet remis par dialogue.
   // Dofus Ocre : deux succès prérequis, « Ocre d'ambre » (5220) et « La fin de l'éternité » (565, quête « L'éternelle moisson »),
   // puis un dialogue avec le PNJ. Aucun des deux ne donne l'objet dans DofusDB : le Dofus se coche à la main (pre).
-  const MANUEL = { 7754: { pa: [5220, 565], src: 'manuel : succès prérequis puis dialogue' } };
-  for (const d of dofus) if (MANUEL[d.id]) { d.a = null; d.q = null; d.pa = MANUEL[d.id].pa; d.src = MANUEL[d.id].src; d.pre = 1; }
+  // Dom de Pin (indication du joueur, vue sur la fiche DofusDB de l'objet) : s'achète à deux PNJ, visibles une fois « Six sur six » et « L'héritage de l'île brisée »
+  // obtenus et la quête « Entretemps, une renaissance » terminée. DofusDB ne le relie à aucun succès : on le rattache ici (pa : succès, pq : quêtes, pnj : où l'acheter).
+  const MANUEL = {
+    7754: { pa: [5220, 565], src: 'manuel : succès prérequis puis dialogue' },
+    27803: { pa: [1705, 5933], pq: [2420], src: 'manuel : achat à un PNJ une fois les prérequis faits', pnj: [{ n: 'Gobalden', x: -5, y: 3 }, { n: 'Gobdepin', x: 38, y: -80 }] },
+  };
+  for (const d of dofus) if (MANUEL[d.id]) { const m = MANUEL[d.id]; d.a = null; d.q = null; d.pa = m.pa; d.src = m.src; d.pre = 1; if (m.pq) d.pq = m.pq; if (m.pnj) d.pnj = m.pnj; }
   const rank = d => ['récompense de succès', 'description de succès', 'récompense de quête', 'remis pendant la quête', 'succès prérequis'].indexOf(d.src) >>> 0;
   const rankM = d => d.src && d.src.startsWith('manuel') ? -1 : rank(d);   // sans lien = le moins bon
   for (const d of dofus) { const i = dofusOut.findIndex(x => x.n === d.n); if (i < 0) dofusOut.push(d); else if (rankM(d) < rankM(dofusOut[i])) dofusOut[i] = d; }

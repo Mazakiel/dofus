@@ -43,6 +43,7 @@
     for (const d of SC.dofus || []) {
       if (d.a && !d.pre) push(DZ_BY_A, d.a, d.id);
       (d.pa || []).forEach(a => push(DZ_BY_A, a, d.id));
+      (d.pq || []).forEach(q => push(DZ_BY_Q, q, d.id));
       if (d.q) push(DZ_BY_Q, d.q, d.id);
     }
 
@@ -170,7 +171,7 @@
         if (seen.has('d' + did)) return; seen.add('d' + did);
         const d = SDZ[did]; if (!d || d.cadeau) return;
         if (!dofusOwned(d)) acc.d.add(did);
-        if (d.a) ach(d.a); if (d.q) quest(d.q); (d.pa || []).forEach(ach);
+        if (d.a) ach(d.a); if (d.q) quest(d.q); (d.pa || []).forEach(ach); (d.pq || []).forEach(quest);
       };
       const objs = aid => { for (const oid of (SACH[aid] || { ob: [] }).ob) { const o = SC.objectifs[oid]; if (!o) continue;
         if (o.t === 'a') ach(o.r); else if (o.t === 'q') quest(o.r); else if (o.t === 'x' && !state.sodone.has(+oid)) acc.o.add(+oid); } };
@@ -181,7 +182,7 @@
       };
       if (kind === 'a') { seen.add('a' + id); objs(id); }
       else if (kind === 'rw') ach(id);   // titre ou ornement : le succès qui le donne, avec tout ce qu'il demande
-      else if (kind === 'd') { seen.add('d' + id); const d = SDZ[id]; if (d) { if (d.a) ach(d.a); if (d.q) quest(d.q); (d.pa || []).forEach(ach); } }   // Dofus : son succès, sa quête et ses succès prérequis, inclus
+      else if (kind === 'd') { seen.add('d' + id); const d = SDZ[id]; if (d) { if (d.a) ach(d.a); if (d.q) quest(d.q); (d.pa || []).forEach(ach); (d.pq || []).forEach(quest); } }   // Dofus : son succès, sa quête et ses succès prérequis, inclus
       else { seen.add('q' + id); const q = SC.quetes[id]; if (q) { (q.pre || []).forEach(quest); (q.preA || []).forEach(ach); (q.preD || []).forEach(dofus); } }
       return acc;
     }

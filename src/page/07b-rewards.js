@@ -72,20 +72,22 @@ function rwDetailHtml(r) {
   const big = r.kind === 't' ? `<span class="rw-ti big">${RIBBON}</span>` : rwIcon(r, 'rw-big');
   const achLine = id => { const s = SACH[id]; if (!s) return ''; const [d, n] = achProg(s), dn = achDone(id);
     return `<div class="ob${dn ? ' done' : ''}">${okx(dn)}<span>Succès <span class="sgo" data-pick="a:${id}">${esc(s.n)}</span></span>${n > 1 ? `<span class="lv">${d} / ${n}</span>` : ''}</div>`; };
+  const questLine = id => SC.quetes[id] ? `<div class="ob${qDoneS(id) ? ' done' : ''}">${okx(qDoneS(id))}<span>Quête <span class="sgo" data-pick="q:${id}">${esc(qName(id))}</span></span><span class="lv">${lvTxt(SC.quetes[id])}</span></div>` : '';
   let src;
   if (r.kind) src = achLine(r.a);
   else {
-    src = [r.a && !r.pre ? achLine(r.a) : '', ...(r.pa || []).map(achLine),
-      r.q ? `<div class="ob${qDoneS(r.q) ? ' done' : ''}">${okx(qDoneS(r.q))}<span>Quête <span class="sgo" data-pick="q:${r.q}">${esc(qName(r.q))}</span></span><span class="lv">${lvTxt(SC.quetes[r.q] || {})}</span></div>` : ''].join('');
-    if (!src) src = `<div class="quote">${esc(dzWho(r))}</div>`;
+    src = [r.a && !r.pre ? achLine(r.a) : '', ...(r.pa || []).map(achLine), questLine(r.q), ...(r.pq || []).map(questLine)].join('');
+    if (!src && !Array.isArray(r.pnj)) src = `<div class="quote">${esc(dzWho(r))}</div>`;
   }
+  // Dofus qui s'achète à un PNJ : où (la position se copie en commande /travel)
+  const vendors = Array.isArray(r.pnj) ? `<div class="lab">S’achète auprès de</div>${r.pnj.map(p => `<div class="ob"><span class="x">•</span><span>${esc(p.n)}</span><span class="lv">${coordBtn(p)}</span></div>`).join('')}` : '';
   const acc = own ? null : rwNeeds(r), avail = acc ? [...acc.q].filter(q => qStatus(q) === 'av').length : 0;
   const left = acc && (acc.q.size || acc.a.size) ? `${[acc.q.size ? plural(acc.q.size, 'quête') : '', acc.a.size ? plural(acc.a.size, 'succès', 'succès') : ''].filter(Boolean).join(' et ')} à faire${avail ? `, dont ${plural(avail, 'quête')} disponible${avail > 1 ? 's' : ''}` : ''}` : '';
   return `<div class="hd">${big}<h3>${esc(r.n)}${copyBtn(r.n)}</h3><div class="k">${rwKindLbl(r)}${lvl}${a ? ' · donné par un succès' : ''}</div></div>
     <div class="stat"><span class="badge ${st}">${st === 'done' ? 'Obtenu' : st === 'lock' ? 'Indisponible' : 'À obtenir'}</span></div>
     <div class="acts prog">${own ? '' : `<button class="btn" data-rgoal="${k}:${r.id}" aria-pressed="${goal}">Objectif</button>`}${r.kind ? '' : `<button class="btn" data-sdzown="${r.id}" aria-pressed="${own}">Obtenu</button>`}</div>
     ${a && a.d ? `<div class="quote${own ? ' ok' : ''}">${esc(a.d)}</div>` : ''}
-    <div class="lab">Pour l’obtenir</div>${src}
+    ${src ? `<div class="lab">Pour l’obtenir</div>${src}` : ''}${vendors}
     ${left ? `<div class="lab">Il reste</div><div class="ob"><span>${left}</span></div>` : ''}
     ${a ? `<div class="path">${esc(catPath(a.c))}</div>` : ''}
     <div class="ddb-row">${r.kind ? ddbLink('a', r.a, 'Succès sur DofusDB') : ddbLink('d', r.id)}</div>`;

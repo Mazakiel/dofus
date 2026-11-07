@@ -19,7 +19,7 @@ const PN = [
   { id: 'neb', d: 'Dofus Nébuleux', lane: 'D', lv: 100 },
   { id: 'domakuro', d: 'Domakuro', lane: 'P', lv: 140 },
   { id: 'dorigami', d: 'Dorigami', lane: 'P', lv: 170 },
-  { id: 'pin', d: 'Dom de Pin', lane: 'D', lv: 180 },                    // exigé par la quête « Flovoraison » (Sylvestre) ; à cocher à la main
+  { id: 'pin', d: 'Dom de Pin', lane: 'M2', lv: 200 },                    // s'achète à un PNJ une fois « Six sur six », « L'héritage de l'île brisée » et la quête « Entretemps, une renaissance » faits ; exigé par « Flovoraison » (Sylvestre)
   { id: 'tach', d: 'Dofus Tacheté', lane: 'P', lv: 200 },                // la chaîne de Cauchemar passe par « En ce jardin qui nous unit », sa dernière quête sur le chemin
   { id: 'cauch', d: 'Dofus du Cauchemar', lane: 'P', lv: 200 },          // la quête de Verdoyant exige « Un héritage tourmenté » (3 des 4 quêtes de Cauchemar)
   { id: 'verd', d: 'Dofus Verdoyant', lane: 'P', lv: 200 },              // la chaîne de Sylvestre passe par la quête de Verdoyant
@@ -32,7 +32,7 @@ const PBOX = { id: 'prim' };
 // Flèches : ['de', 'vers']. Une flèche va toujours vers le bas (ce qui est dessous dépend de ce qui est dessus).
 const PE = [['mais', 'cawotte'], ['mais', 'prim'], ['prim', 'six'], ['arg', 'scint'], ['six', 'scint'],
   ['domakuro', 'dorigami'], ['dorigami', 'tach'], ['tach', 'cauch'], ['cauch', 'verd'], ['verd', 'sylv'],
-  ['six', 'sylv'], ['pin', 'sylv'], ['veill', 'neb']];
+  ['six', 'pin'], ['pin', 'sylv'], ['veill', 'neb']];
 const pDofus = name => SDZL.find(d => d.n === name);
 const pNode = id => (id === 'prim' ? PBOX : PN.find(n => n.id === id));
 const pPlaced = new Set(PN.filter(n => n.d).map(n => n.d).concat(PRIM));

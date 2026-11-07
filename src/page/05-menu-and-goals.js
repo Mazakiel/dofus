@@ -1,4 +1,4 @@
-// ===== Menu de gauche et objectifs : catégories de quêtes, statistiques, arbre des catégories, objectifs Dofus (ce qui y mène).
+// ===== Menu de gauche et objectifs : catégories de quêtes, statistiques, arbre des catégories, objectifs (ce qui y mène).
 // ---- Quêtes : rangées dans la catégorie du premier succès qui les demande ----
 const QOTHER = -1;   // quêtes qui ne sont objectif d'aucun succès (seulement prérequis)
 const QCAT = {};
@@ -25,7 +25,7 @@ const aShown = a => P.achShown(a.id, showOpts());
 const catHasShown = cid => cid === QGOAL || cid === SALL || (sMode === 'quetes' ? qIdsOf(cid).some(qShown) : catIds(cid).some(id => (SBYCAT[id] || []).some(a => sVisible(a) && aShown(a))));
 // Menu de gauche : liste plate — sous-catégories de Quêtes, puis Événements, puis les quêtes sans succès
 function scCatList(){
-  const l = GOALD.length ? [{ id: QGOAL, n: 'Mes objectifs' }] : [];
+  const l = GOALR.length ? [{ id: QGOAL, n: 'Mes objectifs' }] : [];
   l.push(sMode === 'quetes' ? { id: QALL, n: 'Toutes les quêtes' } : { id: SALL, n: 'Tous les succès' });
   l.push(...(SC.menu || []).map(m => ({ id: m.id, n: m.n })));
   if (sMode === 'quetes') l.push({ id: QOTHER, n: 'Autres quêtes (prérequis)' });
@@ -33,6 +33,7 @@ function scCatList(){
 }
 function renderScTree(){
   if (sMode === 'donjons') { renderDjTree(); return; }
+  if (sMode === 'recomp') { renderRwTree(); return; }
   const el = document.getElementById('scTree');
   const pct = s => s.n ? Math.floor(100 * s.d / s.n) : 0;
   const stats = sMode === 'quetes' ? questStats : catStats;
@@ -41,9 +42,9 @@ function renderScTree(){
   const goalN = cid => cid === SALL ? SC.succes.filter(a => sVisible(a) && GOALA[a.id] && aShown(a)).length : sMode === 'quetes' ? qIdsOf(cid).filter(q => GOALQ[q] && qShown(q)).length : catIds(cid).flatMap(id => SBYCAT[id] || []).filter(a => sVisible(a) && GOALA[a.id] && aShown(a)).length;
   const goalCount = () => sMode === 'quetes' ? Object.keys(GOALQ).map(Number).filter(qShown).length : Object.keys(GOALA).map(id => SACH[id]).filter(a => a && aShown(a)).length;
   el.innerHTML = scCatList().map(c => [c, c.id === QGOAL ? { n: goalCount(), d: 0 } : stats(c.id)]).filter(([c, s]) => c.id === QGOAL || (s.n && (c.id === sCat || catHasShown(c.id)))).map(([c, s]) => {
-    if (c.id === QGOAL) return `<div class="sc-cat${sCat === c.id ? ' sel' : ''}" data-scat="${c.id}" title="${s.n} affichés pour tes objectifs Dofus"><span>${esc(c.n)}</span><span class="rt"><span class="gdot">${s.n}</span></span></div>`;
-    const g = GOALD.length ? goalN(c.id) : 0;
-    return `<div class="sc-cat${sCat === c.id ? ' sel' : ''}${s.d === s.n ? ' full' : ''}" data-scat="${c.id}" title="${s.d} / ${s.n}${g ? ` · ${g} pour tes objectifs Dofus` : ''}"><span>${esc(c.n)}</span><span class="rt">${g ? `<span class="gdot" title="${g} pour tes objectifs Dofus">◆ ${g}</span>` : ''}<span class="pct">${pct(s)}%</span></span></div>`; }).join('');
+    if (c.id === QGOAL) return `<div class="sc-cat${sCat === c.id ? ' sel' : ''}" data-scat="${c.id}" title="${s.n} affichés pour tes objectifs"><span>${esc(c.n)}</span><span class="rt"><span class="gdot">${s.n}</span></span></div>`;
+    const g = GOALR.length ? goalN(c.id) : 0;
+    return `<div class="sc-cat${sCat === c.id ? ' sel' : ''}${s.d === s.n ? ' full' : ''}" data-scat="${c.id}" title="${s.d} / ${s.n}${g ? ` · ${g} pour tes objectifs` : ''}"><span>${esc(c.n)}</span><span class="rt">${g ? `<span class="gdot" title="${g} pour tes objectifs">◆ ${g}</span>` : ''}<span class="pct">${pct(s)}%</span></span></div>`; }).join('');
 }
 // Dofus donnés proprement par un succès (récompense ou « obtenir le Dofus X ») ou par une quête (récompense d’étape)
 const DZ_REW_A = {}, DZ_REW_Q = {};
@@ -57,22 +58,32 @@ const isPick = (k, id) => !!sPick && sPick.k === k && sPick.id === id;
 const imgErr = el => el.querySelectorAll('img').forEach(img => img.addEventListener('error', () => { img.style.visibility = 'hidden'; }, { once: true }));
 const pctOf = (d, n) => n ? Math.floor(100 * d / n) : 0;
 const plural = (n, s, p) => `${n} ${n > 1 ? (p || s + 's') : s}`;
-const dzChip = (d, goal) => `<span class="rew${goal ? ' goalrew' : ''}"${goal ? ' title="Récompense, et ton objectif"' : ''}><img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer">${esc(d.n)}</span>`;
-// Titres et ornements donnés par un succès (ti : noms, or : { n, i }) ; `via` : nom du succès, pour la fiche d'une quête
-const titleChip = (t, via) => `<span class="rew rew-t"${via ? ` title="Titre du succès « ${esc(via)} »"` : ''}><span class="rew-k">Titre</span>${esc(t)}</span>`;
-const ornChip = (o, via) => `<span class="rew rew-o"${via ? ` title="Ornement du succès « ${esc(via)} »"` : ''}><img src="https://api.dofusdb.fr/img/ornaments/${o.i}.png" alt="" referrerpolicy="no-referrer"><span class="rew-k">Ornement</span>${esc(o.n)}</span>`;
-const achRewardChips = (a, via) => [...(a.ti || []).map(t => titleChip(t, via)), ...(a.or || []).map(o => ornChip(o, via))].join('');
+const dzChip = (d, goal) => d.kind ? rwChip(d, goal) : `<span class="rew${goal ? ' goalrew' : ''}"${goal ? ' title="Récompense, et ton objectif"' : ''}><img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer">${esc(d.n)}</span>`;
+// Titres et ornements donnés par un succès (ti : { id, n }, or : { id, n, i }) ; `via` : nom du succès, pour la fiche d'une quête
+const goalCls = goal => goal ? ' goalrew' : '';
+const goalTip = goal => goal ? ' · ton objectif' : '';
+const titleChip = (t, via, goal) => `<span class="rew rew-t${goalCls(goal)}" title="Titre${via ? ` du succès « ${esc(via)} »` : ''}${goalTip(goal)}"><span class="rew-k">Titre</span>${esc(t.n)}</span>`;
+const ornChip = (o, via, goal) => `<span class="rew rew-o${goalCls(goal)}" title="Ornement${via ? ` du succès « ${esc(via)} »` : ''}${goalTip(goal)}"><img src="${ornImg(o)}" alt="" referrerpolicy="no-referrer"><span class="rew-k">Ornement</span>${esc(o.n)}</span>`;
+const rwChip = (r, goal) => r.kind === 't' ? titleChip(r, null, goal) : ornChip(r, null, goal);
+const achRewardChips = (a, via) => [...(a.ti || []).map(t => titleChip(t, via, rwGoals.has('t' + t.id))), ...(a.or || []).map(o => ornChip(o, via, rwGoals.has('o' + o.id)))].join('');
+const ornImg = o => `https://api.dofusdb.fr/img/ornaments/${o.i}.png`;
+// Petite icône d'une récompense (Dofus : son objet ; ornement : son icône ; titre : un ruban dessiné, DofusDB n'a pas d'image)
+const RIBBON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14v2l-3 3 3 3v2l-3 3 3 3v2H5v-2l3-3-3-3v-2l3-3-3-3z"/></svg>';
+const rwIcon = (r, cls = '') => r.kind === 't' ? `<span class="rw-ti ${cls}">${RIBBON}</span>` : `<img class="${cls}" src="${r.kind === 'o' ? ornImg(r) : itemImg(r)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
+const rwKindLbl = r => r.kind === 't' ? 'Titre' : r.kind === 'o' ? 'Ornement' : 'Dofus';
 const dzIcons = list => (list || []).map(d => `<img class="rew-ic" src="${itemImg(d)}" alt="" title="Récompense : ${esc(d.n)}" referrerpolicy="no-referrer">`).join('');
 
-// ---------- objectifs Dofus : quêtes et succès qui y mènent ----------
+// ---------- objectifs (Dofus, titres, ornements) : quêtes et succès qui y mènent ----------
 const QGOAL = -3;   // entrée « Mes objectifs » du menu de gauche
 const SALL = -4;    // entrée « Tous les succès » (mode Succès), par niveau
-var GOALQ = {}, GOALA = {}, GOALD = [];
+var GOALQ = {}, GOALA = {}, GOALR = [];
 function computeGoals(){
-  GOALD = SDZL.filter(d => sdzVisible(d) && sdzGoals.has(d.id) && !sdzOwned(d));
-  const g = P.goalsFor(GOALD); GOALQ = g.q; GOALA = g.a;
+  GOALR = [...SDZL.filter(d => sdzVisible(d) && sdzGoals.has(d.id) && !sdzOwned(d)), ...RW.filter(r => rwVisible(r) && rwGoals.has(r.kind + r.id) && !P.rewardOwned(r))];
+  const g = P.goalsFor(GOALR); GOALQ = g.q; GOALA = g.a;
 }
-const goalIcons = list => !list ? '' : `<span class="goalchips" title="Pour tes objectifs : ${esc(list.map(d => d.n).join(', '))}">${list.slice(0, 3).map(d => `<img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer">`).join('')}${list.length > 3 ? `<b>+${list.length - 3}</b>` : ''}</span>`;
-const goalBox = (list, rewards) => { const l = (list || []).filter(d => !(rewards || []).includes(d)); return l.length ? `<div class="goalbox"><b>Sert tes objectifs Dofus :</b><div>${l.map(d => dzChip(d)).join('')}</div></div>` : ''; };
+// « 2 Dofus, 1 titre » : ce que visent les objectifs
+const goalSummary = () => [['d', 'Dofus', 'Dofus'], ['t', 'titre', 'titres'], ['o', 'ornement', 'ornements']].map(([k, s, p]) => { const n = GOALR.filter(r => (r.kind || 'd') === k).length; return n ? `${n} ${n > 1 ? p : s}` : ''; }).filter(Boolean).join(', ');
+const goalIcons = list => !list ? '' : `<span class="goalchips" title="Pour tes objectifs : ${esc(list.map(d => d.n).join(', '))}">${list.slice(0, 3).map(d => rwIcon(d)).join('')}${list.length > 3 ? `<b>+${list.length - 3}</b>` : ''}</span>`;
+const goalBox = (list, rewards) => { const l = (list || []).filter(d => !(rewards || []).includes(d)); return l.length ? `<div class="goalbox"><b>Sert tes objectifs :</b><div>${l.map(d => dzChip(d)).join('')}</div></div>` : ''; };
 const notGoal = (rewards, goals) => (rewards || []).filter(d => !(goals || []).includes(d));
 

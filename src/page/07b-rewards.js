@@ -1,0 +1,115 @@
+// ===== Récompenses : Dofus, titres et ornements — listes, fiches et objectifs.
+// Un Dofus, un titre et un ornement se suivent de la même façon : une source (le succès ou la quête qui le donne), un état « obtenu » et une case objectif.
+// Un Dofus peut être forcé à la main ; un titre ou un ornement n'a pas d'état propre : il est obtenu quand son succès l'est.
+// Dans la page, un Dofus est l'objet de `SDZ` (sans `kind`) ; un titre ou un ornement est une entrée de `RW` { kind: 't' | 'o', id, n, a (succès), i (icône d'ornement) }.
+const { RW, RWBY } = P.index;
+const { rwGoals } = P.state;
+let rKind = store.get('rKind', 'd');   // sous-vue : 'd' Dofus | 't' titres | 'o' ornements
+let rCat = store.get('rCat', SALL);    // entrée du menu : SALL (tous), QGOAL (mes objectifs) ou une entrée de catégories (titres et ornements)
+const RW_KINDS = [['d', 'Dofus', 'Tous les Dofus'], ['t', 'Titres', 'Tous les titres'], ['o', 'Ornements', 'Tous les ornements']];
+const rwKey = r => r.kind || 'd';
+const rwOf = (k, id) => k === 'd' ? SDZ[id] : (RWBY[k] || {})[id];
+const rwVisible = r => r.kind ? !!SACH[r.a] && sVisible(SACH[r.a]) : sdzVisible(r);
+const rwOwned = r => P.rewardOwned(r);
+const rwIsGoal = r => r.kind ? rwGoals.has(r.kind + r.id) : sdzGoals.has(r.id);
+function rwSetGoal(r, on) { const set = r.kind ? rwGoals : sdzGoals, key = r.kind ? r.kind + r.id : r.id; if (on) set.add(key); else set.delete(key); }
+// 'done' obtenu · 'av' à obtenir (le succès est faisable, ou Dofus) · 'lock' son succès est indisponible
+const rwStatus = r => rwOwned(r) ? 'done' : (!r.kind || achAvailNow(r.a)) ? 'av' : 'lock';
+const rwShown = r => r.kind ? P.achShown(r.a, showOpts()) : (sShowDone || !sdzOwned(r));   // mêmes cases que les autres listes
+const rwAll = kind => kind === 'd' ? SDZ_ORDER.filter(sdzVisible)
+  : RW.filter(r => r.kind === kind && rwVisible(r)).sort((x, y) => (SACH[x.a].lv || 0) - (SACH[y.a].lv || 0) || x.n.localeCompare(y.n, 'fr'));
+const rwInCat = (r, cid) => cid === SALL || (!!r.kind && catIds(cid).includes(SACH[r.a].c));
+const rwNeeds = r => r.kind ? collectPrereqs('rw', r.a) : collectPrereqs('d', r.id);
+
+// Entrées du menu de gauche pour la sous-vue courante
+function rwCats() {
+  const all = rwAll(rKind), l = [];
+  if (GOALR.length) l.push({ id: QGOAL, n: 'Mes objectifs', goals: GOALR.length });
+  l.push({ id: SALL, n: RW_KINDS.find(k => k[0] === rKind)[2] });
+  if (rKind !== 'd') for (const m of SC.menu || []) l.push({ id: m.id, n: m.n });
+  return l.map(c => { const list = c.id === QGOAL ? [] : all.filter(r => rwInCat(r, c.id)); return { ...c, total: list.length, done: list.filter(rwOwned).length, shown: list.filter(rwShown).length }; })
+    .filter(c => c.id === QGOAL || c.id === SALL || c.id === rCat || c.shown);
+}
+function ensureRw() { if (!rwCats().some(c => c.id === rCat)) rCat = SALL; }
+function renderRwTree() {
+  const cats = rwCats(), cur = cats.find(c => c.id === rCat) || cats[0];
+  document.getElementById('catBtn').innerHTML = `<span class="cb-n">${esc(cur.n)}</span>${cur.id === QGOAL ? '' : `<span class="pct">${pctOf(cur.done, cur.total)} %</span>`}<span aria-hidden="true">▾</span>`;
+  document.getElementById('scTree').innerHTML = cats.map(c => c.id === QGOAL
+    ? `<div class="sc-cat${rCat === c.id ? ' sel' : ''}" data-rcat="${c.id}" title="${c.goals} objectif${c.goals > 1 ? 's' : ''}"><span>${esc(c.n)}</span><span class="rt"><span class="gdot">${c.goals}</span></span></div>`
+    : `<div class="sc-cat${rCat === c.id ? ' sel' : ''}${c.total && c.done === c.total ? ' full' : ''}" data-rcat="${c.id}" title="${c.done} / ${c.total}"><span>${esc(c.n)}</span><span class="rt"><span class="pct">${pctOf(c.done, c.total)}%</span></span></div>`).join('');
+}
+
+// Ligne d'un titre ou d'un ornement
+function rwRow(r) {
+  const st = rwStatus(r), a = SACH[r.a], [d, n] = achProg(a), goal = rwIsGoal(r) && st !== 'done';
+  const stLbl = { done: 'Obtenu', av: 'À obtenir : son succès est faisable', lock: 'Indisponible : son succès ne l’est pas encore' }[st];
+  return `<div class="row rw-row${st === 'done' ? ' done' : ''}${goal ? ' goal' : ''}${isPick(r.kind, r.id) ? ' sel' : ''}" data-pick="${r.kind}:${r.id}" tabindex="0" role="button">
+    <span class="rdot ${st}" title="${stLbl}"></span>${rwIcon(r, 'rw-ic')}
+    <div style="min-width:0"><div class="t">${esc(r.n)}</div><div class="m">Succès « ${esc(a.n)} »</div></div>
+    <div class="r">${n > 1 ? `<span class="lv">${d} / ${n}</span>` : ''}${st === 'done' ? '' : goalBtn(r, goal)}</div>
+  </div>`;
+}
+const goalBtn = (r, on) => `<button type="button" class="tgt${on ? ' on' : ''}" data-rgoal="${rwKey(r)}:${r.id}" aria-pressed="${on}" title="${on ? 'Retirer des objectifs' : 'En faire un objectif'}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></button>`;
+
+// « Mes objectifs » de la vue Récompenses : ce qui est visé, et ce qu'il reste à faire pour chacun
+function renderRwGoals() {
+  const rows = GOALR.map(r => {
+    const acc = rwNeeds(r), avail = [...acc.q].filter(q => qStatus(q) === 'av').length;
+    const todo = [acc.q.size ? plural(acc.q.size, 'quête') : '', acc.a.size ? plural(acc.a.size, 'succès', 'succès') : ''].filter(Boolean).join(' et ');
+    return `<div class="row rw-row goal${isPick(rwKey(r), r.id) ? ' sel' : ''}" data-pick="${rwKey(r)}:${r.id}" tabindex="0" role="button">
+      <span class="rdot av"></span>${rwIcon(r, 'rw-ic')}
+      <div style="min-width:0"><div class="t">${esc(r.n)}</div><div class="m">${rwKindLbl(r)} · ${todo ? `${todo} à faire${avail ? `, dont ${plural(avail, 'quête')} disponible${avail > 1 ? 's' : ''}` : ''}` : 'plus rien à faire de ton côté'}</div></div>
+      <div class="r">${goalBtn(r, true)}</div></div>`;
+  }).join('');
+  return head('Mes objectifs', `${goalSummary()}`, '<button class="btn" data-goalview>Voir les quêtes</button>') + rows;
+}
+function renderRwMain(el) {
+  const seg = `<div class="seg" role="group" aria-label="Type de récompense">${RW_KINDS.map(([k, l]) => `<button type="button" class="seg-b" data-rkind="${k}" aria-pressed="${rKind === k}">${l}</button>`).join('')}</div>`;
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''), qn = norm(sSearch.trim());
+  if (!qn && rCat === QGOAL && GOALR.length) { el.innerHTML = seg + renderRwGoals(); imgErr(el); return; }
+  const all = rwAll(rKind), cats = rwCats();
+  const list = qn ? all.filter(r => norm(r.n).includes(qn) || (r.kind && norm(SACH[r.a].n).includes(qn))) : all.filter(r => rwInCat(r, rCat));
+  const title = qn ? `Recherche « ${esc(sSearch)} »` : esc((cats.find(c => c.id === rCat) || cats[0]).n);
+  const shown = list.filter(rwShown), d = list.filter(rwOwned).length;
+  const body = rKind === 'd' ? `<div class="dz-grid">${shown.map(dofusCard).join('')}</div>` : shown.map(rwRow).join('');
+  el.innerHTML = seg + head(title, `${d} / ${list.length} obtenus (${pctOf(d, list.length)} %) · ${plural(shown.length, 'affiché')}`)
+    + (rKind === 'd' && shown.length ? '<div class="dz-hint">Clique sur un Dofus pour voir comment l’obtenir. ◎ l’ajoute à tes objectifs : les quêtes et succès qui y mènent sont repérés dans les listes.</div>' : '')
+    + (shown.length ? body : EMPTY);
+  imgErr(el);
+}
+
+// Fiche d'un Dofus, d'un titre ou d'un ornement
+function rwDetailHtml(r) {
+  const k = rwKey(r), own = rwOwned(r), st = rwStatus(r), goal = rwIsGoal(r), a = r.kind ? SACH[r.a] : null;
+  const lvl = !r.kind && SDZLV[r.id] ? ` · niveau ${SDZLV[r.id][0] === SDZLV[r.id][1] ? SDZLV[r.id][0] : SDZLV[r.id].join(' à ')}` : '';
+  const big = r.kind === 't' ? `<span class="rw-ti big">${RIBBON}</span>` : rwIcon(r, 'rw-big');
+  const achLine = id => { const s = SACH[id]; if (!s) return ''; const [d, n] = achProg(s), dn = achDone(id);
+    return `<div class="ob${dn ? ' done' : ''}">${okx(dn)}<span>Succès <span class="sgo" data-sgo="${id}">${esc(s.n)}</span></span>${n > 1 ? `<span class="lv">${d} / ${n}</span>` : ''}</div>`; };
+  let src;
+  if (r.kind) src = achLine(r.a);
+  else {
+    src = [r.a && !r.pre ? achLine(r.a) : '', ...(r.pa || []).map(achLine),
+      r.q ? `<div class="ob${qDoneS(r.q) ? ' done' : ''}">${okx(qDoneS(r.q))}<span>Quête <span class="sgo" data-goq="${r.q}">${esc(qName(r.q))}</span></span><span class="lv">${lvTxt(SC.quetes[r.q] || {})}</span></div>` : ''].join('');
+    if (!src) src = `<div class="quote">${esc(dzWho(r))}</div>`;
+  }
+  const acc = own ? null : rwNeeds(r), avail = acc ? [...acc.q].filter(q => qStatus(q) === 'av').length : 0;
+  const left = acc && (acc.q.size || acc.a.size) ? `${[acc.q.size ? plural(acc.q.size, 'quête') : '', acc.a.size ? plural(acc.a.size, 'succès', 'succès') : ''].filter(Boolean).join(' et ')} à faire${avail ? `, dont ${plural(avail, 'quête')} disponible${avail > 1 ? 's' : ''}` : ''}` : '';
+  return `<div class="hd">${big}<h3>${esc(r.n)}</h3><div class="k">${rwKindLbl(r)}${lvl}${a ? ' · donné par un succès' : ''}</div></div>
+    <div class="stat"><span class="badge ${st}">${st === 'done' ? 'Obtenu' : st === 'lock' ? 'Indisponible' : 'À obtenir'}</span></div>
+    <div class="acts prog">${own ? '' : `<button class="btn" data-rgoal="${k}:${r.id}" aria-pressed="${goal}">Objectif</button>`}${r.kind ? '' : `<button class="btn" data-sdzown="${r.id}" aria-pressed="${own}">Obtenu</button>`}</div>
+    ${a && a.d ? `<div class="quote${own ? ' ok' : ''}">${esc(a.d)}</div>` : ''}
+    <div class="lab">Pour l’obtenir</div>${src}
+    ${left ? `<div class="lab">Il reste</div><div class="ob"><span>${left}</span></div>` : ''}
+    ${a ? `<div class="path">${esc(catPath(a.c))}</div>` : ''}`;
+}
+
+// Aller à une quête depuis une fiche (la fiche d'un Dofus cite la quête qui le donne)
+function goToQuest(id) {
+  if (!SC.quetes[id]) return;
+  sSearch = ''; document.getElementById('scSearch').value = ''; mTab = 'quetes'; sMode = 'quetes'; store.set('sMode', sMode);
+  sCat = QALL; store.set('sCat', sCat);
+  if (!sShowDone && qDoneS(id)) { sShowDone = true; store.set('sShowDone', true); }
+  if (!sShowLocked && qStatus(id) === 'lock') { sShowLocked = true; store.set('sShowLocked', true); }
+  sPick = { k: 'q', id }; renderSucces();
+  const el = document.getElementById('q' + id); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1400); }
+}

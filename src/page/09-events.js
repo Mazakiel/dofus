@@ -26,8 +26,12 @@ function onScClick(e){
     if (acc.a.size + acc.q.size + acc.o.size + acc.d.size) openDlg('d', d.id); else { setSdzOwned(d, true); saveSc(); }
     return;
   }
-  const card = e.target.closest('[data-sdz]');
-  if (card && !e.target.closest('[data-sgo]')) { const d = SDZ[+card.dataset.sdz]; if (!sdzOwned(d)) { sdzGoals.has(d.id) ? sdzGoals.delete(d.id) : sdzGoals.add(d.id); renderSucces(); } return; }
+  const rk = e.target.closest('[data-rkind]');
+  if (rk) { rKind = rk.dataset.rkind; store.set('rKind', rKind); rCat = SALL; store.set('rCat', rCat); sPick = null; sSearch = ''; document.getElementById('scSearch').value = ''; renderSucces(); return; }
+  const rg = e.target.closest('[data-rgoal]');
+  if (rg) { const [k, id] = rg.dataset.rgoal.split(':'), r = rwOf(k, +id); if (r) { rwSetGoal(r, !rwIsGoal(r)); renderSucces(); } return; }
+  const gq = e.target.closest('[data-goq]');
+  if (gq) { goToQuest(+gq.dataset.goq); return; }
   const go = e.target.closest('[data-sgo]'); if (go) { goToAch(+go.dataset.sgo); return; }
   const all = e.target.closest('[data-sall]');
   if (all) { const id = +all.dataset.sall, list = catIds(id).flatMap(c => SBYCAT[c] || []).filter(sVisible);
@@ -63,7 +67,6 @@ function onScClick(e){
 }
 document.getElementById('scList').addEventListener('click', onScClick);
 document.getElementById('scList').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.row[data-pick]')) { e.preventDefault(); e.target.click(); } });
-document.getElementById('scHelp').addEventListener('click', onScClick);
 document.getElementById('scDetail').addEventListener('click', onScClick);
 // Succès : même principe que les quêtes
 function setAchDone(id, on){
@@ -87,7 +90,6 @@ function setQuestDone(id, on){
 function onScChange(e){
   const t = e.target;
   if (t.dataset.sdzgoal) { const id = +t.dataset.sdzgoal; t.checked ? sdzGoals.add(id) : sdzGoals.delete(id); renderSucces(); return; }
-  if (t.id === 'sdzShowOwned') { sdzShowOwned = t.checked; store.set('sdzShowOwned', sdzShowOwned); renderScHelp(); return; }
   if (t.dataset.sach) {
     setAchDone(+t.dataset.sach, t.checked);
   }
@@ -97,7 +99,6 @@ function onScChange(e){
   else if (t.dataset.so) { const id = +t.dataset.so; if (t.checked) { sodone.add(id); saveSc(); } else uncheck('o', id); }
 }
 document.getElementById('scList').addEventListener('change', onScChange);
-document.getElementById('scHelp').addEventListener('change', onScChange);
 document.getElementById('scDetail').addEventListener('change', onScChange);
 let scSearchT;
 document.getElementById('scSearch').addEventListener('input', e => { clearTimeout(scSearchT); scSearchT = setTimeout(() => { sSearch = e.target.value; renderScList(); if (sMode === 'donjons') renderScTree(); }, 200); });

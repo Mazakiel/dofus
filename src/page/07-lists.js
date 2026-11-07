@@ -10,34 +10,34 @@ function progBar(list){
   const chips = `<div class="chips" role="group" aria-label="Filtrer par avancement">${[['av', 'Disponible'], ['st', 'Commencé'], ['bl', 'Bloqué']].map(([c, l]) => `<button class="chip p-${c}" data-progf="${c}" aria-pressed="${sProg === c}">${l}<small>${cnt(c)}</small></button>`).join('')}</div>`;
   return { chips, keep: id => !sProg || qStatus(id) === sProg };
 }
-// Vue « Mes objectifs » : une section par Dofus visé, avec les quêtes qui restent (disponibles d'abord).
+// Vue « Mes objectifs » : une section par récompense visée (Dofus, titre ou ornement), avec les quêtes qui restent (disponibles d'abord).
 // Mêmes cases que les autres listes : les indisponibles ne s'affichent que si « Afficher les indisponibles » est coché.
 const hiddenTxt = n => n ? ` · ${n} masquée${n > 1 ? 's' : ''}` : '';
 function renderGoalQuests(){
   const lv = id => (SC.quetes[id] || {}).lv || 0;
-  const per = GOALD.map(d => { const mine = Object.keys(GOALQ).map(Number).filter(q => GOALQ[q].includes(d)); return { d, mine, vis: mine.filter(qShown) }; });
+  const per = GOALR.map(d => { const mine = Object.keys(GOALQ).map(Number).filter(q => GOALQ[q].includes(d)); return { d, mine, vis: mine.filter(qShown) }; });
   const bar = progBar([...new Set(per.flatMap(x => x.vis))]);
   let hiddenAll = 0, shownAll = 0;
   const secs = per.map(({ d, mine, vis }) => {
     const qs = vis.filter(bar.keep).sort((x, y) => (qAvailNow(y) - qAvailNow(x)) || lv(x) - lv(y));
     const todo = mine.filter(q => !qDoneS(q)), av = todo.filter(q => qStatus(q) === 'av').length, hidden = todo.filter(q => !qShown(q)).length;
     hiddenAll += hidden; shownAll += qs.length;
-    return `<div class="sec dzsec"><img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer"><span>${esc(d.n)}</span><span class="sp"></span>${todo.length ? `${todo.length} à faire · ${av} dispo.${hiddenTxt(hidden)}` : 'rien à faire : coche-le obtenu'}</div>${qs.map(q => questRow(q)).join('')}`;
+    return `<div class="sec dzsec">${rwIcon(d)}<span>${esc(d.n)}</span><span class="sp"></span>${todo.length ? `${todo.length} à faire · ${av} dispo.${hiddenTxt(hidden)}` : 'rien à faire : coche-le obtenu'}</div>${qs.map(q => questRow(q)).join('')}`;
   }).join('');
   const all = Object.keys(GOALQ).length, av = Object.keys(GOALQ).map(Number).filter(q => qStatus(q) === 'av').length;
   const hint = !shownAll && hiddenAll ? '<div class="empty">Les quêtes qui restent sont indisponibles. Coche « Afficher les indisponibles » pour les voir.</div>' : '';
-  return head('Mes objectifs', `${plural(GOALD.length, 'Dofus visé')} · ${plural(all, 'quête')} à faire, ${av} disponible${av > 1 ? 's' : ''}${hiddenTxt(hiddenAll)}`) + bar.chips + (secs || EMPTY) + hint;
+  return head('Mes objectifs', `${goalSummary()} · ${plural(all, 'quête')} à faire, ${av} disponible${av > 1 ? 's' : ''}${hiddenTxt(hiddenAll)}`) + bar.chips + (secs || EMPTY) + hint;
 }
 function renderGoalAchs(){
   let hiddenAll = 0, shownAll = 0;
-  const secs = GOALD.map(d => {
+  const secs = GOALR.map(d => {
     const mine = Object.keys(GOALA).map(Number).filter(a => GOALA[a].includes(d)).map(a => SACH[a]).filter(Boolean);
     const as = mine.filter(aShown).sort((x, y) => x.lv - y.lv || x.o - y.o), hidden = mine.filter(a => !achDone(a.id) && !aShown(a)).length;
     hiddenAll += hidden; shownAll += as.length;
-    return `<div class="sec dzsec"><img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer"><span>${esc(d.n)}</span><span class="sp"></span>${mine.length ? `${plural(mine.length, 'succès', 'succès')}${hiddenTxt(hidden)}` : 'aucun succès à faire'}</div>${as.map(achCard).join('')}`;
+    return `<div class="sec dzsec">${rwIcon(d)}<span>${esc(d.n)}</span><span class="sp"></span>${mine.length ? `${plural(mine.length, 'succès', 'succès')}${hiddenTxt(hidden)}` : 'aucun succès à faire'}</div>${as.map(achCard).join('')}`;
   }).join('');
   const hint = !shownAll && hiddenAll ? '<div class="empty">Les succès qui restent sont indisponibles. Coche « Afficher les indisponibles » pour les voir.</div>' : '';
-  return head('Mes objectifs', `${plural(GOALD.length, 'Dofus visé')} · ${plural(Object.keys(GOALA).length, 'succès', 'succès')} à finir${hiddenTxt(hiddenAll)}`) + (secs || EMPTY) + hint;
+  return head('Mes objectifs', `${goalSummary()} · ${plural(Object.keys(GOALA).length, 'succès', 'succès')} à finir${hiddenTxt(hiddenAll)}`) + (secs || EMPTY) + hint;
 }
 function renderQuestList(el){
   const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -104,7 +104,7 @@ function renderDjTree(){
   const norm = t => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''), qn = norm(sSearch.trim());
   const rows = DJ_IDS.filter(id => djOwn(id).length && djShown(id) && (!qn || norm(SDJ[id].n + ' ' + SDJ[id].b.join(' ')).includes(qn)));
   const row = id => { const st = djStats(id), dj = SDJ[id], done = st.n && st.d === st.n;
-    return `<div class="sc-cat dj${sDj === id ? ' sel' : ''}${done ? ' done' : ''}" data-sdj="${id}" title="${st.d} / ${st.n} quêtes faites"><span>${esc(dj.n)}</span><span class="rt">${st.goal ? `<span class="gdot" title="${st.goal} pour tes objectifs Dofus">◆ ${st.goal}</span>` : ''}<span class="pct">${done ? '✓' : `${st.d}/${st.n}`}</span><span class="lv">${dj.lv}</span></span><small>${esc(dj.b.join(', '))}</small></div>`; };
+    return `<div class="sc-cat dj${sDj === id ? ' sel' : ''}${done ? ' done' : ''}" data-sdj="${id}" title="${st.d} / ${st.n} quêtes faites"><span>${esc(dj.n)}</span><span class="rt">${st.goal ? `<span class="gdot" title="${st.goal} pour tes objectifs">◆ ${st.goal}</span>` : ''}<span class="pct">${done ? '✓' : `${st.d}/${st.n}`}</span><span class="lv">${dj.lv}</span></span><small>${esc(dj.b.join(', '))}</small></div>`; };
   let html = '';
   for (const [lo, hi] of LV_BANDS) { const g = rows.filter(id => SDJ[id].lv >= lo && SDJ[id].lv <= hi); if (!g.length) continue;
     html += `<div class="band"><span>${lo === hi ? `Niveau ${lo}` : `Niveau ${lo} – ${hi}`}</span><span>${g.length}</span></div>${g.map(row).join('')}`; }
@@ -126,6 +126,7 @@ function renderDjMain(el){
 function renderScList(){
   const el = document.getElementById('scList');
   if (sMode === 'donjons') { renderDjMain(el); return; }
+  if (sMode === 'recomp') { renderRwMain(el); return; }
   if (sMode === 'quetes') { renderQuestList(el); return; }
   const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   const q = norm(sSearch.trim());

@@ -16,8 +16,8 @@
   'use strict';
 
   // Les clés d'une progression : celles de `snapshot()` dans src/progression.js
-  const KEYS = ['sdone', 'sq', 'sodone', 'sLevel', 'sdzState', 'sdzGoals', 'qState'];
-  const defaults = () => ({ sdone: [], sq: [], sodone: [], sLevel: 200, sdzState: {}, sdzGoals: [], qState: {} });
+  const KEYS = ['sdone', 'sq', 'sodone', 'sLevel', 'sdzState', 'sdzGoals', 'rwGoals', 'qState'];
+  const defaults = () => ({ sdone: [], sq: [], sodone: [], sLevel: 200, sdzState: {}, sdzGoals: [], rwGoals: [], qState: {} });
   const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const union = (x, y) => [...new Set([...(x || []), ...(y || [])])];
 
@@ -25,20 +25,20 @@
   // (sdzState et qState sont des chaînes JSON : le distant fusionne les objets en profondeur, ce qui perdrait les suppressions)
   const toPayload = (name, snap, savedAt) => ({
     n: name, sdone: snap.sdone, sq: snap.sq, sodone: snap.sodone, sLevel: snap.sLevel,
-    sdzState: JSON.stringify(snap.sdzState), sdzGoals: snap.sdzGoals, qState: JSON.stringify(snap.qState), savedAt: savedAt || '',
+    sdzState: JSON.stringify(snap.sdzState), sdzGoals: snap.sdzGoals, rwGoals: snap.rwGoals, qState: JSON.stringify(snap.qState), savedAt: savedAt || '',
   });
   const fromPayload = pl => ({
     sdone: pl.sdone || [], sq: pl.sq || [], sodone: pl.sodone || [], sLevel: pl.sLevel || 200,
-    sdzState: JSON.parse(pl.sdzState || '{}'), sdzGoals: pl.sdzGoals || [], qState: JSON.parse(pl.qState || '{}'),
+    sdzState: JSON.parse(pl.sdzState || '{}'), sdzGoals: pl.sdzGoals || [], rwGoals: pl.rwGoals || [], qState: JSON.parse(pl.qState || '{}'),
   });
   const samePayload = (a, b) => {
     const srt = x => [...(x || [])].sort();
-    const k = pl => JSON.stringify([pl.n, srt(pl.sdone), srt(pl.sq), srt(pl.sodone), pl.sLevel, srt(pl.sdzGoals), pl.sdzState, pl.qState || '{}']);
+    const k = pl => JSON.stringify([pl.n, srt(pl.sdone), srt(pl.sq), srt(pl.sodone), pl.sLevel, srt(pl.sdzGoals), srt(pl.rwGoals), pl.sdzState, pl.qState || '{}']);
     return k(a) === k(b);
   };
   // Fusion : union des coches des deux côtés (une coche retirée d'un côté peut revenir) ; le local l'emporte pour les états
   const mergePayloads = (a, b, savedAt) => ({
-    n: a.n, sdone: union(a.sdone, b.sdone), sq: union(a.sq, b.sq), sodone: union(a.sodone, b.sodone), sdzGoals: union(a.sdzGoals, b.sdzGoals),
+    n: a.n, sdone: union(a.sdone, b.sdone), sq: union(a.sq, b.sq), sodone: union(a.sodone, b.sodone), sdzGoals: union(a.sdzGoals, b.sdzGoals), rwGoals: union(a.rwGoals, b.rwGoals),
     sLevel: Math.max(a.sLevel || 1, b.sLevel || 1),
     sdzState: JSON.stringify({ ...JSON.parse(b.sdzState || '{}'), ...JSON.parse(a.sdzState || '{}') }),
     qState: JSON.stringify({ ...JSON.parse(b.qState || '{}'), ...JSON.parse(a.qState || '{}') }),
@@ -50,7 +50,7 @@
   function exportFile(snap, profileName, when) {
     return { format: EXPORT_FORMAT, version: 2, exporteLe: when || new Date().toISOString(), profil: profileName, niveau: snap.sLevel,
       succesObtenus: snap.sdone, succesQuetes: snap.sq, succesObjectifs: snap.sodone, succesDofusEtat: snap.sdzState,
-      succesDofusObjectifs: snap.sdzGoals, succesQuetesEtat: snap.qState };
+      succesDofusObjectifs: snap.sdzGoals, succesRecompensesObjectifs: snap.rwGoals, succesQuetesEtat: snap.qState };
   }
   // Ce que contient un fichier d'import, pour demander confirmation : { count, hasDofus, profil } ; count = 0 et sans Dofus : fichier non reconnu
   function inspectImport(file) {
@@ -58,12 +58,13 @@
     return { count, hasDofus: !!file.succesDofusEtat, profil: file.profil || null };
   }
   // Ajoute le contenu du fichier à `snap` (sans rien retirer). `known` écarte ce que les données ne connaissent pas :
-  // { dofus(id) → bool, quest(id) → bool }
+  // { dofus(id) → bool, quest(id) → bool, reward(clé) → bool }
   function importInto(snap, file, known) {
-    const out = { ...snap, sdone: [...snap.sdone], sq: [...snap.sq], sodone: [...snap.sodone], sdzGoals: [...snap.sdzGoals], sdzState: { ...snap.sdzState }, qState: { ...snap.qState } };
+    const out = { ...snap, sdone: [...snap.sdone], sq: [...snap.sq], sodone: [...snap.sodone], sdzGoals: [...snap.sdzGoals], rwGoals: [...(snap.rwGoals || [])], sdzState: { ...snap.sdzState }, qState: { ...snap.qState } };
     for (const [from, to] of [['succesObtenus', 'sdone'], ['succesQuetes', 'sq'], ['succesObjectifs', 'sodone']]) if (Array.isArray(file[from])) out[to] = union(out[to], file[from].map(Number));
     if (file.succesDofusEtat && typeof file.succesDofusEtat === 'object') for (const [k, v] of Object.entries(file.succesDofusEtat)) if (known.dofus(k) && (v === 'owned' || v === 'missing')) out.sdzState[k] = v;
     if (Array.isArray(file.succesDofusObjectifs)) out.sdzGoals = union(out.sdzGoals, file.succesDofusObjectifs.filter(id => known.dofus(id)).map(Number));
+    if (Array.isArray(file.succesRecompensesObjectifs)) out.rwGoals = union(out.rwGoals, file.succesRecompensesObjectifs.filter(k => (known.reward || (() => true))(k)));
     if (file.succesQuetesEtat && typeof file.succesQuetesEtat === 'object') for (const [k, v] of Object.entries(file.succesQuetesEtat)) if (known.quest(k) && (v === 's' || v === 'b')) out.qState[k] = v;
     return out;
   }

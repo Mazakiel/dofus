@@ -18,14 +18,14 @@ async function run(client, OUT) {
   const achs = await client.all('achievements', ['id', 'categoryId', 'iconId', 'points', 'level', 'order', 'accountLinked', 'objectiveIds', 'name', 'description']);
   const objs = await client.all('achievement-objectives', ['id', 'achievementId', 'order', 'criterion', 'name']);
 
-  // Titres et ornements donnés par les succès (achievement-rewards) : ti = noms des titres, or = ornements { n, i (icône) }
+  // Titres et ornements donnés par les succès (achievement-rewards) : ti = titres { id, n }, or = ornements { id, n, i (icône) }
   const titres = Object.fromEntries((await client.all('titles', ['id', 'nameMale', 'nameFemale'])).map(t => [t.id, t]));
   const ornements = Object.fromEntries((await client.all('ornaments', ['id', 'name', 'iconId'])).map(o => [o.id, o]));
   const recompenses = await client.all('achievement-rewards', ['id', 'achievementId', 'titlesReward', 'ornamentsReward']);
   const ti = {}, orn = {};
   for (const r of recompenses) {
-    for (const id of r.titlesReward || []) { const t = titres[id]; if (t && t.nameMale && t.nameMale.fr) ((ti[r.achievementId] = ti[r.achievementId] || [])).push(t.nameMale.fr); }
-    for (const id of r.ornamentsReward || []) { const o = ornements[id]; if (o && o.name && o.name.fr) ((orn[r.achievementId] = orn[r.achievementId] || [])).push({ n: o.name.fr, i: o.iconId }); }
+    for (const id of r.titlesReward || []) { const t = titres[id]; if (t && t.nameMale && t.nameMale.fr) ((ti[r.achievementId] = ti[r.achievementId] || [])).push({ id, n: t.nameMale.fr }); }
+    for (const id of r.ornamentsReward || []) { const o = ornements[id]; if (o && o.name && o.name.fr) ((orn[r.achievementId] = orn[r.achievementId] || [])).push({ id, n: o.name.fr, i: o.iconId }); }
   }
   console.log('succès qui donnent un titre :', Object.keys(ti).length, '· un ornement :', Object.keys(orn).length);
 

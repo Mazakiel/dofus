@@ -2,7 +2,6 @@
 // ---- Dofus (DofusDB : objets de type Dofus, reliés au succès qui les donne, ou à la quête) ----
 const SDZL = (SC.dofus || []).filter(d => !d.cadeau);   // Jyfus : cadeau d'Ankama, ne s'obtient pas en jeu
 const sdzVisible = d => sSeasonal || !d.s;
-let sdzShowOwned = store.get('sdzShowOwned', !store.get('sdzHide', false));
 const itemImg = d => `https://api.dofusdb.fr/img/items/${d.ic}.png`;
 const setSdzOwned = (d, on) => P.setDofusOwned(d, on);
 const sdzSrc = d => d.pa ? `les succès « ${d.pa.map(a => SACH[a] ? SACH[a].n : a).join(" » et « ")} » (prérequis), puis un dialogue avec le PNJ — rattachement fait à la main, absent de DofusDB` : d.pre && d.a && SACH[d.a] ? `le succès « ${SACH[d.a].n} », qui n’en est qu’un prérequis : l’obtention elle-même n’est pas décrite dans DofusDB` : d.a && SACH[d.a] ? `le succès « ${SACH[d.a].n} »` : d.q ? `la quête « ${qName(d.q)} »${d.src === 'remis pendant la quête' ? ' (remis pendant la quête)' : d.src && d.src.startsWith('manuel') ? ' (remis par le PNJ en fin de quête ; rattachement fait à la main, absent de DofusDB)' : ''}` : '';
@@ -49,25 +48,15 @@ const SDZ_ORDER = (() => {
   }
   return [...out, ...SDZL.filter(d => !linked.includes(d))];
 })();
-function renderScDofus(el){
-  const shownDz = SDZL.filter(sdzVisible);
-  const owned = shownDz.filter(sdzOwned).length;
-  const goals = shownDz.filter(d => sdzGoals.has(d.id) && !sdzOwned(d));
-  const card = d => {
-    const own = sdzOwned(d), goal = !own && sdzGoals.has(d.id), link = d.a || d.q || d.pa;
-    const left = !own && link ? collectPrereqs('d', d.id) : null;
-    const tip = `${d.n} — ${d.pa ? 'nécessite ' + sdzSrc(d) : d.pre ? 'lié à ' + sdzSrc(d) : link ? 'donné par ' + sdzSrc(d) : sdzNoLink(d)}${left && left.q.size ? ` · il reste ${left.q.size} quête(s)` : ''}`;
-    return `<div class="dz ${own ? 'own' : 'miss'}${goal ? ' goal' : ''}" data-sdz="${d.id}" title="${esc(tip)}">
-      <span class="dz-lv">${(() => { const l = SDZLV[d.id]; return l ? (l[0] === l[1] ? l[0] : `${l[0]} - ${l[1]}`) : ''; })()}</span>${!own && (!link || d.pre) ? `<button class="dz-hors" data-dzinfo="${d.id}" aria-label="Comment obtenir ${esc(d.n)}" title="${esc(dzWho(d))}">i</button>` : ''}
-      <img src="${itemImg(d)}" alt="" loading="lazy" referrerpolicy="no-referrer">
-      <div class="dz-n">${esc(d.n)}</div>
-      <div class="dz-ctl">${own ? '<span class="dz-ok">✓ obtenu</span>' : `<label><input type="checkbox" data-sdzgoal="${d.id}" ${goal ? 'checked' : ''}> objectif</label>`}
-        <button class="dz-tg" data-sdzown="${d.id}" title="${own ? 'Marquer comme non obtenu' : 'Marquer comme obtenu (avec la cascade de ses quêtes)'}">${own ? '↺' : '✓'}</button></div></div>`;
-  };
-  const help = 'Clique sur un Dofus pour en faire un objectif : les quêtes et succès qui y mènent sont repérés dans les listes, et regroupés dans « Mes objectifs ». ✓ le marque obtenu et valide en cascade le succès ou la quête qui le donne, puis leurs prérequis. Rangés dans l’ordre d’obtention. Au survol : ce qui le donne et les quêtes qui restent.';
-  el.innerHTML = `<div class="dz-head"><h2>Dofus</h2><span class="cnt">${owned} / ${shownDz.length} obtenus${goals.length ? ` · ${goals.length} objectif${goals.length > 1 ? 's' : ''}` : ''}</span><span class="help" title="${esc(help)}">?</span><span class="sp"></span>${goals.length ? '<button class="btn" data-goalview>Voir mes objectifs</button>' : ''}
-      <label class="chk"><input type="checkbox" class="gc" id="sdzShowOwned" ${sdzShowOwned ? 'checked' : ''}> Afficher les obtenus</label></div>
-    <div class="dz-wrap"><div class="dz-grid">${SDZ_ORDER.filter(d => sdzVisible(d) && (sdzShowOwned || !sdzOwned(d))).map(card).join('')}</div></div>`;
-  el.querySelectorAll('img').forEach(img => img.addEventListener('error', () => { img.style.visibility = 'hidden'; }, { once: true }));
+// Carte d'un Dofus (vue Récompenses › Dofus) : un clic l'ouvre dans la fiche ; la case « objectif » et ✓ restent sur la carte
+function dofusCard(d){
+  const own = sdzOwned(d), goal = !own && sdzGoals.has(d.id), link = d.a || d.q || d.pa;
+  const left = !own && link ? collectPrereqs('d', d.id) : null;
+  const tip = `${d.n} — ${d.pa ? 'nécessite ' + sdzSrc(d) : d.pre ? 'lié à ' + sdzSrc(d) : link ? 'donné par ' + sdzSrc(d) : sdzNoLink(d)}${left && left.q.size ? ` · il reste ${left.q.size} quête(s)` : ''}`;
+  return `<div class="dz ${own ? 'own' : 'miss'}${goal ? ' goal' : ''}${isPick('d', d.id) ? ' sel' : ''}" data-pick="d:${d.id}" tabindex="0" role="button" title="${esc(tip)}">
+    <span class="dz-lv">${(() => { const l = SDZLV[d.id]; return l ? (l[0] === l[1] ? l[0] : `${l[0]} - ${l[1]}`) : ''; })()}</span>${!own && (!link || d.pre) ? `<button class="dz-hors" data-dzinfo="${d.id}" aria-label="Comment obtenir ${esc(d.n)}" title="${esc(dzWho(d))}">i</button>` : ''}
+    <img src="${itemImg(d)}" alt="" loading="lazy" referrerpolicy="no-referrer">
+    <div class="dz-n">${esc(d.n)}</div>
+    <div class="dz-ctl">${own ? '<span class="dz-ok">✓ obtenu</span>' : `<label><input type="checkbox" data-sdzgoal="${d.id}" ${goal ? 'checked' : ''}> objectif</label>`}
+      <button class="dz-tg" data-sdzown="${d.id}" title="${own ? 'Marquer comme non obtenu' : 'Marquer comme obtenu (avec la cascade de ses quêtes)'}">${own ? '↺' : '✓'}</button></div></div>`;
 }
-

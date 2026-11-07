@@ -239,14 +239,68 @@ test('annuler : une action en masse affiche un bandeau, « Annuler » rend la pr
   assert.equal(await p.eval(`document.getElementById('toast').hidden`), true, 'rien à annuler : pas de bandeau');
 }));
 
+// Page de test avec des titres et ornements : le jeu figé n'en contient pas, on en pose sur les trois premiers succès suivis
+const REWARDS = skip ? null : (() => {
+  const { trackedContent } = require(path.join(ROOT, 'scripts', 'lib', 'tracked-content.js'));
+  const D = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'dofusdb.json'), 'utf8'));
+  const T = trackedContent(D), seasonal = new Set(T.categories.filter(c => c.s).map(c => c.id));
+  const ids = T.succes.filter(a => a.t && a.ob.length && !seasonal.has(a.c) && a.ob.every(oid => (D.objectifs[oid] || {}).t === 'q')).slice(0, 3).map(a => a.id);
+  const by = Object.fromEntries(D.succes.map(a => [a.id, a]));
+  by[ids[0]].ti = [{ id: 9001, n: 'Titre Test A' }]; by[ids[0]].or = [{ id: 9101, n: 'Ornement Test A', i: 3 }];
+  by[ids[1]].ti = [{ id: 9002, n: 'Titre Test B' }];
+  const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'dofus-rw-')), 'data.json'); fs.writeFileSync(f, JSON.stringify(D));
+  return { page: buildPage(f), ids };
+})();
+
 test('récompenses : titres et ornements apparaissent sur la fiche du succès et de ses quêtes', { skip }, () => withPage(async p => {
   const r = await p.eval(`(() => {
-    const qid = +Object.keys(QOWN).find(q => (QOWN[q] || []).length && SC.quetes[q]), a = SACH[QOWN[qid][0]];
-    a.ti = ['Le Testeur']; a.or = [{ n: 'Cadre de test', i: 3 }];
+    const a = SACH[${REWARDS.ids[0]}], qid = +Object.keys(QOWN).find(q => (QOWN[q] || []).includes(a.id));
     sMode = 'succes'; sPick = { k: 'a', id: a.id }; renderDetail(); const s = document.getElementById('scDetail').innerHTML;
     sMode = 'quetes'; sPick = { k: 'q', id: qid }; renderDetail(); const q = document.getElementById('scDetail').innerHTML;
-    return { s: /Le Testeur/.test(s) && /Cadre de test/.test(s) && /ornaments\\/3\\.png/.test(s), q: /Le Testeur/.test(q) && /Cadre de test/.test(q) };
+    return { s: /Titre Test A/.test(s) && /Ornement Test A/.test(s) && /ornaments\\/3\\.png/.test(s), q: !qid || (/Titre Test A/.test(q) && /Ornement Test A/.test(q)) };
   })()`);
   assert.deepEqual(r, { s: true, q: true });
   assert.equal(await p.eval(`(() => { const a = SC.succes.find(x => !x.ti && !x.or); sMode='succes'; sPick={k:'a',id:a.id}; renderDetail(); return /rew-t|rew-o/.test(document.getElementById('scDetail').innerHTML); })()`), false, 'rien si le succès ne donne rien');
-}));
+}, {}, REWARDS && REWARDS.page));
+
+test('onglet Récompenses : titres et ornements suivent leur succès, objectif posé et retrouvé', { skip }, () => withPage(async p => {
+  const [a0, a1] = REWARDS.ids;
+  await p.eval(`localStorage.clear(); sShowLocked = true; mTab = 'recomp'; sMode = 'recomp'; rKind = 't'; rCat = SALL; renderSucces(); 1`);
+  assert.equal(await p.eval(`document.querySelectorAll('#scList .rw-row').length`), 2, 'deux titres affichés');
+  assert.equal(await p.eval(`document.querySelectorAll('#scList .rw-row.done').length`), 0);
+  // objectif : sur le titre A
+  await p.eval(`document.querySelector('#scList [data-rgoal="t:9001"]').click(); 1`);
+  assert.equal(await p.eval(`rwGoals.has('t9001')`), true);
+  assert.equal(await p.eval(`GOALR.length`), 1);
+  assert.ok(await p.eval(`Object.keys(GOALA).length + Object.keys(GOALQ).length`) > 0, 'ce qu’il reste à faire est calculé');
+  assert.match(await p.eval(`document.getElementById('scTree').textContent`), /Mes objectifs/);
+  // l'objectif est sauvegardé
+  await p.wait(300);
+  assert.deepEqual(await p.eval(`PS.load().rwGoals`), ['t9001']);
+  // la fiche
+  await p.eval(`document.querySelector('#scList [data-pick="t:9002"]').click(); 1`);
+  assert.match(await p.eval(`document.getElementById('scDetail').textContent`), /Titre Test B[\s\S]*Objectif[\s\S]*Pour l’obtenir/);
+  // le succès obtenu : le titre l'est aussi, et n'est plus un objectif
+  await p.eval(`sdone.add(${a0}); saveSc(); 1`);
+  assert.equal(await p.eval(`document.querySelectorAll('#scList .rw-row.done').length`), 1);
+  assert.equal(await p.eval(`GOALR.length`), 0);
+  // ornements : un seul
+  await p.eval(`document.querySelector('[data-rkind="o"]').click(); 1`);
+  assert.equal(await p.eval(`document.querySelectorAll('#scList .rw-row').length`), 1);
+  // les objectifs se retrouvent après rechargement
+  await p.eval(`rwGoals.add('t9002'); 1`); await p.wait(300); await p.reload();
+  assert.equal(await p.eval(`rwGoals.has('t9002')`), true);
+}, {}, REWARDS && REWARDS.page));
+
+test('onglet Récompenses : les Dofus y sont, avec leur fiche ; lien direct vers un titre', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(500);
+  assert.equal(await p.eval(`mTab`), 'recomp');
+  assert.ok(await p.eval(`document.querySelectorAll('#scList .dz').length`) > 5, 'la grille des Dofus');
+  assert.equal(await p.eval(`!!document.getElementById('scHelp')`), false, 'plus de bande Dofus en haut');
+  await p.eval(`document.querySelector('#scList .dz').click(); 1`);
+  assert.match(await p.eval(`location.hash`), /^#\/recompenses\/dofus\/d\d+$/);
+  assert.match(await p.eval(`document.getElementById('scDetail').textContent`), /Dofus[\s\S]*Pour l’obtenir/);
+  await p.eval(`location.hash = '#/recompenses/titres/t9002'; 1`); await p.wait(500);
+  assert.deepEqual(await p.eval(`({ k: rKind, p: sPick })`), { k: 't', p: { k: 't', id: 9002 } });
+  assert.match(await p.eval(`document.title`), /^Récompenses/);
+}, {}, REWARDS && REWARDS.page));

@@ -5,12 +5,14 @@
 //   - choisir une ligne sur ordinateur remplace l'entrée courante (pas d'historique pour chaque clic).
 // L'adresse ne garde la sélection que si elle est visible (fiche à droite sur ordinateur, feuille ouverte sur téléphone).
 var routing = { ready: false, applying: false, sheetPushed: false };   // `var` : routeSync() est appelée par le premier rendu, avant ce fichier
-const VIEW_NAMES = { succes: 'Succès', quetes: 'Quêtes', donjons: 'Donjons', dofus: 'Dofus', plus: 'Réglages' };
+const VIEW_NAMES = { succes: 'Succès', quetes: 'Quêtes', donjons: 'Donjons', recomp: 'Récompenses', plus: 'Réglages' };
+const KIND_TOKEN = { d: 'dofus', t: 'titres', o: 'ornements' }, TOKEN_KIND = { dofus: 'd', titres: 't', ornements: 'o' };
 const catToken = c => (c === QALL || c === SALL) ? 'tous' : c === QGOAL ? 'objectifs' : c === QOTHER ? 'autres' : c;
 const sheetOpen = () => document.body.classList.contains('sheet-open');
 
 function routeState() {
-  const view = mTab === 'plus' ? 'reglages' : mTab, st = { view, cat: null, dj: null, item: null };
+  const view = mTab === 'plus' ? 'reglages' : mTab === 'recomp' ? 'recompenses' : mTab, st = { view, cat: null, dj: null, item: null };
+  if (view === 'recompenses') { st.cat = KIND_TOKEN[rKind]; if (sPick && ['d', 't', 'o'].includes(sPick.k) && (!isMobile() || sheetOpen())) st.item = { k: sPick.k, id: sPick.id }; return st; }
   if (view === 'succes' || view === 'quetes') st.cat = sCat == null ? null : String(catToken(sCat));
   if (view === 'donjons') st.dj = sDj;
   if (['succes', 'quetes', 'donjons'].includes(view) && sPick && (!isMobile() || sheetOpen())) st.item = { k: sPick.k, id: sPick.id };
@@ -38,14 +40,17 @@ function applyRoute(hash) {
   routing.applying = true;
   try {
     sPick = null;
-    if (s.view === 'dofus') mTab = 'dofus'; else if (s.view === 'reglages') mTab = 'plus'; else { mTab = s.view; sMode = s.view; store.set('sMode', sMode); }
+    if (s.view === 'recompenses') {
+      mTab = 'recomp'; sMode = 'recomp'; store.set('sMode', sMode);
+      if (s.cat && TOKEN_KIND[s.cat] && TOKEN_KIND[s.cat] !== rKind) { rKind = TOKEN_KIND[s.cat]; store.set('rKind', rKind); rCat = SALL; store.set('rCat', rCat); }
+    } else if (s.view === 'reglages') mTab = 'plus'; else { mTab = s.view; sMode = s.view; store.set('sMode', sMode); }
     store.set('mTab', mTab);
     if (s.cat != null && (s.view === 'succes' || s.view === 'quetes')) {
       sCat = s.cat === 'tous' ? (s.view === 'quetes' ? QALL : SALL) : s.cat === 'objectifs' ? QGOAL : s.cat === 'autres' ? QOTHER : +s.cat;
       store.set('sCat', sCat);
     }
     if (s.dj != null) { sDj = s.dj; store.set('sDj', sDj); }
-    if (s.item && (s.item.k === 'q' ? SC.quetes[s.item.id] : SACH[s.item.id])) sPick = { k: s.item.k, id: s.item.id };
+    if (s.item && (s.item.k === 'q' ? SC.quetes[s.item.id] : s.item.k === 'a' ? SACH[s.item.id] : rwOf(s.item.k, s.item.id))) sPick = { k: s.item.k, id: s.item.id };
     if (sPick && isMobile()) openSheet(); else closeSheet();
     renderSucces();
     applyTitle();

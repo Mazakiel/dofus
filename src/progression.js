@@ -46,6 +46,14 @@
       if (d.q) push(DZ_BY_Q, d.q, d.id);
     }
 
+    // Titres et ornements donnés par un succès (`ti` et `or` des succès) : { kind: 't' | 'o', id, n, a: succès qui le donne, i: icône d'ornement }
+    // Un titre ou un ornement n'a pas d'état propre : il est obtenu quand son succès l'est.
+    const RW = [], RWBY = { t: {}, o: {} };
+    for (const a of SC.succes) {
+      for (const t of a.ti || []) if (!RWBY.t[t.id]) RW.push(RWBY.t[t.id] = { kind: 't', id: t.id, n: t.n, a: a.id });
+      for (const o of a.or || []) if (!RWBY.o[o.id]) RW.push(RWBY.o[o.id] = { kind: 'o', id: o.id, n: o.n, a: a.id, i: o.i });
+    }
+
     // ---- état suivi + caches : une mutation invalide tout ----
     const memoDone = new Map(), memoAvail = new Map(), listeners = new Set();
     let level = 200, quiet = 0;
@@ -58,6 +66,7 @@
       sq: new TrackedSet(changed),           // quêtes faites
       sodone: new TrackedSet(changed),       // autres objectifs cochés (monstre, donjon, exploration…)
       sdzGoals: new TrackedSet(changed),     // Dofus visés
+      rwGoals: new TrackedSet(changed),      // titres et ornements visés : 't57', 'o56'
       sdzState: trackedObject(changed),      // Dofus : 'owned' | 'missing' forcé à la main
       qState: trackedObject(changed),        // quêtes : 's' commencée | 'b' bloquée
       get level() { return level; },
@@ -65,12 +74,12 @@
     };
     const clearObject = o => { for (const k of Object.keys(o)) delete o[k]; };
     const snapshot = () => ({ sdone: [...state.sdone], sq: [...state.sq], sodone: [...state.sodone], sLevel: level,
-      sdzState: { ...state.sdzState }, sdzGoals: [...state.sdzGoals], qState: { ...state.qState } });
+      sdzState: { ...state.sdzState }, sdzGoals: [...state.sdzGoals], rwGoals: [...state.rwGoals], qState: { ...state.qState } });
     // Charge un état (depuis le stockage, la synchro, un import) : silencieux, ce n'est pas une modification de l'utilisateur
     function load(s = {}) {
       silently(() => {
         state.sdone.replace(s.sdone || []); state.sq.replace(s.sq || []); state.sodone.replace(s.sodone || []);
-        state.sdzGoals.replace(s.sdzGoals || []);
+        state.sdzGoals.replace(s.sdzGoals || []); state.rwGoals.replace(s.rwGoals || []);
         clearObject(state.sdzState); Object.assign(state.sdzState, s.sdzState || {});
         clearObject(state.qState); Object.assign(state.qState, s.qState || {});
         state.level = s.sLevel == null ? 200 : s.sLevel;
@@ -169,6 +178,7 @@
         objs(aid);
       };
       if (kind === 'a') { seen.add('a' + id); objs(id); }
+      else if (kind === 'rw') ach(id);   // titre ou ornement : le succès qui le donne, avec tout ce qu'il demande
       else if (kind === 'd') { seen.add('d' + id); const d = SDZ[id]; if (d) { if (d.a) ach(d.a); if (d.q) quest(d.q); (d.pa || []).forEach(ach); } }   // Dofus : son succès, sa quête et ses succès prérequis, inclus
       else { seen.add('q' + id); const q = SC.quetes[id]; if (q) { (q.pre || []).forEach(quest); (q.preA || []).forEach(ach); (q.preD || []).forEach(dofus); } }
       return acc;
@@ -211,18 +221,20 @@
       // Dofus : on retire le forçage, puis on force « non obtenu » s'il reste obtenu par ailleurs
       rm.d.forEach(id => { delete state.sdzState[id]; if (dofusOwned(SDZ[id])) state.sdzState[id] = 'missing'; });
     }
-    // Pour des Dofus visés : les quêtes et succès qui restent à faire pour les obtenir, et pour quel Dofus.
-    function goalsFor(dofusList) {
+    // Un Dofus, un titre ou un ornement : obtenu ?
+    const rewardOwned = r => r.kind ? achDone(r.a) : dofusOwned(r);
+    // Pour des récompenses visées (Dofus, titres, ornements) : les quêtes et succès qui restent à faire pour les obtenir, et pour laquelle.
+    function goalsFor(rewardList) {
       const q = {}, a = {};
-      for (const d of dofusList) { const acc = collectPrereqs('d', d.id);
+      for (const d of rewardList) { const acc = d.kind ? collectPrereqs('rw', d.a) : collectPrereqs('d', d.id);
         acc.q.forEach(id => push(q, id, d)); acc.a.forEach(id => push(a, id, d)); }
       return { q, a };
     }
 
     return {
-      state, index: { SACH, SDZ, QOWN, QNEXT, SPARENTS },
+      state, index: { SACH, SDZ, QOWN, QNEXT, SPARENTS, RW, RWBY },
       load, snapshot, simulate, subscribe,
-      questDone, achDone, objDone, achProg, dofusAuto, dofusOwned, setDofusOwned,
+      questDone, achDone, objDone, achProg, dofusAuto, dofusOwned, setDofusOwned, rewardOwned,
       questAvailable, achAvailable, questStatus, lockReasons, questShown, achShown,
       collectPrereqs, collectDependents, applyRemoval, goalsFor,
     };

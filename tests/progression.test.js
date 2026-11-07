@@ -165,9 +165,9 @@ test('un Dofus se déduit de son succès ou de sa quête, et peut être forcé �
 
 test("l'état se sauvegarde et se recharge à l'identique ; simulate remet l'état d'origine", () => {
   const P = make();
-  P.load({ sdone: [4], sq: [1, 2], sodone: [13], sLevel: 77, sdzState: { 101: 'owned' }, sdzGoals: [100], qState: { 5: 's' } });
+  P.load({ sdone: [4], sq: [1, 2], sodone: [13], sLevel: 77, sdzState: { 101: 'owned' }, sdzGoals: [100], rwGoals: ['t7'], qState: { 5: 's' } });
   const snap = P.snapshot();
-  assert.deepEqual(snap, { sdone: [4], sq: [1, 2], sodone: [13], sLevel: 77, sdzState: { 101: 'owned' }, sdzGoals: [100], qState: { 5: 's' } });
+  assert.deepEqual(snap, { sdone: [4], sq: [1, 2], sodone: [13], sLevel: 77, sdzState: { 101: 'owned' }, sdzGoals: [100], rwGoals: ['t7'], qState: { 5: 's' } });
   const Q = Progression.create(DATA()); Q.load(snap);
   assert.deepEqual(Q.snapshot(), snap);
   const vu = P.simulate(() => { P.state.sq.add(3); P.state.sdone.add(1); return P.achDone(1); });
@@ -182,6 +182,27 @@ test('les quêtes et succès qui servent des Dofus visés sont retrouvés', () =
   assert.deepEqual(Object.keys(q).sort(), ['1', '2']);
   assert.deepEqual(Object.keys(a).sort(), ['1', '2']);
   assert.equal(q[1][0].id, 100);
+});
+
+test('un titre ou un ornement est obtenu avec son succès, et un objectif en déduit ce qui reste', () => {
+  const D = DATA();
+  D.succes[0].ti = [{ id: 7, n: 'Titre A1' }]; D.succes[1].or = [{ id: 8, n: 'Ornement A2', i: 3 }];
+  const P = Progression.create(D); P.load({ sLevel: 100 });
+  const [t, o] = [P.index.RWBY.t[7], P.index.RWBY.o[8]];
+  assert.deepEqual([t.kind, t.a, o.kind, o.a, o.i], ['t', 1, 'o', 2, 3]);
+  assert.equal(P.index.RW.length, 2);
+  assert.equal(P.rewardOwned(t), false);
+  const g = P.goalsFor([t, o]);                              // A1 = Q1 + Q2 ; A2 = A1 + un objectif libre
+  assert.deepEqual(Object.keys(g.q).sort(), ['1', '2']);
+  assert.deepEqual(Object.keys(g.a).sort(), ['1', '2']);     // le succès qui donne la récompense compte aussi
+  assert.deepEqual(g.a[1].map(r => r.kind).sort(), ['o', 't']);
+  P.state.sq.add(1); P.state.sq.add(2);                      // A1 obtenu : le titre aussi
+  assert.equal(P.rewardOwned(t), true);
+  assert.equal(P.rewardOwned(o), false);
+  assert.deepEqual(Object.keys(P.goalsFor([o]).q), [], 'plus de quête à faire pour l’ornement');
+  assert.deepEqual(Object.keys(P.goalsFor([o]).a), ['2']);
+  P.state.rwGoals.add('t7');
+  assert.deepEqual(P.snapshot().rwGoals, ['t7']);
 });
 
 test('sur les données figées : cohérence et temps de calcul', { skip: !fs.existsSync(path.join(__dirname, 'fixtures', 'dofusdb.json')) }, () => {

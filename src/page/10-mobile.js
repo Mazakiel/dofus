@@ -1,7 +1,7 @@
 // ===== Mobile : onglets du bas, feuille de détail, menu de catégorie.
 // ---- Mobile : onglets en bas, fiche en feuille ----
 let mTab = store.get('mTab', sMode);
-if (mTab !== 'dofus' && mTab !== 'plus') mTab = sMode;
+if (mTab !== 'plus') mTab = sMode;   // (l'ancien onglet « dofus » est devenu le mode « recomp »)
 function showTab(){
   document.body.dataset.tab = mTab;
   document.querySelectorAll('#tabbar [data-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === mTab)));
@@ -11,7 +11,7 @@ function closeSheet(){ document.body.classList.remove('sheet-open'); }
 document.getElementById('tabbar').addEventListener('click', e => {
   const b = e.target.closest('[data-tab]'); if (!b) return;
   closeSheet(); mTab = b.dataset.tab; store.set('mTab', mTab);
-  if (['succes', 'quetes', 'donjons'].includes(mTab) && sMode !== mTab) { sPick = null; sMode = mTab; store.set('sMode', sMode); }
+  if (mTab !== 'plus' && sMode !== mTab) { sPick = null; sMode = mTab; store.set('sMode', sMode); }
   renderSucces(); window.scrollTo({ top: 0 });
 });
 document.getElementById('scrim').addEventListener('click', dismissSheet);

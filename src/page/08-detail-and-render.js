@@ -53,10 +53,10 @@ function renderDetail(){
   const CLOSE = '<button class="det-close" data-closedet aria-label="Fermer">✕</button>';
   if (sPick && sPick.k === 'a' && SACH[sPick.id]) el.innerHTML = CLOSE + achDetailHtml(SACH[sPick.id]);
   else if (sPick && sPick.k === 'q' && SC.quetes[sPick.id]) el.innerHTML = CLOSE + questDetailHtml(sPick.id);
-  else el.innerHTML = `<div class="det-empty"><div class="orn">✦</div>Choisis ${sMode === 'quetes' ? 'une quête' : 'un succès'} dans la liste pour voir ses objectifs, ses prérequis et ce qu’il rapporte.</div>`;
+  else if (sPick && ['d', 't', 'o'].includes(sPick.k) && rwOf(sPick.k, sPick.id)) el.innerHTML = CLOSE + rwDetailHtml(rwOf(sPick.k, sPick.id));
+  else el.innerHTML = `<div class="det-empty"><div class="orn">✦</div>Choisis ${sMode === 'quetes' ? 'une quête' : sMode === 'recomp' ? 'une récompense' : 'un succès'} dans la liste pour voir ses objectifs, ses prérequis et ce qu’il rapporte.</div>`;
   imgErr(el);
 }
-function renderScHelp(){ renderScDofus(document.getElementById("scHelp")); }
 function ensureCat(){
   const l = scCatList(); if (l.some(c => c.id === sCat)) return;
   const st = sMode === 'quetes' ? questStats : catStats, real = l.filter(c => ![QGOAL, QALL, SALL].includes(c.id));
@@ -76,11 +76,11 @@ function renderSucces(){
   document.getElementById('scShowLocked').checked = sShowLocked;
   document.getElementById('scSeasonal').checked = sSeasonal;
   document.querySelectorAll('[data-smode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.smode === sMode)));
-  document.getElementById('scSearch').placeholder = sMode === 'quetes' ? 'Rechercher une quête…' : sMode === 'donjons' ? 'Rechercher un donjon ou un boss…' : 'Rechercher un succès…';
-  if (['succes', 'quetes', 'donjons'].includes(mTab)) mTab = sMode;
+  document.getElementById('scSearch').placeholder = sMode === 'quetes' ? 'Rechercher une quête…' : sMode === 'donjons' ? 'Rechercher un donjon ou un boss…' : sMode === 'recomp' ? 'Rechercher une récompense…' : 'Rechercher un succès…';
+  if (mTab !== 'plus') mTab = sMode;
   showTab();
-  if (sMode === 'donjons') ensureDj(); else ensureCat();
-  renderScTree(); renderScList(); renderScHelp(); renderDetail();
+  if (sMode === 'donjons') ensureDj(); else if (sMode === 'recomp') ensureRw(); else ensureCat();
+  renderScTree(); renderScList(); renderDetail();
   if (typeof routeSync === 'function') routeSync();
 }
 function goToAch(id){
@@ -95,6 +95,14 @@ function goToAch(id){
   const el = document.getElementById('ach' + id); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1400); }
 }
 document.getElementById('scTree').addEventListener('click', e => {
+  const rc = e.target.closest('[data-rcat]');
+  if (rc) {
+    rCat = +rc.dataset.rcat; store.set('rCat', rCat); sPick = null; sSearch = ''; document.getElementById('scSearch').value = '';
+    document.querySelector('.side').classList.remove('open'); document.getElementById('catBtn').setAttribute('aria-expanded', 'false');
+    renderScTree(); renderScList(); renderDetail(); routeSync();
+    if (isMobile()) window.scrollTo({ top: 0 });
+    return;
+  }
   const dj = e.target.closest('[data-sdj]');
   if (dj) {
     sDj = +dj.dataset.sdj; store.set('sDj', sDj); sPick = null;

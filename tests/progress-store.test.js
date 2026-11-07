@@ -9,7 +9,7 @@ const memory = (init = {}) => {
   return { get: (k, d) => (m.has(k) ? structuredClone(m.get(k)) : d), set: (k, v) => { m.set(k, structuredClone(v)); }, del: k => { m.delete(k); }, keys: () => [...m.keys()], m };
 };
 const clock = () => { let n = 0; return () => `2026-01-01T00:00:${String(++n).padStart(2, '0')}.000Z`; };
-const snap = o => ({ sdone: [], sq: [], sodone: [], sLevel: 200, sdzState: {}, sdzGoals: [], qState: {}, ...o });
+const snap = o => ({ sdone: [], sq: [], sodone: [], sLevel: 200, sdzState: {}, sdzGoals: [], rwGoals: [], qState: {}, ...o });
 const fakeRemote = (docs = {}) => ({ docs, read: async () => structuredClone(docs), write: async p => { Object.assign(docs, structuredClone(p)); } });
 
 test('premier chargement : un profil « Défaut » qui reprend les anciennes clés sans profil', () => {
@@ -126,19 +126,21 @@ test('synchro : changé des deux côtés → fusion si on confirme, sinon le con
 });
 
 test("export / import : le fichier garde son format ; l'import ajoute sans rien retirer et écarte l'inconnu", () => {
-  const a = snap({ sdone: [1], sq: [2, 3], sodone: [4], sLevel: 130, sdzState: { 10: 'owned' }, sdzGoals: [11], qState: { 2: 's' } });
+  const a = snap({ sdone: [1], sq: [2, 3], sodone: [4], sLevel: 130, sdzState: { 10: 'owned' }, sdzGoals: [11], rwGoals: ['t5', 'o6'], qState: { 2: 's' } });
   const f = PS.exportFile(a, 'Moi', '2026-11-06T00:00:00.000Z');
   assert.equal(f.format, 'succes-dofus-coches'); assert.equal(f.version, 2); assert.equal(f.niveau, 130);
   assert.deepEqual(f.succesQuetes, [2, 3]); assert.deepEqual(f.succesQuetesEtat, { 2: 's' });
   assert.deepEqual(PS.inspectImport(f), { count: 4, hasDofus: true, profil: 'Moi' });
   assert.equal(PS.inspectImport({ format: 'autre' }).count, 0);
-  const known = { dofus: id => String(id) === '10' || String(id) === '99', quest: id => String(id) !== '404' };
+  const known = { dofus: id => String(id) === '10' || String(id) === '99', quest: id => String(id) !== '404', reward: k => k !== 'o6' };
   const base = snap({ sq: [9], sdzState: { 99: 'missing' }, qState: { 7: 'b' } });
   const imp = PS.importInto(base, { ...f, succesDofusEtat: { 10: 'owned', 55: 'owned', 99: 'weird' }, succesQuetesEtat: { 2: 's', 404: 's', 8: 'x' }, succesDofusObjectifs: [11, 99] }, known);
   assert.deepEqual(imp.sq.sort((x, y) => x - y), [2, 3, 9]);
   assert.deepEqual(imp.sdzState, { 99: 'missing', 10: 'owned' });
   assert.deepEqual(imp.qState, { 7: 'b', 2: 's' });
   assert.deepEqual(imp.sdzGoals, [99]);
+  assert.deepEqual(imp.rwGoals, ['t5'], 'les objectifs titres et ornements sont importés, l’inconnu écarté');
+  assert.deepEqual(f.succesRecompensesObjectifs, ['t5', 'o6']);
   assert.deepEqual(base.sq, [9], 'le snapshot d’origine n’est pas modifié');
 });
 

@@ -68,6 +68,7 @@ test('cached() construit une fois, puis relit le cache', async () => {
 test('critère d’objectif : quête, succès ou autre', () => {
   assert.deepEqual(parseObjective('Qf=12'), { t: 'q', r: 12 });
   assert.deepEqual(parseObjective('OA=44'), { t: 'a', r: 44 });
+  assert.deepEqual(parseObjective('(QF>1313,0)'), { t: 'q', r: 1313 }, 'autre écriture de « quête terminée »');
   assert.deepEqual(parseObjective('PL>10'), { t: 'x' });
   assert.deepEqual(parseObjective(undefined), { t: 'x' });
 });
@@ -76,6 +77,7 @@ test('conditions de départ : quêtes, succès, objets ; une alternative n’exi
   assert.deepEqual(parseStart('PL>19&Qf=12&OA=5&PO=300'), { pre: [12], preA: [5], po: [300] });
   assert.deepEqual(parseStart('(Qa=7|Qf=7)&Qf=8'), { pre: [7, 8], preA: [], po: [] }, 'Q7 est dans les deux branches : exigée');
   assert.deepEqual(parseStart('Qf=1|Qf=2').pre, [], 'quêtes différentes dans les alternatives : ignorées');
+  assert.deepEqual(parseStart('QF>1423,0&PL>9&Sc=822'), { pre: [1423], preA: [], po: [] }, 'quête terminée, autre écriture');
   assert.deepEqual(parseStart('((Qf=3))&(OA=4)'), { pre: [3], preA: [4], po: [] }, 'parenthèses redondantes retirées');
   assert.deepEqual(parseStart(''), { pre: [], preA: [], po: [] });
 });

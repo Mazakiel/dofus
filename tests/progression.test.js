@@ -205,6 +205,14 @@ test('un titre ou un ornement est obtenu avec son succès, et un objectif en dé
   assert.deepEqual(P.snapshot().rwGoals, ['t7']);
 });
 
+test('un objectif coché à la main, devenu une quête, rend la quête faite', () => {
+  const P = make();
+  P.load({ sodone: [10, 13], sLevel: 100 });                 // 10 est l'objectif « quête 1 » : il était libre avant d'être relié
+  assert.equal(P.questDone(1), true);
+  assert.deepEqual(P.snapshot().sodone, [13], 'la coche d’objectif est reprise par la quête');
+  assert.deepEqual(P.snapshot().sq, [1]);
+});
+
 test('sur les données figées : cohérence et temps de calcul', { skip: !fs.existsSync(path.join(__dirname, 'fixtures', 'dofusdb.json')) }, () => {
   const data = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'dofusdb.json'), 'utf8'));
   const P = Progression.create(data);

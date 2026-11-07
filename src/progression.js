@@ -83,6 +83,8 @@
         clearObject(state.sdzState); Object.assign(state.sdzState, s.sdzState || {});
         clearObject(state.qState); Object.assign(state.qState, s.qState || {});
         state.level = s.sLevel == null ? 200 : s.sLevel;
+        // Objectifs cochés à la main avant que DofusDB ne les relie à une quête : c'est la quête qui est faite
+        for (const [oid, o] of Object.entries(SC.objectifs)) if (o.t === 'q' && state.sodone.has(+oid)) { state.sq.add(o.r); state.sodone.delete(+oid); }
       });
     }
     // Exécute `fn` sur un état modifié, puis remet l'état d'origine (ex. « quels succès seraient complétés par cette validation »)

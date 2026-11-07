@@ -1,8 +1,11 @@
 // Lecture des critères DofusDB (chaînes comme « PL>19&Qf=12&(OA=5|OA=6) »). Fonctions pures, testées.
 
 // Critère d'un objectif de succès : Qf=ID → quête terminée, OA=ID → succès obtenu, sinon autre (monstre, donjon, niveau…)
+// « Qf=12 » et « QF>12,0 » (quête 12 terminée au moins une fois) disent la même chose ; DofusDB emploie les deux.
+const normalize = c => String(c || '').replace(/QF>(\d+),0/g, 'Qf=$1');
+
 function parseObjective(c) {
-  c = c || '';
+  c = normalize(c);
   let m;
   if ((m = c.match(/Qf=(\d+)/))) return { t: 'q', r: +m[1] };
   if ((m = c.match(/OA=(\d+)/))) return { t: 'a', r: +m[1] };
@@ -13,6 +16,7 @@ function parseObjective(c) {
 // Qf=X → la quête X doit être terminée ; OA=Y → le succès Y doit être obtenu ; PO=Z → posséder l'objet Z.
 // Les alternatives « a|b » sont ignorées, sauf quand une même quête figure dans toutes : elle est alors exigée.
 function parseStart(c) {
+  c = normalize(c);
   const pre = new Set(), preA = new Set(), po = new Set();
   // découpe au niveau 0 des parenthèses : a&(b|c)&d → [a, (b|c), d]
   const split = (s, sep) => { const out = []; let depth = 0, cur = '';

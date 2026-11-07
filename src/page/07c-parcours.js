@@ -3,26 +3,29 @@
 // Les Dofus sont désignés par leur nom, les succès et quêtes par leur identifiant : un nom absent des données est ignoré, et tout Dofus
 // qui n'est pas placé arrive dans « Indépendants », rangé par niveau puis par effort restant. Dofawa est masqué (SDZ_HIDDEN).
 const PRIM = ['Dofus Ocre', 'Dofus Émeraude', 'Dofus Pourpre', 'Dofus Turquoise', 'Dofus Ébène', 'Dofus Ivoire'];
-// r = ligne (à partir de 2), c = colonne (1 à 6), s = nombre de colonnes occupées.
+// Position verticale = niveau : une ligne par étape, regroupées en paliers de niveau (PBANDS). Chaque Dofus est rangé selon son niveau de fin
+// (SDZLV) ; ce qui dépend d'un autre Dofus est toujours plus bas. r = ligne (à partir de 2), c = colonne (1 à 6), s = colonnes occupées.
+const PBANDS = [[3, 50], [5, 100], [6, 150], [7, 200]];   // [première ligne du palier suivant, niveau où il commence] : traits discrets entre les paliers
 const PN = [
-  { id: 'arg', d: 'Dofus Argenté', r: 2, c: 1 },
-  { id: 'mais', ach: 1036, r: 2, c: 2, s: 2 },                          // « Mais où sont les Dofus ? » : les quêtes d'introduction des Dofus, tronc commun des six primordiaux
-  { id: 'cawotte', d: 'Dofus Cawotte', r: 3, c: 2 },                    // rattaché à l'introduction des Dofus (indication du joueur : DofusDB ne donne pas ce lien)
-  { id: 'six', ach: 1705, r: 7, c: 2, s: 2 },                           // « Six sur six » (6/6) : les six primordiaux et leurs quêtes finales ; ouvre Scintillant et Sylvestre
-  { id: 'scint', d: 'Dofus Argenté Scintillant', r: 8, c: 2 },          // demande Argenté et presque tout « Six sur six » (il lui manque ses deux dernières quêtes)
-  { id: 'domakuro', d: 'Domakuro', r: 2, c: 4 },
-  { id: 'dorigami', d: 'Dorigami', r: 3, c: 4 },
-  { id: 'tach', d: 'Dofus Tacheté', r: 4, c: 4 },                       // la chaîne de Cauchemar passe par « En ce jardin qui nous unit », sa dernière quête sur le chemin
-  { id: 'cauch', d: 'Dofus du Cauchemar', r: 5, c: 4 },                 // la quête de Verdoyant exige « Un héritage tourmenté » (3 des 4 quêtes de Cauchemar)
-  { id: 'verd', d: 'Dofus Verdoyant', r: 6, c: 4 },                     // la chaîne de Sylvestre passe par la quête de Verdoyant
-  { id: 'pin', d: 'Dom de Pin', r: 7, c: 5 },                           // exigé par la quête « Flovoraison » (Sylvestre) ; à cocher à la main
-  { id: 'sylv', d: 'Dofus Sylvestre', r: 8, c: 4 },
-  { id: 'veill', d: 'Dofus des Veilleurs', r: 2, c: 5 },                // Dimensions Divines : entre la série Pandala et les indépendants
-  { id: 'neb', d: 'Dofus Nébuleux', r: 3, c: 5 },
+  { id: 'arg', d: 'Dofus Argenté', r: 2, c: 1 },                          // niv. 2–40
+  { id: 'mais', ach: 1036, r: 2, c: 2, s: 2 },                          // « Mais où sont les Dofus ? » : les quêtes d'introduction des Dofus (niv. 30–40), tronc commun des six primordiaux
+  { id: 'cawotte', d: 'Dofus Cawotte', r: 3, c: 3 },                    // niv. 60 ; rattaché à l'introduction des Dofus (indication du joueur : DofusDB ne donne pas ce lien)
+  { id: 'veill', d: 'Dofus des Veilleurs', r: 3, c: 5 },                // niv. 100 ; Dimensions Divines : entre la série Pandala et les indépendants
+  { id: 'neb', d: 'Dofus Nébuleux', r: 4, c: 5 },
+  { id: 'domakuro', d: 'Domakuro', r: 5, c: 4 },                         // niv. 30–140
+  { id: 'dorigami', d: 'Dorigami', r: 6, c: 4 },                         // niv. 160–170
+  { id: 'pin', d: 'Dom de Pin', r: 6, c: 5 },                           // niv. 180 ; exigé par la quête « Flovoraison » (Sylvestre) ; à cocher à la main
+  { id: 'tach', d: 'Dofus Tacheté', r: 7, c: 4 },                       // la chaîne de Cauchemar passe par « En ce jardin qui nous unit », sa dernière quête sur le chemin
+  { id: 'six', ach: 1705, r: 8, c: 2, s: 2 },                           // « Six sur six » (6/6) : les six primordiaux et leurs quêtes finales ; ouvre Scintillant et Sylvestre
+  { id: 'cauch', d: 'Dofus du Cauchemar', r: 8, c: 4 },                 // la quête de Verdoyant exige « Un héritage tourmenté » (3 des 4 quêtes de Cauchemar)
+  { id: 'scint', d: 'Dofus Argenté Scintillant', r: 9, c: 2 },          // demande Argenté et presque tout « Six sur six » (il lui manque ses deux dernières quêtes)
+  { id: 'verd', d: 'Dofus Verdoyant', r: 9, c: 4 },                     // la chaîne de Sylvestre passe par la quête de Verdoyant
+  { id: 'sylv', d: 'Dofus Sylvestre', r: 10, c: 4 },
 ];
 // Les six primordiaux : placés dans l'ordre (niveau puis effort), deux par ligne, dans un cadre commun (pas de chaîne entre eux)
-const PRIM_SLOTS = [[4, 2], [4, 3], [5, 2], [5, 3], [6, 2], [6, 3]];
-const PBOX = { id: 'prim', r: 4, c: 2, rows: 3 };
+const PRIM_SLOTS = [[5, 2], [5, 3], [6, 2], [6, 3], [7, 2], [7, 3]];
+const PBOX = { id: 'prim', r: 5, c: 2, rows: 3 };
+const PALONE_ROWS = [2, 3, 5, 6, 7];   // première ligne des indépendants pour : ≤ 50, 51–100, 101–150, 151–199, 200
 // Flèches : ['de', 'vers']. Une flèche va toujours vers le bas (ce qui est dessous dépend de ce qui est dessus), à angles droits :
 // droite si les cartes sont alignées, sinon elle descend, longe l'espace juste au-dessus de la cible, puis descend dedans.
 const PE = [['mais', 'cawotte'], ['mais', 'prim'], ['prim', 'six'], ['arg', 'scint'], ['six', 'scint'],
@@ -77,7 +80,13 @@ function parcoursHtml() {
   const alone = SDZ_ORDER.filter(d => !pPlaced.has(d.n) && sdzVisible(d) && rwShown(d))
     .sort((a, b) => { const hi = d => (SDZLV[d.id] || [999, 999])[1], lo = d => (SDZLV[d.id] || [999, 999])[0];
       return hi(a) - hi(b) || lo(a) - lo(b) || pLeft(a) - pLeft(b); });   // niveau de fin, puis de départ, puis effort
-  alone.forEach((d, i) => out.push(pCard(d, 'a' + d.id, `${pPos(2 + i, 6)};order:${1000 + i}`, '', false)));
+  let last = 0;
+  alone.forEach(d => {
+    const hi = (SDZLV[d.id] || [999, 999])[1], band = hi <= 50 ? 0 : hi <= 100 ? 1 : hi <= 150 ? 2 : hi < 200 ? 3 : 4;
+    const row = Math.max(PALONE_ROWS[band], last + 1); last = row;
+    out.push(pCard(d, 'a' + d.id, `${pPos(row, 6)};order:${1000 + row}`, '', false));
+  });
+  out.unshift(...PBANDS.map(([r, lv]) => `<div class="pband" style="grid-row:${r - 1};grid-column:1 / -1"><span>niv. ${lv}</span></div>`));
   return `<div class="pwrap"><div class="pgrid" id="pgrid"><svg class="pedges" id="pedges" aria-hidden="true"></svg>${out.join('')}</div></div>`;
 }
 
@@ -112,10 +121,9 @@ function pDrawEdges() {
     if (lo <= hi) { const x = Math.min(Math.max(e.x2, lo), hi); e.x1 = e.x2 = x; }
     if (Math.abs(e.x1 - e.x2) < 3) pts = [[e.x1, A.b], [e.x2, B.t - 3]];
     else {
-      // le palier horizontal laisse toujours de la place à la pointe (au moins 20 px au-dessus de la cible) et un trait droit sous la source ;
-      // plusieurs flèches vers la même carte étagent leurs paliers de 14 px
-      const lo = A.b + 14, hi = B.t - 20, want = B.t - 30 - e.x2Rank * 14;
-      const ym = lo > hi ? (A.b + B.t) / 2 : Math.min(Math.max(want, lo), hi);
+      // le palier horizontal est dans l'espace libre juste au-dessus de la carte cible (jamais dans la rangée d'au-dessus), avec de la place pour la pointe ;
+      // deux flèches vers la même carte arrivent de côtés différents : leurs paliers ne se recouvrent pas
+      const lo = A.b + 14, hi = B.t - 20, ym = lo > hi ? (A.b + B.t) / 2 : Math.min(Math.max(B.t - 28, lo), hi);
       pts = [[e.x1, A.b], [e.x1, ym], [e.x2, ym], [e.x2, B.t - 3]];
     }
     h += `<path class="pe" d="${pRound(pts)}" marker-end="url(#pah)"/>`;

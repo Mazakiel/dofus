@@ -468,6 +468,8 @@ input.gc:focus-visible{outline-offset:3px}
 /* ---- Parcours des Dofus : grille lue de haut en bas, une colonne par famille ---- */
 .pwrap{overflow-x:auto;padding:8px 0 16px}
 .pgrid{position:relative;display:grid;grid-template-columns:repeat(6,172px);column-gap:30px;row-gap:46px;padding:16px 18px 22px;width:max-content;align-items:start}
+.pband{align-self:start;margin-top:-23px;height:0;border-top:1px dashed var(--line);position:relative;z-index:0;pointer-events:none}
+.pband span{position:absolute;left:0;top:-9px;background:var(--win);padding:0 6px 0 0;font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
 .pedges{position:absolute;left:0;top:0;pointer-events:none;color:var(--muted);overflow:visible;z-index:0}
 .pe{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;opacity:.75}
 .pbox{border:2px dashed var(--line);border-radius:12px;margin:-9px;z-index:0;align-self:stretch}
@@ -510,7 +512,7 @@ input.gc:focus-visible{outline-offset:3px}
 @media (max-width:700px){
   .pwrap{overflow:visible}
   .pgrid{display:flex;flex-direction:column;width:auto;gap:8px;padding:6px 14px}
-  .pedges,.pbox{display:none}
+  .pedges,.pbox,.pband{display:none}
   .cz{width:100%;min-height:54px}
   .cz-after{display:block !important}
   .cz-c .tgt,.cz-ok{width:34px;height:34px}

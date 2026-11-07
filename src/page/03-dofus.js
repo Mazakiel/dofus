@@ -1,6 +1,8 @@
 // ===== Dofus : liste, ordre d'obtention, niveaux, explications, et cartes de la bande des Dofus.
 // ---- Dofus (DofusDB : objets de type Dofus, reliés au succès qui les donne, ou à la quête) ----
-const SDZL = (SC.dofus || []).filter(d => !d.cadeau);   // Jyfus : cadeau d'Ankama, ne s'obtient pas en jeu
+// Jyfus : cadeau d'Ankama, ne s'obtient pas en jeu ; Dofawa : trop court pour être un objectif, masqué partout
+const SDZ_HIDDEN = new Set(['Dofawa']);
+const SDZL = (SC.dofus || []).filter(d => !d.cadeau && !SDZ_HIDDEN.has(d.n));
 const sdzVisible = d => sSeasonal || !d.s;
 const itemImg = d => `https://api.dofusdb.fr/img/items/${d.ic}.png`;
 const setSdzOwned = (d, on) => P.setDofusOwned(d, on);

@@ -357,3 +357,25 @@ test('suggestions : la fenêtre propose du faisable, change de critère et ouvre
   assert.deepEqual(await p.eval(`({ m: sMode, k: sPick && sPick.k, id: sPick && sPick.id })`), { m: 'quetes', k: 'q', id: +pick });
   assert.ok(first);
 }));
+
+test('parcours des Dofus : familles en arbre, Dofawa masqué, indépendants à part, « Suivant »', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(500);
+  const r = await p.eval(`(() => {
+    const names = [...document.querySelectorAll('#scList .parcours .dz .dz-n')].map(e => e.textContent.trim());
+    return { n: names.length, dofawa: names.includes('Dofawa'), titres: [...document.querySelectorAll('#scList .pg h3')].map(h => h.textContent.trim()),
+      next: document.querySelectorAll('#scList .pn.next').length, famille: !!document.querySelector('#scList .pt-k .pt-c'),
+      hasHidden: SDZL.some(d => d.n === 'Dofawa') };
+  })()`);
+  assert.ok(r.n > 10, 'les Dofus sont là : ' + r.n);
+  assert.equal(r.dofawa, false); assert.equal(r.hasHidden, false);
+  assert.ok(r.titres.includes('Indépendants'));
+  assert.ok(r.famille, 'les familles ont des branches');
+  assert.ok(r.next >= 1, '« Suivant » marque un Dofus');
+  // un Dofus obtenu : sa carte passe en « obtenu », et il n'est plus « Suivant »
+  const own = await p.eval(`(() => { const d = pDofus(PARCOURS.groups[1].lanes[0].tree.d); setSdzOwned(d, true); renderSucces(); return d.n; })()`);
+  assert.equal(await p.eval(`!!document.querySelector('#scList .pn .dz.own')`), true, own + ' obtenu');
+  assert.equal(await p.eval(`[...document.querySelectorAll('#scList .pn.next .dz-n')].some(e => e.textContent.trim() === ${JSON.stringify(own)})`), false);
+  // « Afficher les obtenus » décoché : il disparaît, l'arbre garde ses enfants
+  await p.eval(`sShowDone = false; renderSucces(); 1`);
+  assert.equal(await p.eval(`[...document.querySelectorAll('#scList .parcours .dz .dz-n')].some(e => e.textContent.trim() === ${JSON.stringify(own)})`), false);
+}));

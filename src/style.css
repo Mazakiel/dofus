@@ -468,6 +468,29 @@ input.gc:focus-visible{outline-offset:3px}
 .ddb{font-size:.78rem;font-weight:700;color:var(--gold-txt);text-decoration:none;border-bottom:1px dotted currentColor}
 .ddb:hover,.ddb:focus-visible{border-bottom-style:solid}
 @media (max-width:700px){.copy{width:34px;height:34px}.coord{padding:4px 8px}}
+/* ---- Parcours des Dofus : familles en arbre, du haut vers le bas ---- */
+.parcours{display:flex;flex-wrap:wrap;gap:22px 28px;align-items:flex-start;padding:12px 14px 18px}
+.pg h3{margin:0 0 8px;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--line);padding-bottom:4px}
+.pg-lanes{display:flex;gap:22px;align-items:flex-start}
+.pl h4{margin:0 0 8px;font-size:.78rem;font-weight:800;color:var(--gold-txt)}
+.pt-top{margin-bottom:10px}
+.pt+.pt{margin-top:10px}
+.pt-k{margin-left:12px;border-left:2px solid var(--line);padding-left:14px;margin-top:2px}
+.pt-c{position:relative;padding-top:8px}
+.pt-c:before{content:"";position:absolute;left:-14px;top:50px;width:12px;border-top:2px solid var(--line)}
+.pn{position:relative;width:132px}
+.pn .dz{width:132px}
+.pn.next .dz{outline:2px solid var(--orange);outline-offset:-1px}
+.pn.next:before{content:"Suivant";position:absolute;z-index:2;top:-7px;right:6px;font-size:.58rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:var(--orange);color:#fff;border-radius:5px;padding:0 6px}
+.pt-m{font-size:.7rem;color:var(--muted);text-align:center;margin-top:3px}
+.pt-req b{color:var(--gold-txt)}
+.pt-alone{display:grid;grid-template-columns:repeat(2,132px);gap:10px 12px}
+.pv{display:flex;align-items:center;gap:8px;width:196px;padding:6px 8px;border:1px dashed var(--line);border-radius:8px;background:var(--detail1);cursor:pointer}
+.pv img{width:30px;height:30px;object-fit:contain;flex:none}
+.pv b{display:block;font-size:.78rem;line-height:1.15}.pv small{color:var(--muted);font-size:.68rem}
+.pv.own{border-color:var(--green);background:var(--t1s)}
+.pv:hover,.pv:focus-visible{border-color:var(--gold)}
+@media (max-width:700px){.parcours{flex-direction:column;gap:18px}.pg-lanes{flex-direction:column}.pn,.pn .dz{width:156px}.pt-alone{grid-template-columns:repeat(2,minmax(0,1fr))}.pv{width:220px}}
 /* ---- Récompenses : sélecteur de type, lignes de titres et d'ornements, case objectif ---- */
 .seg{display:flex;margin:10px 14px 0;border:1px solid var(--line);border-radius:7px;overflow:hidden}
 .seg-b{flex:1;border:0;background:var(--win2);color:var(--muted);font:inherit;font-weight:800;font-size:.8rem;padding:6px 0;cursor:pointer}

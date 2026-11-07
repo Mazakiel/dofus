@@ -55,10 +55,11 @@ function renderRwMain(el) {
   const list = qn ? all.filter(r => norm(r.n).includes(qn) || (r.kind && norm(SACH[r.a].n).includes(qn))) : all.filter(r => rwInCat(r, rCat));
   const title = qn ? `Recherche « ${esc(sSearch)} »` : esc((cats.find(c => c.id === rCat) || cats[0]).n);
   const shown = list.filter(rwShown), d = list.filter(rwOwned).length;
-  const body = rKind === 'd' ? `<div class="dz-grid">${shown.map(dofusCard).join('')}</div>` : shown.map(rwRow).join('');
+  const parcours = rKind === 'd' && !qn;   // les Dofus se lisent en parcours ; une recherche affiche les résultats en grille
+  const body = rKind === 'd' ? (parcours ? parcoursHtml() : `<div class="dz-grid">${shown.map(dofusCard).join('')}</div>`) : shown.map(rwRow).join('');
   const goalBtnHead = GOALR.length ? `<button class="btn" data-goalview title="${esc(goalSummary())} : les quêtes à faire">Mes objectifs (${GOALR.length})</button>` : '';
   el.innerHTML = seg + head(title, `${d} / ${list.length} obtenus (${pctOf(d, list.length)} %) · ${plural(shown.length, 'affiché')}`, goalBtnHead)
-    + (rKind === 'd' && shown.length ? '<div class="dz-hint">Clique sur un Dofus pour voir comment l’obtenir. ◎ l’ajoute à tes objectifs : les quêtes et succès qui y mènent sont repérés dans les listes.</div>' : '')
+    + (parcours && shown.length ? '<div class="dz-hint">Chaque famille se lit de haut en bas : ce qui est au-dessus se fait d’abord. « Suivant » marque le prochain Dofus de la famille. Clique un Dofus pour voir comment l’obtenir, « objectif » le suit dans tes listes.</div>' : '')
     + (shown.length ? body : EMPTY);
   imgErr(el);
 }

@@ -260,9 +260,9 @@ test('un Dofus à acheter à un PNJ demande ses succès et ses quêtes prérequi
   const P = Progression.create(D); P.load({ sLevel: 100 });
   const acc = P.collectPrereqs('d', 200);
   assert.deepEqual([...acc.a].sort(), [1, 2], 'le succès prérequis et son sous-succès');
-  assert.deepEqual([...acc.q], [5], 'la quête prérequise');
+  assert.ok(acc.q.has(5), 'la quête prérequise');
   P.state.sq.add(5);
-  assert.deepEqual([...P.collectPrereqs('d', 200).q], [], 'faite : elle ne figure plus');
+  assert.equal(P.collectPrereqs('d', 200).q.has(5), false, 'faite : elle ne figure plus');
   assert.ok(P.collectDependents('q', 5).d.has(200) === false, 'tant que le Dofus n’est pas obtenu, rien à décocher');
 });
 

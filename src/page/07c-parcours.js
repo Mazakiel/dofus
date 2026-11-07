@@ -6,7 +6,7 @@ const PRIM = ['Dofus Ocre', 'Dofus Émeraude', 'Dofus Pourpre', 'Dofus Turquoise
 // Disposition : une ligne par étape de niveau, partagée par toutes les familles (ce qui est à la même hauteur se fait à peu près au même niveau) ;
 // horizontalement, pas de colonnes régulières : chaque famille a son décalage (PLANES, en pixels). Ce qui dépend d'un autre Dofus est toujours plus bas.
 // Les Dofus sont désignés par leur nom, les succès et quêtes par leur identifiant. r = ligne, lane = position horizontale, s = largeur en cartes.
-const PW = 156, PSTEP = 172, PNH = 72, PGAP = 46, PGAP_STRAIGHT = 30, PGAP_MIN = 20;   // largeur d'une carte, pas entre deux cartes voisines, hauteur d'une ligne, espace avant une ligne où arrive un coude / une flèche droite / rien
+const PW = 156, PSTEP = 172, PNH = 72, PGAP = 46, PGAP_STRAIGHT = 34, PGAP_MIN = 20;   // largeur d'une carte, pas entre deux cartes voisines, hauteur d'une ligne, espace avant une ligne où arrive un coude / une flèche droite / rien
 const PLANES = { A: 0, M1: 100, M2: 272, P: 460, D: 632, I1: 804, I2: 976 };   // Argenté ; les deux colonnes des primordiaux (décalées pour laisser passer la flèche d'Argenté) ; Pandala ; Dimensions Divines ; indépendants
 const PBANDS = [[3, 50], [4, 100], [6, 150], [7, 200]];   // [première ligne du palier, niveau où il commence] : un trait « niv. N » veut dire « niveau N ou plus » (un Dofus de niveau 100 est sous le trait 100)
 const PN = [
@@ -60,6 +60,9 @@ function pPivot(n, pos, after, ready) {
   if (!SC.quetes[n.q]) return '';
   return `<div class="cz pv${dn ? ' own' : ''}${ready ? ' ready' : ''}${isPick('q', n.q) ? ' sel' : ''}" id="cz-${n.id}" style="${pos}" data-pick="q:${n.q}" tabindex="0" role="button" title="${esc(qName(n.q))}">${qIcon(SC.quetes[n.q], n.q)}<span class="cz-t"><b>${esc(qName(n.q))}</b><small>Quête${dn ? '' : ''}</small>${after ? `<small class="cz-after">${esc(after)}</small>` : ''}</span></div>`;
 }
+// Ordonnée du trait de niveau avant la ligne r : à mi-hauteur d'un grand espace ; dans un petit espace, collé en haut (sous la ligne précédente),
+// pour ne pas passer sur la pointe des flèches qui arrivent
+const pBandY = r => { if (r === 1) return 8; const gap = pTops[r] - pTops[r - 1] - PNH; return pTops[r] - gap + (gap >= PGAP ? gap / 2 : Math.min(10, gap / 2)); };
 let pTops = [];   // ordonnée du haut de chaque ligne (à partir de 1) : l'espace avant une ligne n'est complet que si une flèche y arrive
 const pRowTop = r => pTops[r];
 const pRect = (lane, r, span = 1) => ({ l: PLANES[lane], t: pRowTop(r), w: span * PW + (span - 1) * (PSTEP - PW), h: PNH });
@@ -115,7 +118,7 @@ function parcoursHtml() {
   }
   // 4. traits de niveau : un trait par palier qui a encore des cartes, juste au-dessus de sa première ligne
   const lines = PBANDS.map(([first, lv], i) => { const next = i + 1 < PBANDS.length ? PBANDS[i + 1][0] : Infinity, r = rows.find(x => x >= first && x < next); return r ? [rowOf(r), lv] : null; }).filter(Boolean);
-  out.unshift(...lines.map(([r, lv]) => `<div class="pband" style="top:${pRowTop(r) - (r === 1 ? 16 : pTops[r] - pTops[r - 1] - PNH) / 2}px"><span>niv. ${lv}</span></div>`));
+  out.unshift(...lines.map(([r, lv]) => `<div class="pband" style="top:${pBandY(r)}px"><span>niv. ${lv}</span></div>`));
   const W = Math.max(0, ...rects.map(r => r.l + r.w)) + 20, H = Math.max(0, ...rects.map(r => r.t + r.h)) + 30;
   return `<div class="pwrap"><div class="pgrid" id="pgrid" style="width:${W}px;height:${H}px"><svg class="pedges" id="pedges" aria-hidden="true"></svg>${out.join('')}</div></div>`;
 }

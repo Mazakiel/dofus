@@ -152,6 +152,13 @@
     }
     // Qu'est-ce qui reste affiché, d'après les options « Afficher les obtenus / indisponibles ». Une quête marquée à la main reste visible.
     const questShown = (id, o) => questDone(id) ? !!o.showDone : (!!o.showLocked || questAvailable(id) || !!state.qState[id]);
+    // Un méta-succès (qui regroupe d'autres succès) n'est « disponible » qu'une fois ses sous-succès finis, mais on peut déjà y travailler :
+    // il est faisable maintenant si lui-même ou l'un de ses sous-succès non finis, à n'importe quelle profondeur, l'est.
+    function achDoable(id, seen = new Set()) {
+      if (achDone(id) || seen.has(id)) return false; seen.add(id);
+      const a = SACH[id]; if (!a) return false;
+      return achAvailable(id) || a.ob.some(oid => { const o = SC.objectifs[oid]; return o && o.t === 'a' && !objDone(oid) && achDoable(o.r, seen); });
+    }
     const achShown = (id, o) => achDone(id) ? !!o.showDone : (!!o.showLocked || achAvailable(id));
 
     // ---- cascade : ce que valider (collectPrereqs) ou décocher (collectDependents) un élément entraîne ----
@@ -320,7 +327,7 @@
       state, index: { SACH, SDZ, QOWN, QNEXT, SPARENTS, RW, RWBY },
       load, snapshot, simulate, subscribe,
       questDone, achDone, objDone, achProg, dofusAuto, dofusOwned, setDofusOwned, rewardOwned, suggest, suggestInfo: { base: SUGGEST_BASE, presets: SUGGEST_PRESETS },
-      questAvailable, achAvailable, questStatus, lockReasons, questShown, achShown,
+      questAvailable, achAvailable, achDoable, questStatus, lockReasons, questShown, achShown,
       collectPrereqs, collectDependents, applyRemoval, goalsFor,
     };
   }

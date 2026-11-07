@@ -14,8 +14,8 @@ const rwOwned = r => P.rewardOwned(r);
 const rwIsGoal = r => r.kind ? rwGoals.has(r.kind + r.id) : sdzGoals.has(r.id);
 function rwSetGoal(r, on) { const set = r.kind ? rwGoals : sdzGoals, key = r.kind ? r.kind + r.id : r.id; if (on) set.add(key); else set.delete(key); }
 // 'done' obtenu · 'av' à obtenir (le succès est faisable, ou Dofus) · 'lock' son succès est indisponible
-const rwStatus = r => rwOwned(r) ? 'done' : (!r.kind || achAvailNow(r.a)) ? 'av' : 'lock';
-const rwShown = r => r.kind ? P.achShown(r.a, showOpts()) : (sShowDone || !sdzOwned(r));   // mêmes cases que les autres listes
+const rwStatus = r => rwOwned(r) ? 'done' : (!r.kind || P.achDoable(r.a)) ? 'av' : 'lock';   // un méta-succès est « à obtenir » dès qu'un de ses sous-succès est faisable
+const rwShown = r => r.kind ? (achDone(r.a) ? sShowDone : (sShowLocked || P.achDoable(r.a))) : (sShowDone || !sdzOwned(r));   // mêmes cases que les autres listes
 const rwAll = kind => kind === 'd' ? SDZ_ORDER.filter(sdzVisible)
   : RW.filter(r => r.kind === kind && rwVisible(r)).sort((x, y) => (SACH[x.a].lv || 0) - (SACH[y.a].lv || 0) || x.n.localeCompare(y.n, 'fr'));
 const rwInCat = (r, cid) => cid === SALL || (!!r.kind && catIds(cid).includes(SACH[r.a].c));

@@ -266,6 +266,16 @@ test('un Dofus à acheter à un PNJ demande ses succès et ses quêtes prérequi
   assert.ok(P.collectDependents('q', 5).d.has(200) === false, 'tant que le Dofus n’est pas obtenu, rien à décocher');
 });
 
+test('un méta-succès est faisable dès qu\'un de ses sous-succès l\'est, même s\'il n\'est pas « disponible »', () => {
+  const P = make(); P.load({ sLevel: 100 });
+  assert.equal(P.achAvailable(2), false, 'A2 exige le sous-succès A1 : indisponible');
+  assert.equal(P.achDoable(2), true, 'mais A1 est faisable : on peut y travailler');
+  P.load({ sLevel: 5 });
+  assert.equal(P.achDoable(2), false, 'rien de faisable dessous (niveau trop bas) : indisponible aussi');
+  P.load({ sLevel: 100, sq: [1, 2], sodone: [13] });
+  assert.equal(P.achDoable(2), false, 'obtenu : plus à faire');
+});
+
 test('sur les données figées : cohérence et temps de calcul', { skip: !fs.existsSync(path.join(__dirname, 'fixtures', 'dofusdb.json')) }, () => {
   const data = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'dofusdb.json'), 'utf8'));
   const P = Progression.create(data);

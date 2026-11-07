@@ -8,15 +8,15 @@ const PN = [
   { id: 'deb', q: 1962, r: 2, c: 1 },                                  // « Ça sent le gaz » puis « Balade en forêt » : départ d'Argenté et de la série primordiale
   { id: 'arg', d: 'Dofus Argenté', r: 3, c: 1 },
   { id: 'mais', ach: 1036, r: 3, c: 2, s: 2 },                          // « Mais où sont les Dofus ? » : le tronc commun des six primordiaux
-  { id: 'six', ach: 1705, r: 7, c: 2, s: 2 },                           // « Six sur six » : demande les six primordiaux ; ouvre Sylvestre
+  { id: 'six', ach: 1705, r: 8, c: 2, s: 2 },                           // « Six sur six » : demande les six primordiaux ; ouvre Sylvestre
   { id: 'scint', d: 'Dofus Argenté Scintillant', r: 8, c: 1 },
   { id: 'domakuro', d: 'Domakuro', r: 2, c: 4 },
   { id: 'dorigami', d: 'Dorigami', r: 3, c: 4 },
-  { id: 'mdlm', q: 2200, r: 4, c: 4 },                                  // « Main dans la main » : première quête de Tacheté, passage obligé de Verdoyant, Cauchemar et Sylvestre
-  { id: 'tach', d: 'Dofus Tacheté', r: 5, c: 4 },
-  { id: 'verd', d: 'Dofus Verdoyant', r: 5, c: 5 },
-  { id: 'cauch', d: 'Dofus du Cauchemar', r: 6, c: 4 },                 // sa chaîne passe par la dernière quête de Tacheté
-  { id: 'pin', d: 'Dom de Pin', r: 7, c: 5 },                           // exigé par la quête « Flovoraison » (Sylvestre) ; à cocher à la main
+  { id: 'mdlm', q: 2200, r: 4, c: 4 },                                  // « Main dans la main » : première quête de Tacheté (demande Domakuro et Dorigami)
+  { id: 'tach', d: 'Dofus Tacheté', r: 5, c: 4 },                       // la chaîne de Cauchemar passe par « En ce jardin qui nous unit », sa dernière quête sur le chemin
+  { id: 'cauch', d: 'Dofus du Cauchemar', r: 6, c: 4 },                 // la quête de Verdoyant exige « Un héritage tourmenté » (3 des 4 quêtes de Cauchemar)
+  { id: 'verd', d: 'Dofus Verdoyant', r: 7, c: 4 },                     // la chaîne de Sylvestre passe par la quête de Verdoyant
+  { id: 'pin', d: 'Dom de Pin', r: 8, c: 5 },                           // exigé par la quête « Flovoraison » (Sylvestre) ; à cocher à la main
   { id: 'sylv', d: 'Dofus Sylvestre', r: 8, c: 4 },
   { id: 'veill', d: 'Dofus des Veilleurs', r: 10, c: 1 },
   { id: 'neb', d: 'Dofus Nébuleux', r: 11, c: 1 },
@@ -25,10 +25,10 @@ const PN = [
 const PRIM_SLOTS = [[4, 2], [4, 3], [5, 2], [5, 3], [6, 2], [6, 3]];
 const PBOX = { id: 'prim', r: 4, c: 2, rows: 3 };
 // Flèches : ['de', 'vers', type]. Toutes à angles droits : par défaut elles descendent (droit si les cartes sont alignées, sinon un palier au milieu) ;
-// lg = longe la gouttière à gauche de la colonne ; el = part du côté gauche du cadre ; h = part du côté droit puis descend.
+// el = part du côté gauche du cadre ; r / l = à l'horizontale vers la droite / la gauche (cartes de la même ligne).
 const PE = [['deb', 'arg'], ['deb', 'mais'], ['mais', 'prim'], ['prim', 'six'], ['arg', 'scint'], ['prim', 'scint', 'el'],
-  ['domakuro', 'dorigami'], ['dorigami', 'mdlm'], ['mdlm', 'tach'], ['mdlm', 'verd'], ['tach', 'cauch'],
-  ['six', 'sylv', 'h'], ['mdlm', 'sylv', 'lg'], ['pin', 'sylv'], ['veill', 'neb']];
+  ['domakuro', 'dorigami'], ['dorigami', 'mdlm'], ['mdlm', 'tach'], ['tach', 'cauch'], ['cauch', 'verd'], ['verd', 'sylv'],
+  ['six', 'sylv', 'r'], ['pin', 'sylv', 'l'], ['veill', 'neb']];
 const pDofus = name => SDZL.find(d => d.n === name);
 const pNode = id => (id === 'prim' ? PBOX : PN.find(n => n.id === id));
 const pPlaced = new Set(PN.filter(n => n.d).map(n => n.d).concat(PRIM));
@@ -99,9 +99,9 @@ function pDrawEdges() {
   for (const [a, b, kind] of PE) {
     const A = R(a), B = R(b); if (!A || !B) continue;
     let pts;
-    if (kind === 'lg') { const gx = B.l - 12; pts = [[A.l, A.cy], [gx, A.cy], [gx, B.cy], [B.l - 2, B.cy]]; }
+    if (kind === 'r') pts = [[A.r, A.cy], [B.l - 2, B.cy]];
+    else if (kind === 'l') pts = [[A.l, A.cy], [B.r + 2, B.cy]];
     else if (kind === 'el') pts = [[A.l, A.b - 20], [B.cx, A.b - 20], [B.cx, B.t - 2]];
-    else if (kind === 'h') pts = [[A.r, A.cy], [B.cx, A.cy], [B.cx, B.t - 2]];
     else if (Math.abs(A.cx - B.cx) < 3) pts = [[A.cx, A.b], [B.cx, B.t - 2]];
     else { const ym = A.b + (B.t - A.b) / 2; pts = [[A.cx, A.b], [A.cx, ym], [B.cx, ym], [B.cx, B.t - 2]]; }
     h += `<path class="pe" d="${pRound(pts)}" marker-end="url(#pah)"/>`;

@@ -228,12 +228,6 @@ label.chk{display:inline-flex;gap:6px;align-items:center;font-size:.8rem;color:v
 dialog{border:1px solid var(--line);border-radius:10px;padding:0;background:var(--win);color:var(--text);box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden}
 dialog::backdrop{background:rgba(8,6,4,.6)}
 #cfDialog{width:min(460px,calc(100vw - 24px))}
-#ornDialog{width:min(340px,calc(100vw - 24px))}
-.orn-body{padding:22px 18px 8px;text-align:center}
-.orn-body img{width:192px;height:192px;max-width:100%;object-fit:contain}
-.orn-body h2{margin:8px 0 2px;font-size:1.1rem}
-button.rew{font:inherit;color:inherit;cursor:pointer}
-button.rew:hover,button.rew:focus-visible{border-color:var(--orange)}
 #pfDialog{width:min(520px,calc(100vw - 24px))}
 #scDialog{width:min(760px,calc(100vw - 24px));max-height:min(86vh,900px)}
 #scDialog[open]{display:flex;flex-direction:column}

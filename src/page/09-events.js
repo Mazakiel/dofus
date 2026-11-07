@@ -10,8 +10,6 @@ function onScClick(e){
     if (qState[id] === v) delete qState[id]; else qState[id] = v;
     renderSucces(); return;
   }
-  const orn = e.target.closest('[data-orn]');
-  if (orn) { openOrnament({ i: orn.dataset.orn, n: orn.dataset.ornN }, orn.dataset.ornVia || (sPick && sPick.k === 'a' && SACH[sPick.id] ? SACH[sPick.id].n : '')); return; }
   if (e.target.closest('input,label')) return;
   if (e.target.closest('[data-closedet]')) { dismissSheet(); return; }
   const gv = e.target.closest('[data-goalview]');
@@ -110,13 +108,3 @@ document.getElementById('scSeasonal').onchange = e => { sSeasonal = e.target.che
 document.querySelectorAll('[data-smode]').forEach(b => b.onclick = () => { if (sMode !== b.dataset.smode) sPick = null; sMode = b.dataset.smode; store.set('sMode', sMode); renderSucces(); });
 
 
-
-// Fenêtre d'un ornement : image en grand, nom et succès qui le donne
-const ornDlg = document.getElementById('ornDialog');
-function openOrnament(o, via) {
-  document.getElementById('ornImg').src = ornImg(o);
-  document.getElementById('ornTitle').textContent = o.n;
-  document.getElementById('ornSub').textContent = via ? `Ornement du succès « ${via} »` : 'Ornement';
-  imgErr(ornDlg); ornDlg.showModal();
-}
-ornDlg.addEventListener('click', e => { if (e.target === ornDlg || e.target.closest('[data-orn-close]')) ornDlg.close(); });

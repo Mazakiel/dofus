@@ -6,7 +6,7 @@ const PRIM = ['Dofus Ocre', 'Dofus Émeraude', 'Dofus Pourpre', 'Dofus Turquoise
 // Disposition : une ligne par étape de niveau, partagée par toutes les familles (ce qui est à la même hauteur se fait à peu près au même niveau) ;
 // horizontalement, pas de colonnes régulières : chaque famille a son décalage (PLANES, en pixels). Ce qui dépend d'un autre Dofus est toujours plus bas.
 // Les Dofus sont désignés par leur nom, les succès et quêtes par leur identifiant. r = ligne, lane = position horizontale, s = largeur en cartes.
-const PW = 156, PSTEP = 172, PNH = 72, PGAP = 46, PGAP_MIN = 20;   // largeur d'une carte, pas entre deux cartes voisines, hauteur d'une ligne, espace avant une ligne où arrive une flèche / sinon
+const PW = 156, PSTEP = 172, PNH = 72, PGAP = 46, PGAP_STRAIGHT = 30, PGAP_MIN = 20;   // largeur d'une carte, pas entre deux cartes voisines, hauteur d'une ligne, espace avant une ligne où arrive un coude / une flèche droite / rien
 const PLANES = { A: 0, M1: 100, M2: 272, P: 460, D: 632, I1: 804, I2: 976 };   // Argenté ; les deux colonnes des primordiaux (décalées pour laisser passer la flèche d'Argenté) ; Pandala ; Dimensions Divines ; indépendants
 const PBANDS = [[3, 50], [4, 100], [6, 150], [7, 200]];   // [première ligne du palier, niveau où il commence] : un trait « niv. N » veut dire « niveau N ou plus » (un Dofus de niveau 100 est sous le trait 100)
 const PN = [
@@ -91,11 +91,22 @@ function parcoursHtml() {
   });
   // 2. les lignes sans aucune carte disparaissent : quand on masque les obtenus, la grille se resserre
   const rows = [...new Set(items.map(it => it.row))].sort((a, b) => a - b), rowOf = r => rows.indexOf(r) + 1;
-  // 3. espacement vertical : complet (46 px) avant une ligne où arrive une flèche, réduit (20 px) sinon
-  const rowOfId = {}; for (const it of items) rowOfId[it.id] = rowOf(it.row);
-  if (primItems.length) rowOfId.prim = Math.min(...primItems.map(it => rowOf(it.row)));
-  const arrives = new Set(); for (const [a, b] of PE) if (rowOfId[a] && rowOfId[b]) arrives.add(rowOfId[b]);
-  pTops = [0, 16]; for (let k = 2; k <= rows.length; k++) pTops[k] = pTops[k - 1] + PNH + (arrives.has(k) ? PGAP : PGAP_MIN);
+  // 3. espacement vertical, selon ce qui arrive sur la ligne : un coude (46 px), une flèche droite seule (30 px), rien (20 px)
+  const rowOfId = {}, xOf = {};
+  const span = it => (it.span || 1) * PW + ((it.span || 1) - 1) * (PSTEP - PW);
+  for (const it of items) { rowOfId[it.id] = rowOf(it.row); xOf[it.id] = { l: PLANES[it.lane], w: span(it) }; }
+  if (primItems.length) {
+    rowOfId.prim = Math.min(...primItems.map(it => rowOf(it.row)));
+    const l = Math.min(...primItems.map(it => PLANES[it.lane])) - 10, r = Math.max(...primItems.map(it => PLANES[it.lane] + PW)) + 10; xOf.prim = { l, w: r - l };
+  }
+  const need = {};   // ligne → espace nécessaire avant elle
+  for (const [a, b] of PE) {
+    if (!rowOfId[a] || !rowOfId[b]) continue;
+    const A = xOf[a], B = xOf[b], overlap = Math.min(A.l + A.w, B.l + B.w) - Math.max(A.l, B.l);
+    const straight = overlap >= 100 || Math.abs(A.l + A.w / 2 - B.l - B.w / 2) < 3;   // même règle que le tracé (pDrawEdges)
+    const k = rowOfId[b]; need[k] = Math.max(need[k] || 0, straight ? PGAP_STRAIGHT : PGAP);
+  }
+  pTops = [0, 16]; for (let k = 2; k <= rows.length; k++) pTops[k] = pTops[k - 1] + PNH + (need[k] || PGAP_MIN);
   const out = [], rects = [];
   for (const it of items) { const rc = pRect(it.lane, rowOf(it.row), it.span); it.rc = rc; rects.push(rc); out.push(it.build(pStyle(rc, rowOf(it.row) * 10 + PLANES[it.lane] / 100))); }
   if (primItems.length) {
@@ -104,7 +115,7 @@ function parcoursHtml() {
   }
   // 4. traits de niveau : un trait par palier qui a encore des cartes, juste au-dessus de sa première ligne
   const lines = PBANDS.map(([first, lv], i) => { const next = i + 1 < PBANDS.length ? PBANDS[i + 1][0] : Infinity, r = rows.find(x => x >= first && x < next); return r ? [rowOf(r), lv] : null; }).filter(Boolean);
-  out.unshift(...lines.map(([r, lv]) => `<div class="pband" style="top:${pRowTop(r) - (arrives.has(r) ? PGAP : PGAP_MIN) / 2}px"><span>niv. ${lv}</span></div>`));
+  out.unshift(...lines.map(([r, lv]) => `<div class="pband" style="top:${pRowTop(r) - (r === 1 ? 16 : pTops[r] - pTops[r - 1] - PNH) / 2}px"><span>niv. ${lv}</span></div>`));
   const W = Math.max(0, ...rects.map(r => r.l + r.w)) + 20, H = Math.max(0, ...rects.map(r => r.t + r.h)) + 30;
   return `<div class="pwrap"><div class="pgrid" id="pgrid" style="width:${W}px;height:${H}px"><svg class="pedges" id="pedges" aria-hidden="true"></svg>${out.join('')}</div></div>`;
 }

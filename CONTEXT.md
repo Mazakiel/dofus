@@ -12,6 +12,7 @@ Vocabulaire du projet, tel qu'il apparaît dans le code et dans la page. À mett
 - **Récompense** : un Dofus, un titre ou un ornement. Les titres et ornements sont donnés par un succès (`ti` et `or` dans les données) et n'ont pas d'état propre : ils sont obtenus quand leur succès l'est. Seuls ceux des succès suivis sont affichés.
 - **Objectif** (« Mes objectifs ») : une récompense visée (Dofus, titre ou ornement) ; les quêtes et succès qui restent à faire pour l'obtenir. Les objectifs Dofus restent dans `sdzGoals` (clé historique), ceux des titres et ornements dans `rwGoals` (`t57`, `o56`).
 - **Cascade** : ce que valider un élément entraîne (ses prérequis) ou ce que le décocher entraîne (ce qui en dépend).
+- **Suggestion** : quête ou succès à faire maintenant, classé par un score (objectif, quête commencée, succès terminé, ce que ça débloque, récompenses, niveau, prérequis déjà faits). Jamais proposé : le fait, le bloqué, ce qui n'est pas faisable.
 - **Profil** : un personnage ; ses coches, son niveau et ses Dofus lui sont propres. Chaque donnée suivie est stockée sous `c200:p:<profil>:<clé>` (préfixe historique, voir le périmètre).
 - **Donjon** : fiche DofusDB (niveau optimal, boss) à laquelle des quêtes se rattachent.
 

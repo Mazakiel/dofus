@@ -223,6 +223,102 @@
       // Dofus : on retire le forçage, puis on force « non obtenu » s'il reste obtenu par ailleurs
       rm.d.forEach(id => { delete state.sdzState[id]; if (dofusOwned(SDZ[id])) state.sdzState[id] = 'missing'; });
     }
+
+    // ---- Suggestions : quoi faire maintenant ----
+    // Un score additionne des points par critère ; chaque préréglage multiplie certains critères. Rien n'est caché : chaque suggestion
+    // rend les raisons qui l'ont fait monter (`reasons`), et `suggestInfo` expose le barème.
+    const SUGGEST_BASE = {
+      goal: { first: 40, more: 10, max: 60 },         // sert un objectif (Dofus, titre, ornement visé) : 40, puis 10 par objectif de plus
+      started: 25,                                   // quête déjà commencée
+      completes: 25,                                 // dernière quête d'un succès ; sinon jusqu'à `progress` selon l'avancement du succès
+      progress: 10,
+      unlock: { each: 1.2, max: 30 },                // quêtes qu'elle ouvre (directement ou plus loin) : « prérequis de beaucoup de choses »
+      reward: { item: 10, itemMax: 20, dofus: 20 },  // titre ou ornement (10 chacun, 20 au plus) ; Dofus : 20
+      level: [[10, 15], [30, 8], [60, 3]],           // quête de niveau proche du tien : écart ≤ 10 → 15, ≤ 30 → 8, ≤ 60 → 3
+      chain: { each: 2, max: 10 },                   // prérequis déjà faits : tu es au milieu d'une chaîne
+    };
+    const SUGGEST_PRESETS = {
+      mix:     { goal: 1,   started: 1,  completes: 1,  unlock: 1,   reward: 1,   level: 1,  chain: 1 },
+      goals:   { goal: 2.5, started: .5, completes: .5, unlock: .5,  reward: .5,  level: .5, chain: .5 },
+      level:   { goal: .5,  started: .5, completes: .5, unlock: .5,  reward: .5,  level: 3,  chain: .5 },
+      unlock:  { goal: .5,  started: .5, completes: .5, unlock: 2.5, reward: .5,  level: .5, chain: .5 },
+      rewards: { goal: .5,  started: .5, completes: .5, unlock: .5,  reward: 2.5, level: .5, chain: .5 },
+    };
+    // Quêtes qui ont besoin de celle-ci, directement ou plus loin (par une quête, un succès qu'elle complète ou un Dofus qu'elle donne) et pas encore faites
+    function dependentQuests(qid) {
+      const out = new Set(), seen = new Set([qid]), stack = [qid];
+      while (stack.length) {
+        const x = stack.pop(), next = [...(QNEXT[x] || [])];
+        for (const a of QOWN[x] || []) (QBYPREA[a] || []).forEach(n => next.push(n));
+        for (const d of DZ_BY_Q[x] || []) (QBYPRED[d] || []).forEach(n => next.push(n));
+        for (const n of next) if (!seen.has(n)) { seen.add(n); if (!questDone(n)) out.add(n); stack.push(n); }
+      }
+      return out;
+    }
+    // Titres et ornements d'un succès, et Dofus qu'il donne (ou que donne la quête)
+    const rewardsOfAch = a => [...(a.ti || []).map(t => ({ kind: 't', n: t.n })), ...(a.or || []).map(o => ({ kind: 'o', n: o.n })),
+      ...(SC.dofus || []).filter(d => d.a === a.id && !d.pre && /récompense de succès|description de succès/.test(d.src || '')).map(d => ({ kind: 'd', n: d.n }))];
+    const rewardsOfQuest = qid => (SC.dofus || []).filter(d => d.q === qid && !d.pre && d.src === 'récompense de quête').map(d => ({ kind: 'd', n: d.n }));
+    const rewardPoints = (list, B, f) => Math.min(list.filter(r => r.kind !== 'd').length * B.reward.item, B.reward.itemMax) * f.reward + list.filter(r => r.kind === 'd').length * B.reward.dofus * f.reward;
+
+    // Quêtes et succès à faire maintenant, du plus conseillé au moins conseillé.
+    // Options : preset, goalQ / goalA (quêtes et succès qui servent un objectif : { id: [récompenses visées] }),
+    // questVisible(id) / achVisible(succès) (ce que la page affiche), limit.
+    // Jamais proposés : le fait, ce que tu as marqué bloqué, ce qui n'est pas faisable maintenant.
+    function suggest({ preset = 'mix', goalQ = {}, goalA = {}, questVisible = () => true, achVisible = () => true, limit = 12 } = {}) {
+      const B = SUGGEST_BASE, f = SUGGEST_PRESETS[preset] || SUGGEST_PRESETS.mix, out = [];
+      const goalPts = n => Math.min(B.goal.first + B.goal.more * (n - 1), B.goal.max) * f.goal;
+      for (const sid of Object.keys(SC.quetes)) {
+        const id = +sid, q = SC.quetes[id], st = questStatus(id);
+        if ((st !== 'av' && st !== 'st') || !questAvailable(id) || !questVisible(id)) continue;
+        let score = 0; const reasons = [];
+        if (goalQ[id] && goalQ[id].length) { score += goalPts(goalQ[id].length); reasons.push({ t: 'goal', items: goalQ[id] }); }
+        if (st === 'st') { score += B.started * f.started; reasons.push({ t: 'started' }); }
+        let best = null;
+        for (const a of (QOWN[id] || []).map(i => SACH[i]).filter(a => a && !achDone(a.id))) {
+          const [d, n] = achProg(a); if (n < 2) continue;
+          if (d + 1 === n) { best = { a, d: d + 1, n, last: true }; break; }
+          if (!best || (d + 1) / n > best.d / best.n) best = { a, d: d + 1, n, last: false };
+        }
+        if (best) {
+          if (best.last) { score += B.completes * f.completes; reasons.push({ t: 'completes', ach: best.a.n }); }
+          else { score += Math.round(B.progress * best.d / best.n) * f.completes; reasons.push({ t: 'progress', ach: best.a.n, d: best.d, n: best.n }); }
+        }
+        const dep = dependentQuests(id).size;
+        if (dep) { score += Math.min(dep * B.unlock.each, B.unlock.max) * f.unlock; reasons.push({ t: 'unlock', n: dep }); }
+        const rw = [...rewardsOfQuest(id), ...(QOWN[id] || []).flatMap(i => SACH[i] ? rewardsOfAch(SACH[i]) : [])];
+        const rwSeen = new Set(), rws = rw.filter(r => !rwSeen.has(r.kind + r.n) && rwSeen.add(r.kind + r.n));
+        if (rws.length) { score += rewardPoints(rws, B, f); reasons.push({ t: 'reward', items: rws }); }
+        const gap = level - (q.lv || 0);
+        if (q.lv && gap >= 0) { const band = B.level.find(([max]) => gap <= max); if (band) { score += band[1] * f.level; reasons.push({ t: 'level', lv: q.lv }); } }
+        const done = [...(q.pre || []).filter(questDone), ...(q.preA || []).filter(a => achDone(a))].length;
+        if (done) { score += Math.min(done * B.chain.each, B.chain.max) * f.chain; reasons.push({ t: 'chain', n: done }); }
+        out.push({ k: 'q', id, score: Math.round(score), reasons });
+      }
+      // Succès : proposés quand ils avancent (au moins un objectif fait) ou servent un objectif ; la quête qui les termine a déjà sa ligne
+      for (const a of SC.succes) {
+        if (achDone(a.id) || !achAvailable(a.id) || !achVisible(a)) continue;
+        const [d, n] = achProg(a), served = goalA[a.id] && goalA[a.id].length;
+        if (!served && !(d > 0 && d < n)) continue;
+        let score = 0; const reasons = [];
+        if (served) { score += goalPts(goalA[a.id].length); reasons.push({ t: 'goal', items: goalA[a.id] }); }
+        if (n > 1) { score += Math.round(B.progress * 2 * d / n) * f.completes; reasons.push({ t: 'progress', ach: a.n, d, n }); }
+        const dep = new Set(); for (const q of QBYPREA[a.id] || []) { if (!questDone(q)) dep.add(q); dependentQuests(q).forEach(x => dep.add(x)); }
+        if (dep.size) { score += Math.min(dep.size * B.unlock.each, B.unlock.max) * f.unlock; reasons.push({ t: 'unlock', n: dep.size }); }
+        const rws = rewardsOfAch(a);
+        if (rws.length) { score += rewardPoints(rws, B, f); reasons.push({ t: 'reward', items: rws }); }
+        out.push({ k: 'a', id: a.id, score: Math.round(score), reasons });
+      }
+      out.sort((x, y) => y.score - x.score || (x.k === y.k ? x.id - y.id : x.k === 'q' ? -1 : 1));
+      // Pas plus de deux quêtes d'un même succès côte à côte : sinon un seul succès à dix quêtes remplit toute la liste
+      const perAch = {}, kept = [], rest = [];
+      for (const s of out) {
+        const key = s.k === 'q' ? (s.reasons.find(r => r.t === 'progress' || r.t === 'completes') || {}).ach : null;
+        if (key && (perAch[key] = (perAch[key] || 0) + 1) > 2) rest.push(s); else kept.push(s);
+      }
+      return [...kept, ...rest].slice(0, limit);
+    }
+
     // Un Dofus, un titre ou un ornement : obtenu ?
     const rewardOwned = r => r.kind ? achDone(r.a) : dofusOwned(r);
     // Pour des récompenses visées (Dofus, titres, ornements) : les quêtes et succès qui restent à faire pour les obtenir, et pour laquelle.
@@ -236,7 +332,7 @@
     return {
       state, index: { SACH, SDZ, QOWN, QNEXT, SPARENTS, RW, RWBY },
       load, snapshot, simulate, subscribe,
-      questDone, achDone, objDone, achProg, dofusAuto, dofusOwned, setDofusOwned, rewardOwned,
+      questDone, achDone, objDone, achProg, dofusAuto, dofusOwned, setDofusOwned, rewardOwned, suggest, suggestInfo: { base: SUGGEST_BASE, presets: SUGGEST_PRESETS },
       questAvailable, achAvailable, questStatus, lockReasons, questShown, achShown,
       collectPrereqs, collectDependents, applyRemoval, goalsFor,
     };

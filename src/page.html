@@ -18,6 +18,7 @@
     <header class="win-t">
       <span class="ic">★</span><h1>Progression Dofus</h1><span class="sub" id="sub"></span>
       <span class="sp"></span>
+      <button class="btn sug-btn" id="sugBtn" title="Quoi faire maintenant ? Des quêtes et succès conseillés"><span aria-hidden="true">★</span> Suggestions</button>
       <button class="btn prof-btn" id="profBtn" title="Changer de personnage, gérer les profils, exporter ou importer"></button>
       <button class="btn" id="theme" title="Changer de thème"></button>
     </header>
@@ -28,6 +29,14 @@
       <div class="prog" id="progA"></div>
     </div>
   </section>
+
+  <dialog id="sugDialog" aria-labelledby="sugTitle">
+    <div class="dl-bar"><span id="sugTitle">Que faire maintenant ?</span><span class="sp"></span><span class="sug-lvl" id="sugLvl"></span></div>
+    <div class="sug-pre" id="sugPre" role="group" aria-label="Critère de classement"></div>
+    <div class="sug-list" id="sugList"></div>
+    <details class="sug-why"><summary>Comment le score est calculé</summary><div id="sugWhy"></div></details>
+    <div class="dl-foot"><span class="muted" style="font-size:.78rem">Jamais proposé : le fait, le bloqué, ce qui n’est pas faisable maintenant.</span><span class="sp"></span><button class="btn" id="sugClose">Fermer</button></div>
+  </dialog>
 
   <dialog id="pfDialog" aria-labelledby="pfTitle">
     <div class="dl-bar"><span id="pfTitle">Profils</span></div>

@@ -213,6 +213,49 @@ test('un objectif coché à la main, devenu une quête, rend la quête faite', (
   assert.deepEqual(P.snapshot().sq, [1]);
 });
 
+test('suggestions : seulement ce qui se fait maintenant, classé par un score dont on voit les raisons', () => {
+  const P = make(); P.load({ sLevel: 100 });
+  const ids = list => list.filter(x => x.k === 'q').map(x => x.id).sort((x, y) => x - y);
+  assert.deepEqual(ids(P.suggest()), [1, 5], 'Q2, Q3, Q4 ne sont pas faisables : pas proposées');
+  P.load({ sLevel: 100, qState: { 1: 'b' } });
+  assert.deepEqual(ids(P.suggest()), [5], 'une quête marquée bloquée n’est jamais proposée');
+  P.load({ sLevel: 100, sq: [5] });
+  assert.deepEqual(ids(P.suggest()), [1], 'ni une quête faite');
+  P.load({ sLevel: 100 });
+  const q1 = P.suggest().find(x => x.id === 1);
+  const un = q1.reasons.find(r => r.t === 'unlock');
+  assert.equal(un.n, 2, 'Q1 ouvre Q2 (directement) et Q3 (par le succès A1)');
+  assert.ok(q1.reasons.some(r => r.t === 'progress' && r.ach === 'A1' && r.n === 2));
+});
+
+test('suggestions : objectif, quête commencée, dernière quête d’un succès et récompenses font monter le score', () => {
+  const D = DATA(); D.succes[0].ti = [{ id: 7, n: 'Titre A1' }];
+  const P = Progression.create(D); P.load({ sLevel: 100 });
+  const top = o => P.suggest(o)[0];
+  assert.equal(top({ goalQ: { 5: [{ n: 'Dofus visé', id: 100 }] } }).id, 5, 'un objectif passe devant');
+  assert.equal(top({ goalQ: { 5: [{ n: 'Dofus visé' }] } }).reasons[0].t, 'goal');
+  P.load({ sLevel: 100, qState: { 5: 's' } });
+  const started = P.suggest().find(x => x.id === 5);
+  assert.ok(started.reasons.some(r => r.t === 'started'));
+  P.load({ sLevel: 100, sq: [1] });                          // Q2 est la dernière quête de A1, qui donne un titre
+  const q2 = P.suggest().find(x => x.k === 'q' && x.id === 2);
+  assert.ok(q2.reasons.some(r => r.t === 'completes' && r.ach === 'A1'));
+  assert.ok(q2.reasons.some(r => r.t === 'reward' && r.items[0].n === 'Titre A1'));
+  assert.equal(P.suggest()[0].id, 2, 'terminer un succès qui rapporte un titre passe en tête');
+  const a1 = P.suggest().find(x => x.k === 'a');
+  assert.equal(a1.id, 1, 'le succès avancé est proposé aussi');
+  assert.ok(P.suggest({ preset: 'rewards' }).find(x => x.id === 2).score > q2.score, 'le préréglage Récompenses pèse plus sur le titre');
+});
+
+test('suggestions : un même succès ne remplit pas toute la liste', () => {
+  const D = { categories: [], succes: [{ id: 1, n: 'Gros succès', ob: [10, 11, 12, 13, 14] }, { id: 2, n: 'Autre', ob: [20] }], objectifs: {}, quetes: {}, dofus: [] };
+  [1, 2, 3, 4, 5].forEach((q, i) => { D.quetes[q] = { n: 'Q' + q, lv: 10 }; D.objectifs[10 + i] = { a: 1, t: 'q', r: q }; });
+  D.quetes[6] = { n: 'Q6', lv: 10 }; D.objectifs[20] = { a: 2, t: 'q', r: 6 };
+  const P = Progression.create(D); P.load({ sLevel: 100 });
+  const ids = P.suggest({ limit: 6 }).map(x => x.id);
+  assert.equal(ids.indexOf(6) < 3, true, 'la quête de l’autre succès remonte devant les quêtes en trop du premier');
+});
+
 test('sur les données figées : cohérence et temps de calcul', { skip: !fs.existsSync(path.join(__dirname, 'fixtures', 'dofusdb.json')) }, () => {
   const data = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'dofusdb.json'), 'utf8'));
   const P = Progression.create(data);

@@ -1,7 +1,7 @@
 // ===== Dofus : liste, ordre d'obtention, niveaux, explications, et cartes de la bande des Dofus.
 // ---- Dofus (DofusDB : objets de type Dofus, reliés au succès qui les donne, ou à la quête) ----
-// Jyfus : cadeau d'Ankama, ne s'obtient pas en jeu ; Dofawa : trop court pour être un objectif, masqué partout
-const SDZ_HIDDEN = new Set(['Dofawa']);
+// Jyfus : cadeau d'Ankama, ne s'obtient pas en jeu ; Dofawa : trop court pour être un objectif ; Dofus Verdoyant : un objet de quête, pas un vrai Dofus. Masqués partout
+const SDZ_HIDDEN = new Set(['Dofawa', 'Dofus Verdoyant']);
 const SDZL = (SC.dofus || []).filter(d => !d.cadeau && !SDZ_HIDDEN.has(d.n));
 const sdzVisible = d => sSeasonal || !d.s;
 const itemImg = d => `https://api.dofusdb.fr/img/items/${d.ic}.png`;

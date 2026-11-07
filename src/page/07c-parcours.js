@@ -18,9 +18,8 @@ const PN = [
   { id: 'dorigami', d: 'Dorigami', lane: 'P', r: 6 },                              // niv. 160–170
   { id: 'tach', d: 'Dofus Tacheté', lane: 'P', r: 7 },                            // la chaîne de Cauchemar passe par « En ce jardin qui nous unit », sa dernière quête sur le chemin
   { id: 'neb', d: 'Dofus Nébuleux', lane: 'D', r: 7 },                            // niv. 100–200 : niveau de fin 200
-  { id: 'cauch', d: 'Dofus du Cauchemar', lane: 'P', r: 8 },                      // la quête de Verdoyant exige « Un héritage tourmenté » (3 des 4 quêtes de Cauchemar)
+  { id: 'cauch', d: 'Dofus du Cauchemar', lane: 'P', r: 8 },                      // la chaîne de Sylvestre passe par « Un héritage tourmenté » (3 des 4 quêtes de Cauchemar) puis par la quête de Verdoyant, un objet de quête masqué
   { id: 'six', ach: 1705, lane: 'M1', s: 2, r: 8 },                               // « Six sur six » (6/6) : les six primordiaux et leurs quêtes finales
-  { id: 'verd', d: 'Dofus Verdoyant', lane: 'P', r: 9 },                          // la chaîne de Sylvestre passe par la quête de Verdoyant
   { id: 'scint', d: 'Dofus Argenté Scintillant', lane: 'M1', r: 9 },              // demande Argenté et presque tout « Six sur six » (il lui manque ses deux dernières quêtes)
   { id: 'pin', d: 'Dom de Pin', lane: 'M2', r: 9 },                               // s'achète à un PNJ une fois « Six sur six », « L'héritage de l'île brisée » et la quête « Entretemps, une renaissance » faits ; exigé par « Flovoraison » (Sylvestre)
   { id: 'sylv', d: 'Dofus Sylvestre', lane: 'P', r: 10 },
@@ -31,7 +30,7 @@ const PBOX = { id: 'prim' };
 const PALONE_FIRST = [1, 3, 4, 6, 7];   // première ligne des indépendants pour : < 50, 50–99, 100–149, 150–199, 200
 // Flèches : ['de', 'vers']. Une flèche va toujours vers le bas (ce qui est dessous dépend de ce qui est dessus).
 const PE = [['mais', 'cawotte'], ['mais', 'prim'], ['prim', 'six'], ['arg', 'scint'], ['six', 'scint'],
-  ['domakuro', 'dorigami'], ['dorigami', 'tach'], ['tach', 'cauch'], ['cauch', 'verd'], ['verd', 'sylv'],
+  ['domakuro', 'dorigami'], ['dorigami', 'tach'], ['tach', 'cauch'], ['cauch', 'sylv'],
   ['six', 'pin'], ['pin', 'sylv'], ['veill', 'neb']];
 const pDofus = name => SDZL.find(d => d.n === name);
 const pNode = id => (id === 'prim' ? PBOX : PN.find(n => n.id === id));

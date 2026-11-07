@@ -199,6 +199,7 @@ input.gc:disabled{opacity:.6;cursor:default}
 .rwd .lab:before,.rwd .lab:after{content:"•";color:var(--dim)}
 .rew{display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 6px;border-radius:8px;border:1px solid var(--gold);background:radial-gradient(circle at 20% 50%,var(--accent-soft),transparent 70%);font-weight:800;font-size:.85rem;margin:2px}
 .rew img{width:26px;height:26px;object-fit:contain}
+.rew-k{font-size:.62rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
 .sgo{color:var(--gold-txt);cursor:pointer;font-weight:700}
 .sgo:hover{text-decoration:underline}
 .badge{display:inline-block;border-radius:4px;padding:0 6px;font-size:.7rem;font-weight:800;white-space:nowrap;vertical-align:1px}

@@ -23,7 +23,7 @@ function achDetailHtml(a){
     ${goalBox(GOALA[a.id], DZ_REW_A[a.id])}
     ${a.ob.length ? `<div class="lab">Objectifs</div>${a.ob.map(line).join('')}` : ''}
     ${parents.length ? `<div class="lab">Fait partie de</div>${parents.map(p => `<div class="ob${achDone(p.id) ? ' done' : ''}">${okx(achDone(p.id))}<span><span class="sgo" data-pick="a:${p.id}">${esc(p.n)}</span></span></div>`).join('')}` : ''}
-    ${DZ_REW_A[a.id] ? `<div class="rwd"><div class="lab">Récompense</div>${DZ_REW_A[a.id].map(d => dzChip(d, (GOALA[a.id] || []).includes(d))).join('')}</div>` : ''}
+    ${DZ_REW_A[a.id] || a.ti || a.or ? `<div class="rwd"><div class="lab">Récompense</div>${(DZ_REW_A[a.id] || []).map(d => dzChip(d, (GOALA[a.id] || []).includes(d))).join('')}${achRewardChips(a)}</div>` : ''}
     <div class="path">${esc(catPath(a.c))}</div>`;
 }
 function questDetailHtml(qid){
@@ -46,7 +46,7 @@ function questDetailHtml(qid){
     ${pre.length ? `<div class="lab">Prérequis</div>${pre.join('')}` : ''}
     ${owners.length ? `<div class="lab">Succès</div>${owners.map(a => `<div class="ob${achDone(a.id) ? ' done' : ''}">${okx(achDone(a.id))}<span><span class="sgo" data-pick="a:${a.id}">${esc(a.n)}</span></span></div>`).join('')}` : ''}
     ${next.length ? `<div class="lab">Débloque</div>${next.map(n => `<div class="ob${qDoneS(n) ? ' done' : ''}">${okx(qDoneS(n))}<span>${qLink(n)}</span><span class="lv">${SC.quetes[n] && SC.quetes[n].lv ? 'Niv. ' + SC.quetes[n].lv : ''}</span></div>`).join('')}` : ''}
-    ${DZ_REW_Q[qid] ? `<div class="rwd"><div class="lab">Récompense</div>${DZ_REW_Q[qid].map(d => dzChip(d, (GOALQ[qid] || []).includes(d))).join('')}</div>` : ''}`;
+    ${DZ_REW_Q[qid] || owners.some(a => a.ti || a.or) ? `<div class="rwd"><div class="lab">Récompense</div>${(DZ_REW_Q[qid] || []).map(d => dzChip(d, (GOALQ[qid] || []).includes(d))).join('')}${owners.map(a => achRewardChips(a, a.n)).join('')}</div>` : ''}`;
 }
 function renderDetail(){
   const el = document.getElementById('scDetail');

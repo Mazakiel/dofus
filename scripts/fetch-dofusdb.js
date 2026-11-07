@@ -18,6 +18,17 @@ async function run(client, OUT) {
   const achs = await client.all('achievements', ['id', 'categoryId', 'iconId', 'points', 'level', 'order', 'accountLinked', 'objectiveIds', 'name', 'description']);
   const objs = await client.all('achievement-objectives', ['id', 'achievementId', 'order', 'criterion', 'name']);
 
+  // Titres et ornements donnés par les succès (achievement-rewards) : ti = noms des titres, or = ornements { n, i (icône) }
+  const titres = Object.fromEntries((await client.all('titles', ['id', 'nameMale', 'nameFemale'])).map(t => [t.id, t]));
+  const ornements = Object.fromEntries((await client.all('ornaments', ['id', 'name', 'iconId'])).map(o => [o.id, o]));
+  const recompenses = await client.all('achievement-rewards', ['id', 'achievementId', 'titlesReward', 'ornamentsReward']);
+  const ti = {}, orn = {};
+  for (const r of recompenses) {
+    for (const id of r.titlesReward || []) { const t = titres[id]; if (t && t.nameMale && t.nameMale.fr) ((ti[r.achievementId] = ti[r.achievementId] || [])).push(t.nameMale.fr); }
+    for (const id of r.ornamentsReward || []) { const o = ornements[id]; if (o && o.name && o.name.fr) ((orn[r.achievementId] = orn[r.achievementId] || [])).push({ n: o.name.fr, i: o.iconId }); }
+  }
+  console.log('succès qui donnent un titre :', Object.keys(ti).length, '· un ornement :', Object.keys(orn).length);
+
   const objOut = {};
   for (const o of objs) { const p = parseObjective(o.criterion); objOut[o.id] = { a: o.achievementId, n: (o.name && o.name.fr) || '', t: p.t, ...(p.r ? { r: p.r } : {}) }; }
 
@@ -129,7 +140,8 @@ async function run(client, OUT) {
     genereLe: new Date().toISOString().slice(0, 10),
     categories: cats.map(c => ({ id: c.id, p: c.parentId || 0, o: c.order, n: (c.name && c.name.fr) || '' })),
     succes: achs.map(a => ({ id: a.id, c: a.categoryId, ic: a.iconId, pts: a.points, lv: a.level, o: a.order,
-      n: (a.name && a.name.fr) || '', d: (a.description && a.description.fr) || '', ob: a.objectiveIds || [], ...(a.accountLinked ? { cpt: 1 } : {}) })),
+      n: (a.name && a.name.fr) || '', d: (a.description && a.description.fr) || '', ob: a.objectiveIds || [], ...(a.accountLinked ? { cpt: 1 } : {}),
+      ...(ti[a.id] ? { ti: ti[a.id] } : {}), ...(orn[a.id] ? { or: orn[a.id] } : {}) })),
     objectifs: objOut,
     quetes: qOut,
     dofus: dofusOut,

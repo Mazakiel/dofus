@@ -58,6 +58,10 @@ const imgErr = el => el.querySelectorAll('img').forEach(img => img.addEventListe
 const pctOf = (d, n) => n ? Math.floor(100 * d / n) : 0;
 const plural = (n, s, p) => `${n} ${n > 1 ? (p || s + 's') : s}`;
 const dzChip = (d, goal) => `<span class="rew${goal ? ' goalrew' : ''}"${goal ? ' title="Récompense, et ton objectif"' : ''}><img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer">${esc(d.n)}</span>`;
+// Titres et ornements donnés par un succès (ti : noms, or : { n, i }) ; `via` : nom du succès, pour la fiche d'une quête
+const titleChip = (t, via) => `<span class="rew rew-t"${via ? ` title="Titre du succès « ${esc(via)} »"` : ''}><span class="rew-k">Titre</span>${esc(t)}</span>`;
+const ornChip = (o, via) => `<span class="rew rew-o"${via ? ` title="Ornement du succès « ${esc(via)} »"` : ''}><img src="https://api.dofusdb.fr/img/ornaments/${o.i}.png" alt="" referrerpolicy="no-referrer"><span class="rew-k">Ornement</span>${esc(o.n)}</span>`;
+const achRewardChips = (a, via) => [...(a.ti || []).map(t => titleChip(t, via)), ...(a.or || []).map(o => ornChip(o, via))].join('');
 const dzIcons = list => (list || []).map(d => `<img class="rew-ic" src="${itemImg(d)}" alt="" title="Récompense : ${esc(d.n)}" referrerpolicy="no-referrer">`).join('');
 
 // ---------- objectifs Dofus : quêtes et succès qui y mènent ----------

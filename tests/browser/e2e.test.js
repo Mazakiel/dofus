@@ -238,3 +238,15 @@ test('annuler : une action en masse affiche un bandeau, « Annuler » rend la pr
   await p.eval(`withUndo('rien', () => {}); 1`);
   assert.equal(await p.eval(`document.getElementById('toast').hidden`), true, 'rien à annuler : pas de bandeau');
 }));
+
+test('récompenses : titres et ornements apparaissent sur la fiche du succès et de ses quêtes', { skip }, () => withPage(async p => {
+  const r = await p.eval(`(() => {
+    const qid = +Object.keys(QOWN).find(q => (QOWN[q] || []).length && SC.quetes[q]), a = SACH[QOWN[qid][0]];
+    a.ti = ['Le Testeur']; a.or = [{ n: 'Cadre de test', i: 3 }];
+    sMode = 'succes'; sPick = { k: 'a', id: a.id }; renderDetail(); const s = document.getElementById('scDetail').innerHTML;
+    sMode = 'quetes'; sPick = { k: 'q', id: qid }; renderDetail(); const q = document.getElementById('scDetail').innerHTML;
+    return { s: /Le Testeur/.test(s) && /Cadre de test/.test(s) && /ornaments\\/3\\.png/.test(s), q: /Le Testeur/.test(q) && /Cadre de test/.test(q) };
+  })()`);
+  assert.deepEqual(r, { s: true, q: true });
+  assert.equal(await p.eval(`(() => { const a = SC.succes.find(x => !x.ti && !x.or); sMode='succes'; sPick={k:'a',id:a.id}; renderDetail(); return /rew-t|rew-o/.test(document.getElementById('scDetail').innerHTML); })()`), false, 'rien si le succès ne donne rien');
+}));

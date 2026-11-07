@@ -6,7 +6,7 @@ const PRIM = ['Dofus Ocre', 'Dofus Émeraude', 'Dofus Pourpre', 'Dofus Turquoise
 // Disposition : une ligne par étape de niveau, partagée par toutes les familles (ce qui est à la même hauteur se fait à peu près au même niveau) ;
 // horizontalement, pas de colonnes régulières : chaque famille a son décalage (PLANES, en pixels). Ce qui dépend d'un autre Dofus est toujours plus bas.
 // Les Dofus sont désignés par leur nom, les succès et quêtes par leur identifiant. r = ligne, lane = position horizontale, s = largeur en cartes.
-const PW = 156, PSTEP = 172, PNH = 72, PGAP = 46, PGAP_STRAIGHT = 34, PGAP_MIN = 20;   // largeur d'une carte, pas entre deux cartes voisines, hauteur d'une ligne, espace avant une ligne où arrive un coude / une flèche droite / rien
+const PW = 156, PSTEP = 172, PNH = 72, PGAP = 40, PGAP_STRAIGHT = 28, PGAP_MIN = 16;   // largeur d'une carte, pas entre deux cartes voisines, hauteur d'une ligne, espace avant une ligne où arrive un coude / une flèche droite / rien
 const PLANES = { A: 0, M1: 100, M2: 272, P: 460, D: 632, I1: 804, I2: 976 };   // Argenté ; les deux colonnes des primordiaux (décalées pour laisser passer la flèche d'Argenté) ; Pandala ; Dimensions Divines ; indépendants
 const PBANDS = [[3, 50], [4, 100], [6, 150], [7, 200]];   // [première ligne du palier, niveau où il commence] : un trait « niv. N » veut dire « niveau N ou plus » (un Dofus de niveau 100 est sous le trait 100)
 const PN = [
@@ -60,9 +60,8 @@ function pPivot(n, pos, after, ready) {
   if (!SC.quetes[n.q]) return '';
   return `<div class="cz pv${dn ? ' own' : ''}${ready ? ' ready' : ''}${isPick('q', n.q) ? ' sel' : ''}" id="cz-${n.id}" style="${pos}" data-pick="q:${n.q}" tabindex="0" role="button" title="${esc(qName(n.q))}">${qIcon(SC.quetes[n.q], n.q)}<span class="cz-t"><b>${esc(qName(n.q))}</b><small>Quête${dn ? '' : ''}</small>${after ? `<small class="cz-after">${esc(after)}</small>` : ''}</span></div>`;
 }
-// Ordonnée du trait de niveau avant la ligne r : à mi-hauteur d'un grand espace ; dans un petit espace, collé en haut (sous la ligne précédente),
-// pour ne pas passer sur la pointe des flèches qui arrivent
-const pBandY = r => { if (r === 1) return 8; const gap = pTops[r] - pTops[r - 1] - PNH; return pTops[r] - gap + (gap >= PGAP ? gap / 2 : Math.min(10, gap / 2)); };
+// Ordonnée du trait de niveau avant la ligne r : juste sous la ligne précédente (rien ne se met entre le bloc et le trait), loin de la pointe des flèches
+const pBandY = r => (r === 1 ? 6 : pTops[r - 1] + PNH + 6);
 let pTops = [];   // ordonnée du haut de chaque ligne (à partir de 1) : l'espace avant une ligne n'est complet que si une flèche y arrive
 const pRowTop = r => pTops[r];
 const pRect = (lane, r, span = 1) => ({ l: PLANES[lane], t: pRowTop(r), w: span * PW + (span - 1) * (PSTEP - PW), h: PNH });
@@ -94,7 +93,7 @@ function parcoursHtml() {
   });
   // 2. les lignes sans aucune carte disparaissent : quand on masque les obtenus, la grille se resserre
   const rows = [...new Set(items.map(it => it.row))].sort((a, b) => a - b), rowOf = r => rows.indexOf(r) + 1;
-  // 3. espacement vertical, selon ce qui arrive sur la ligne : un coude (46 px), une flèche droite seule (30 px), rien (20 px)
+  // 3. espacement vertical, selon ce qui arrive sur la ligne : un coude (40 px), une flèche droite seule (28 px), rien (16 px)
   const rowOfId = {}, xOf = {};
   const span = it => (it.span || 1) * PW + ((it.span || 1) - 1) * (PSTEP - PW);
   for (const it of items) { rowOfId[it.id] = rowOf(it.row); xOf[it.id] = { l: PLANES[it.lane], w: span(it) }; }
@@ -156,7 +155,7 @@ function pDrawEdges() {
     else {
       // le palier horizontal est dans l'espace libre juste au-dessus de la carte cible (jamais dans la rangée d'au-dessus), avec de la place pour la pointe ;
       // deux flèches vers la même carte arrivent de côtés différents : leurs paliers ne se recouvrent pas
-      const lo = A.b + 14, hi = B.t - 20, ym = lo > hi ? (A.b + B.t) / 2 : Math.min(Math.max(B.t - 36, lo), hi);
+      const lo = A.b + 14, hi = B.t - 20, ym = lo > hi ? (A.b + B.t) / 2 : Math.min(Math.max(B.t - 24, lo), hi);
       pts = [[e.x1, A.b], [e.x1, ym], [e.x2, ym], [e.x2, B.t - 3]];
     }
     h += `<path class="pe" d="${pRound(pts)}" marker-end="url(#pah)"/>`;

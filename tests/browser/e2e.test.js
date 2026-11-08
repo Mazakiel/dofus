@@ -487,3 +487,21 @@ test('parcours : avec les contenus saisonniers, aucune carte n’en recouvre une
   assert.deepEqual(await p.eval(`(() => { const cs = [...document.querySelectorAll('#pgrid .cz')].map(e => ({ id: e.id, l: e.offsetLeft, t: e.offsetTop, r: e.offsetLeft + e.offsetWidth, b: e.offsetTop + e.offsetHeight })); const bad = [];
     for (let i = 0; i < cs.length; i++) for (let j = i + 1; j < cs.length; j++) if (cs[i].l < cs[j].r && cs[i].r > cs[j].l && cs[i].t < cs[j].b && cs[i].b > cs[j].t) bad.push(cs[i].id + '/' + cs[j].id); return bad; })()`), []);
 }));
+
+test('glisser une ligne : la direction choisie dans Réglages valide ou marque la quête, sous le seuil rien ne se passe, l’annulation fonctionne', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); location.hash = '#/quetes/tous'; 1`); await p.wait(600);
+  const r = await p.eval(`(() => {
+    const swipe = (row, dx) => { const o = { bubbles: true, pointerType: 'touch', pointerId: 7, isPrimary: true, clientY: 100 };
+      row.dispatchEvent(new PointerEvent('pointerdown', { ...o, clientX: 100 })); row.dispatchEvent(new PointerEvent('pointermove', { ...o, clientX: 100 + dx / 2 })); row.dispatchEvent(new PointerEvent('pointermove', { ...o, clientX: 100 + dx })); row.dispatchEvent(new PointerEvent('pointerup', { ...o, clientX: 100 + dx })); };
+    const pick = () => { const ids = [...document.querySelectorAll('#scList .row input[data-sq]')].map(i => +i.dataset.sq).filter(id => qStatus(id) === 'av' && !qDoneS(id)); const id = ids.find(i => { const a = collectPrereqs('q', i); return !(a.a.size + a.q.size + a.o.size + a.d.size); }); return [id, document.getElementById('q' + id)]; };
+    const out = {};
+    let [id, row] = pick(); swipe(row, 40); out.short = qDoneS(id);                      // sous le seuil
+    swipe(row, 200); out.right = qDoneS(id); out.toast = document.getElementById('toast').classList.contains('show') || document.getElementById('toast').textContent.includes('Annuler');
+    document.querySelector('[data-undo]').click(); out.undone = !qDoneS(id);
+    [id, row] = pick(); swipe(row, -200); out.left = qState[id];                          // défaut : commencée
+    PS.setSyncedPref('swipeL', 'bl'); renderSwipeSettings(); [id, row] = pick(); swipe(row, -200); out.bl = qState[id];
+    out.sel = document.getElementById('swL').value; out.at = !!PS.pref('prefsAt', '');
+    return out; })()`);
+  assert.equal(r.short, false); assert.equal(r.right, true); assert.equal(r.toast, true); assert.equal(r.undone, true);
+  assert.equal(r.left, 's'); assert.equal(r.bl, 'b'); assert.equal(r.sel, 'bl'); assert.equal(r.at, true);
+}));

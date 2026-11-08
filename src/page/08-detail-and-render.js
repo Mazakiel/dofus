@@ -89,7 +89,7 @@ function renderSucces(){
   if (mTab !== 'plus') mTab = sMode;
   showTab();
   if (sMode === 'donjons') ensureDj(); else if (sMode === 'recomp') ensureRw(); else ensureCat();
-  renderScTree(); renderScList(); renderDetail();
+  renderScTree(); renderScList(); renderDetail(); renderSwipeSettings();
   if (typeof routeSync === 'function') routeSync();
 }
 document.getElementById('scTree').addEventListener('click', e => {

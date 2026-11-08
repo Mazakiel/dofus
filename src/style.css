@@ -553,3 +553,12 @@ input[type=checkbox]:not(.gc){accent-color:var(--gold)}
 .fx-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 16px 0;font-size:.88rem}
 .seg.fx-seg{margin:0;width:max-content;flex:none}.seg.fx-seg .seg-b{padding:4px 16px;font-size:.74rem}
 .fx-list{margin-top:2px}.fx-list .gcn{position:static;flex:none;pointer-events:none}
+/* ---- Glisser une ligne : la couleur de l'action se révèle derrière la ligne ---- */
+.row:has(input[data-sq],input[data-sach]){touch-action:pan-y}
+.row.swiping{position:relative;z-index:1;background:var(--win);transition:none}
+.row.swiping::before{content:attr(data-swl);position:absolute;top:0;bottom:0;right:100%;width:var(--swx);display:flex;align-items:center;justify-content:flex-end;padding-right:14px;box-sizing:border-box;overflow:hidden;white-space:nowrap;font-size:.8rem;font-weight:800;color:#fff;background:var(--sw-c,transparent);opacity:.55}
+.row.swiping.sw-l::before{right:auto;left:100%;justify-content:flex-start;padding:0 0 0 14px}
+.row.swiping.sw-go::before{opacity:1}
+.row.sw-done{--sw-c:var(--green)}.row.sw-st{--sw-c:var(--yel)}.row.sw-bl{--sw-c:var(--red)}
+select.btn{padding:6px 8px;max-width:11rem}
+#scList{overflow-x:clip}

@@ -155,3 +155,17 @@ test('la progression prévient de ses modifications, mais pas des chargements ni
   assert.equal(P.state.sdone.has(1), false, 'et l’état revient');
   off(); P.state.sq.add(99); assert.equal(n, 3);
 });
+
+test('synchro des réglages : le plus récent l’emporte, dans les deux sens, sans toucher aux profils', async () => {
+  const a = PS.create(memory(), { now: () => '2026-01-01T10:00:00Z' }), b = PS.create(memory(), { now: () => '2026-01-02T10:00:00Z' });
+  const remote = fakeRemote();
+  a.setSyncedPref('swipeR', 'blocked');
+  let r = await PS.sync(a, remote);
+  assert.equal(remote.docs.__prefs.v.swipeR, 'blocked'); assert.equal(Object.keys(remote.docs).filter(k => k !== '__prefs').length, 1);
+  r = await PS.sync(b, remote);   // l'autre appareil reçoit
+  assert.equal(b.pref('swipeR', ''), 'blocked'); assert.equal(r.refresh, true);
+  b.setSyncedPref('swipeR', 'done');   // modifié plus tard : repart vers le distant puis revient sur le premier appareil
+  await PS.sync(b, remote); await PS.sync(a, remote);
+  assert.equal(a.pref('swipeR', ''), 'done');
+  assert.ok(!a.profiles().some(p => p.id === '__prefs'), 'les réglages ne sont pas pris pour un profil');
+});

@@ -16,6 +16,9 @@
   'use strict';
 
   // Les clés d'une progression : celles de `snapshot()` dans src/progression.js
+  // Réglages qui suivent l'utilisateur d'un appareil à l'autre (le dernier modifié l'emporte) : gestes de glissement sur les lignes.
+  // Ils voyagent dans le même document que les profils, sous une clé réservée : aucune règle Firestore à changer.
+  const SYNCED_PREFS = ['swipeR', 'swipeL'], PREFS_KEY = '__prefs';
   const KEYS = ['sdone', 'sq', 'sodone', 'sLevel', 'sdzState', 'sdzGoals', 'rwGoals', 'qState'];
   const defaults = () => ({ sdone: [], sq: [], sodone: [], sLevel: 200, sdzState: {}, sdzGoals: [], rwGoals: [], qState: {} });
   const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -118,6 +121,9 @@
       summary(id) { const s = self.load(id); return { level: s.sLevel, quests: s.sq.length, achievements: s.sdone.length }; },
       // ---- préférences d'affichage (communes à tous les profils) ----
       pref: (k, d) => adapter.get(k, d),
+      syncedPrefs() { const v = {}; for (const k of SYNCED_PREFS) { const x = adapter.get(k, undefined); if (x !== undefined) v[k] = x; } return { v, at: adapter.get('prefsAt', '') || '' }; },
+      setSyncedPref(k, val) { adapter.set(k, val); adapter.set('prefsAt', now()); },
+      applyPrefs(p) { for (const k of SYNCED_PREFS) if (p.v && p.v[k] !== undefined) adapter.set(k, p.v[k]); adapter.set('prefsAt', p.at || ''); },
       setPref: (k, v) => adapter.set(k, v),
       // ---- synchro ----
       savedAt,
@@ -142,7 +148,11 @@
   async function sync(store, remote, { manual = false, confirmMerge = null } = {}) {
     const rp = await remote.read();
     const push = {}; let conflicts = 0, refresh = false;
-    for (const id of new Set([...store.profiles().map(p => p.id), ...Object.keys(rp)])) {
+    // réglages : le plus récent des deux côtés gagne
+    const rprefs = rp[PREFS_KEY], lprefs = store.syncedPrefs();
+    if (rprefs && (rprefs.at || '') > lprefs.at) { store.applyPrefs(rprefs); refresh = true; }
+    else if (lprefs.at && lprefs.at > ((rprefs && rprefs.at) || '')) push[PREFS_KEY] = lprefs;
+    for (const id of new Set([...store.profiles().map(p => p.id), ...Object.keys(rp).filter(k => k !== PREFS_KEY)])) {
       const r = rp[id];
       if (store.has(id) && !r) { push[id] = store.payload(id); continue; }                                      // profil seulement ici : on l'envoie
       if (!store.has(id) && r) { store.applyPayload(id, r); store.setSyncBase(id, r.savedAt || ''); refresh = true; continue; }   // seulement chez le distant : on le reçoit
@@ -156,8 +166,8 @@
         else conflicts++;
       }
     }
-    if (Object.keys(push).length) { await remote.write(push); for (const [id, pl] of Object.entries(push)) store.setSyncBase(id, pl.savedAt || ''); }
-    return { refresh, conflicts, pushed: Object.keys(push).length };
+    if (Object.keys(push).length) { await remote.write(push); for (const [id, pl] of Object.entries(push)) if (id !== PREFS_KEY) store.setSyncBase(id, pl.savedAt || ''); }
+    return { refresh, conflicts, pushed: Object.keys(push).filter(k => k !== PREFS_KEY).length };
   }
 
   return { create, sync, toPayload, samePayload, mergePayloads, exportFile, inspectImport, importInto };

@@ -534,3 +534,11 @@ input[type=checkbox]:not(.gc){accent-color:var(--gold)}
 .cz-c{display:flex;flex:none}
 .cz-c .tgt{width:22px;height:22px}.cz-c .tgt svg{width:12px;height:12px}
 @media (max-width:700px){.cz-c .tgt{width:34px;height:34px}}
+/* ---- Flux de quêtes (dans la fiche) ---- */
+.fx{overflow:auto;margin:6px 14px 4px;padding-bottom:4px}.fx svg{display:block;margin:0 auto}
+.fx-e{fill:none;stroke:var(--line);stroke-width:2}.fx-e.d{stroke-dasharray:4 3}
+.fx-n{fill:var(--win);stroke:var(--green);stroke-width:3;cursor:pointer}.fx-n:hover,.fx-n.sel{stroke-width:5}.fx-n:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.fx-n.st{fill:var(--green)}.fx-n.bl{fill:var(--red);stroke:var(--red)}.fx-n.lock{fill:var(--muted);stroke:var(--muted);opacity:.75}.fx-n.obj.lock{fill:var(--win)}
+.fx-t{fill:var(--orange)}
+#fxTip{position:fixed;display:none;pointer-events:none;z-index:60;max-width:260px;padding:7px 10px;border:1px solid var(--orange);border-radius:6px;background:var(--win);color:var(--text);font-size:.78rem;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+#fxTip b{display:block;margin-bottom:2px}

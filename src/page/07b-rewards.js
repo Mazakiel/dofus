@@ -88,7 +88,7 @@ function rwDetailHtml(r) {
     <div class="acts prog">${own ? '' : `<button class="btn" data-rgoal="${k}:${r.id}" aria-pressed="${goal}">Objectif</button>`}${r.kind ? '' : `<button class="btn" data-sdzown="${r.id}" aria-pressed="${own}">Obtenu</button>`}</div>
     ${a && a.d ? `<div class="quote${own ? ' ok' : ''}">${esc(a.d)}</div>` : ''}
     ${src ? `<div class="lab">Pour l’obtenir</div>${src}` : ''}${vendors}
-    ${left ? `<div class="lab">Il reste</div><div class="ob"><span>${left}</span></div>` : ''}
+    ${left ? `<div class="lab">Il reste</div><div class="ob"><span>${left}</span></div>${fluxHtml(acc.q, r.n)}` : ''}
     ${a ? `<div class="path">${esc(catPath(a.c))}</div>` : ''}
     <div class="ddb-row">${r.kind ? ddbLink('a', r.a, 'Succès sur DofusDB') : ddbLink('d', r.id)}</div>`;
 }

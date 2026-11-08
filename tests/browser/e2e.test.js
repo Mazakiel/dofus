@@ -445,3 +445,15 @@ test('parcours : en masquant les obtenus, les lignes vides disparaissent et la g
   assert.deepEqual(await p.eval(`(() => { const cs = [...document.querySelectorAll('#pgrid .cz')].map(e => ({ id: e.id, l: e.offsetLeft, t: e.offsetTop, r: e.offsetLeft + e.offsetWidth, b: e.offsetTop + e.offsetHeight })); const bad = [];
     for (let i = 0; i < cs.length; i++) for (let j = i + 1; j < cs.length; j++) if (cs[i].l < cs[j].r && cs[i].r > cs[j].l && cs[i].t < cs[j].b && cs[i].b > cs[j].t) bad.push(cs[i].id + '/' + cs[j].id); return bad; })()`), []);
 }));
+
+test('flux de quêtes : la fiche d’un Dofus dessine les quêtes restantes, le survol renseigne, le clic ouvre la quête', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(600);
+  const r = await p.eval(`(() => { const d = SDZL.find(x => x.n === 'Dofus Forgelave'); sPick = { k: 'd', id: d.id }; renderScList(); renderDetail();
+    const nodes = [...document.querySelectorAll('#scDetail .fx-n')], need = collectPrereqs('d', d.id).q.size;
+    const target = !!document.querySelector('#scDetail .fx-t'), c = nodes[0]; c.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    const tip = document.getElementById('fxTip'), shown = tip.style.display === 'block', txt = tip.textContent;
+    c.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    return { n: nodes.length, need, shown, txt, pick: sPick && sPick.k, target }; })()`);
+  assert.ok(r.n >= 2 && r.n <= r.need, 'un rond par quête restante : ' + r.n + ' / ' + r.need);
+  assert.equal(r.target, true, JSON.stringify(r)); assert.equal(r.shown, true, JSON.stringify(r)); assert.ok(r.txt.length > 5); assert.equal(r.pick, 'q');
+}));

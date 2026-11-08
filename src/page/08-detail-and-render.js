@@ -22,7 +22,7 @@ function achDetailHtml(a){
     <div class="quote${dn ? ' ok' : ''}">${esc(a.d)}</div>
     ${goalBox(GOALA[a.id], DZ_REW_A[a.id])}
     ${a.ob.length ? `<div class="lab">Objectifs</div>${a.ob.map(line).join('')}` : ''}
-    ${dn ? '' : (() => { const f = fluxHtml(collectPrereqs('a', a.id).q, a.n); return f ? `<div class="lab">Flux de quêtes</div>${f}` : ''; })()}
+    ${dn ? '' : fluxSection(collectPrereqs('a', a.id).q, a.n, 'Quêtes restantes')}
     ${parents.length ? `<div class="lab">Fait partie de</div>${parents.map(p => `<div class="ob${achDone(p.id) ? ' done' : ''}">${okx(achDone(p.id))}<span><span class="sgo" data-pick="a:${p.id}">${esc(p.n)}</span></span></div>`).join('')}` : ''}
     ${DZ_REW_A[a.id] || a.ti || a.or ? `<div class="rwd"><div class="lab">Récompense</div>${(DZ_REW_A[a.id] || []).map(d => dzChip(d, (GOALA[a.id] || []).includes(d))).join('')}${achRewardChips(a)}</div>` : ''}
     <div class="path">${esc(catPath(a.c))}</div>

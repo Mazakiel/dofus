@@ -28,6 +28,8 @@ function onScClick(e){
   }
   const rk = e.target.closest('[data-rkind]');
   if (rk) { rKind = rk.dataset.rkind; store.set('rKind', rKind); rCat = SALL; store.set('rCat', rCat); sPick = null; sSearch = ''; document.getElementById('scSearch').value = ''; renderSucces(); return; }
+  const fm = e.target.closest('[data-fxmode]');
+  if (fm) { fxMode = fm.dataset.fxmode; store.set('fxMode', fxMode); renderDetail(); return; }
   const rg = e.target.closest('[data-rgoal]');
   if (rg) { const [k, id] = rg.dataset.rgoal.split(':'), r = rwOf(k, +id); if (r) { rwSetGoal(r, !rwIsGoal(r)); renderSucces(); } return; }
   const all = e.target.closest('[data-sall]');

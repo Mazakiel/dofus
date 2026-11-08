@@ -1,6 +1,7 @@
 // ===== Flux de quêtes : ce qu'il reste à faire pour obtenir un Dofus, un titre, un ornement ou un succès, en graphe de haut en bas.
 // Un rond par quête restante (le plus gros : celle qui n'ouvre plus rien), un trait par « exige » ; tout converge vers un rond orange, la cible.
 // Seules les quêtes restantes sont dessinées : les faites sont masquées. Survol : infos de la quête ; clic : sa fiche.
+let fxMode = store.get('fxMode', 'graph');   // présentation des quêtes restantes : 'graph' | 'list'
 const FX_CW = 42, FX_RH = 46, FX_PAD = 22;
 const FX_LBL = { av: 'disponible', st: 'commencée', bl: 'bloquée', lock: 'indisponible', done: 'faite' };
 // Quêtes d'un succès exigé par une quête (ses objectifs, sous-succès compris)
@@ -28,6 +29,21 @@ function fxModel(qs) {
   sinks.sort((x, y) => rank.get(y) - rank.get(x) || x - y).forEach(q => { if (!col.has(q)) walk(q, nc++); });
   [...S].forEach(q => { if (!col.has(q)) walk(q, nc++); });
   return { S, pre, dashed, rank, col, nc, sinks: new Set(sinks), maxr: Math.max(0, ...rank.values()) };
+}
+// Liste : dans l'ordre où on les fait (une quête après celles qu'elle exige)
+function fluxList(qs) {
+  const m = fxModel(qs);
+  return `<div class="fx-list">${[...m.S].sort((x, y) => m.rank.get(x) - m.rank.get(y) || (SC.quetes[x].lv || 0) - (SC.quetes[y].lv || 0) || x - y).map(q =>
+    `<div class="ob"><span class="fx-dot ${qStatus(q)}"></span><span><span class="sgo" data-pick="q:${q}">${esc(qName(q))}</span></span><span class="lv">${SC.quetes[q].lv ? 'Niv. ' + SC.quetes[q].lv : ''}</span></div>`).join('')}</div>`;
+}
+// Section de fiche : titre, compteur de quêtes, bascule liste / graphe
+function fluxSection(qs, target, lab = 'Il reste') {
+  const todo = [...qs].filter(q => SC.quetes[q]), avail = todo.filter(q => qStatus(q) === 'av').length;
+  if (!todo.length) return '';
+  const lead = `<div class="ob"><span>${plural(todo.length, 'quête')} à faire${avail ? `, dont ${avail} disponible${avail > 1 ? 's' : ''}` : ''}</span></div>`;
+  if (todo.length < 2) return `<div class="lab">${lab}</div>${lead}${fluxList(todo)}`;
+  const seg = `<div class="seg fx-seg" role="group" aria-label="Présentation">${[['graph', 'Graphe'], ['list', 'Liste']].map(([k, l]) => `<button type="button" class="seg-b" data-fxmode="${k}" aria-pressed="${fxMode === k}">${l}</button>`).join('')}</div>`;
+  return `<div class="lab">${lab}</div>${lead}${seg}${fxMode === 'list' ? fluxList(todo) : fluxHtml(todo, target)}`;
 }
 function fluxHtml(qs, target) {
   const m = fxModel(qs); if (m.S.size < 2) return '';

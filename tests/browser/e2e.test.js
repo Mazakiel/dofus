@@ -457,3 +457,15 @@ test('flux de quêtes : la fiche d’un Dofus dessine les quêtes restantes, le 
   assert.ok(r.n >= 2 && r.n <= r.need, 'un rond par quête restante : ' + r.n + ' / ' + r.need);
   assert.equal(r.target, true, JSON.stringify(r)); assert.equal(r.shown, true, JSON.stringify(r)); assert.ok(r.txt.length > 5); assert.equal(r.pick, 'q');
 }));
+
+test('flux de quêtes : la bascule Liste / Graphe change la présentation et se retient', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(600);
+  const r = await p.eval(`(() => { const d = SDZL.find(x => x.n === 'Dofus Forgelave'); sPick = { k: 'd', id: d.id }; renderScList(); renderDetail();
+    const det = () => document.getElementById('scDetail'), need = collectPrereqs('d', d.id).q.size, g = !!det().querySelector('svg.fx-svg, .fx svg');
+    det().querySelector('[data-fxmode="list"]').click();
+    const rows = det().querySelectorAll('.fx-list .ob').length, svg = !!det().querySelector('.fx svg'), lead = det().querySelector('.fx-seg').previousElementSibling.textContent;
+    return { need, g, rows, svg, lead, saved: store.get('fxMode', '') }; })()`);
+  assert.equal(r.g, true); assert.equal(r.svg, false); assert.equal(r.rows, r.need); assert.equal(r.saved, 'list');
+  assert.match(r.lead, new RegExp('^' + r.need + ' quêtes à faire'));
+  assert.doesNotMatch(r.lead, /succès/);
+}));

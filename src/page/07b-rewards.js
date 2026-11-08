@@ -81,14 +81,13 @@ function rwDetailHtml(r) {
   }
   // Dofus qui s'achète à un PNJ : où (la position se copie en commande /travel)
   const vendors = Array.isArray(r.pnj) ? `<div class="lab">S’achète auprès de</div>${r.pnj.map(p => `<div class="ob"><span class="x">•</span><span>${esc(p.n)}</span><span class="lv">${coordBtn(p)}</span></div>`).join('')}` : '';
-  const acc = own ? null : rwNeeds(r), avail = acc ? [...acc.q].filter(q => qStatus(q) === 'av').length : 0;
-  const left = acc && (acc.q.size || acc.a.size) ? `${[acc.q.size ? plural(acc.q.size, 'quête') : '', acc.a.size ? plural(acc.a.size, 'succès', 'succès') : ''].filter(Boolean).join(' et ')} à faire${avail ? `, dont ${plural(avail, 'quête')} disponible${avail > 1 ? 's' : ''}` : ''}` : '';
+  const acc = own ? null : rwNeeds(r);
   return `<div class="hd">${big}<h3>${esc(r.n)}${copyBtn(r.n)}</h3><div class="k">${rwKindLbl(r)}${lvl}${a ? ' · donné par un succès' : ''}</div></div>
     <div class="stat"><span class="badge ${st}">${st === 'done' ? 'Obtenu' : st === 'lock' ? 'Indisponible' : 'À obtenir'}</span></div>
     <div class="acts prog">${own ? '' : `<button class="btn" data-rgoal="${k}:${r.id}" aria-pressed="${goal}">Objectif</button>`}${r.kind ? '' : `<button class="btn" data-sdzown="${r.id}" aria-pressed="${own}">Obtenu</button>`}</div>
     ${a && a.d ? `<div class="quote${own ? ' ok' : ''}">${esc(a.d)}</div>` : ''}
     ${src ? `<div class="lab">Pour l’obtenir</div>${src}` : ''}${vendors}
-    ${left ? `<div class="lab">Il reste</div><div class="ob"><span>${left}</span></div>${fluxHtml(acc.q, r.n)}` : ''}
+    ${acc && acc.q.size ? fluxSection(acc.q, r.n) : acc && acc.a.size ? `<div class="lab">Il reste</div><div class="ob"><span>${plural(acc.a.size, 'succès', 'succès')} à faire</span></div>` : ''}
     ${a ? `<div class="path">${esc(catPath(a.c))}</div>` : ''}
     <div class="ddb-row">${r.kind ? ddbLink('a', r.a, 'Succès sur DofusDB') : ddbLink('d', r.id)}</div>`;
 }

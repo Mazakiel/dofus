@@ -85,11 +85,13 @@ function parcoursHtml() {
     const it = { id: 'prim:' + i, row, lane, build: st => pCard(d, 'p' + i, st, 'après ' + pName(pNode('mais')), false) }; items.push(it); primItems.push(it); });
   // les indépendants : par niveau de fin, puis de départ, puis effort ; deux par ligne, à partir de la première ligne de leur palier
   const alone = SDZ_ORDER.filter(d => !pPlaced.has(d.n) && sdzVisible(d) && rwShown(d)).sort((a, b) => hi(a) - hi(b) || lo(a) - lo(b) || pLeft(a) - pLeft(b));
-  const used = {};
+  const taken = new Set(items.map(it => it.row + ':' + it.lane));   // cases déjà prises (Dofus du parcours, saisonniers compris) : un indépendant ne s'y pose jamais
   alone.forEach(d => {
     const h = hi(d), band = h < 50 ? 0 : h < 100 ? 1 : h < 150 ? 2 : h < 200 ? 3 : 4;   // un trait N = « niveau N ou plus »
-    let row = PALONE_FIRST[band]; while ((used[row] || 0) >= 2) row++;
-    items.push({ id: 'a' + d.id, row, lane: (used[row] = (used[row] || 0) + 1) === 1 ? 'I1' : 'I2', build: st => pCard(d, 'a' + d.id, st, '', false) });
+    let row = PALONE_FIRST[band], lane;
+    while (!(lane = ['I1', 'I2'].find(l => !taken.has(row + ':' + l)))) row++;
+    taken.add(row + ':' + lane);
+    items.push({ id: 'a' + d.id, row, lane, build: st => pCard(d, 'a' + d.id, st, '', false) });
   });
   // 2. les lignes sans aucune carte disparaissent : quand on masque les obtenus, la grille se resserre
   const rows = [...new Set(items.map(it => it.row))].sort((a, b) => a - b), rowOf = r => rows.indexOf(r) + 1;

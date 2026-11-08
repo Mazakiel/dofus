@@ -481,3 +481,9 @@ test('fiches : une flèche retour ramène à la fiche d’où l’on vient, et s
   assert.equal(r.first, false, 'pas de flèche sur une fiche ouverte depuis la liste'); assert.equal(r.second, true); assert.equal(r.onAch, 'a');
   assert.equal(r.back, 'd:true'); assert.equal(r.gone, true);
 }));
+
+test('parcours : avec les contenus saisonniers, aucune carte n’en recouvre une autre', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; sSeasonal = true; renderSucces(); 1`); await p.wait(500);
+  assert.deepEqual(await p.eval(`(() => { const cs = [...document.querySelectorAll('#pgrid .cz')].map(e => ({ id: e.id, l: e.offsetLeft, t: e.offsetTop, r: e.offsetLeft + e.offsetWidth, b: e.offsetTop + e.offsetHeight })); const bad = [];
+    for (let i = 0; i < cs.length; i++) for (let j = i + 1; j < cs.length; j++) if (cs[i].l < cs[j].r && cs[i].r > cs[j].l && cs[i].t < cs[j].b && cs[i].b > cs[j].t) bad.push(cs[i].id + '/' + cs[j].id); return bad; })()`), []);
+}));

@@ -1,0 +1,8 @@
+{
+  "_doc": "Corrections manuelles des données DofusDB, appliquées par scripts/enrich-dofusdb.js. dansDonjon : \"tout\", \"rien\", ou la liste des lignes (texte exact de `ft`) à marquer « dans le donjon ». La règle de base est celle du site : objectif avec need.generated.dungeons non vide.",
+  "quetes": {
+    "692": { "dansDonjon": "tout", "note": "Porte, Kolosso : DofusDB ne rattache pas « Dernière salle des cavernes » au donjon (carte d'entrée)" },
+    "1315": { "dansDonjon": "tout", "note": "Porte, Comte Harebourg : objectif sans carte ni donjon dans DofusDB" },
+    "1775": { "dansDonjon": ["Vaincre Capsaaloocke"], "note": "Voler dans les plumes : combat au milieu du donjon sans donjon rattaché dans DofusDB" }
+  }
+}

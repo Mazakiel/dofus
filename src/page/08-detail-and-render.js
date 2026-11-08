@@ -45,7 +45,7 @@ function questDetailHtml(qid){
     ${goalBox(GOALQ[qid], DZ_REW_Q[qid])}
     ${(q.dj || []).length ? `<div class="lab">${(q.dj || []).length > 1 ? 'Donjons' : 'Donjon'}</div>${q.dj.map(id => `<div class="ob"><span class="tag dj">DJ</span><span>${esc((DJN[id] || {}).n || 'Donjon ' + id)}${(DJN[id] || {}).lv ? ` <span class="muted">· niveau ${DJN[id].lv}</span>` : ''}</span></div>`).join('')}` : ''}
     ${(q.sp || []).length ? `<div class="lab">${q.sp.length > 1 ? 'Débuts possibles' : 'Début'}</div>${q.sp.map(p => `<div class="ob"><span class="x">•</span><span>${esc(p.n || 'PNJ')}${p.z ? ` <span class="muted">· ${esc(p.z)}</span>` : ''}</span><span class="lv">${coordBtn(p)}</span></div>`).join('')}` : ''}
-    ${(q.ft || []).length ? `<div class="lab">À faire</div>${q.ft.map(l => `<div class="ob"><span class="x">•</span><span>${esc(l)}</span></div>`).join('')}` : ''}
+    ${(q.ft || []).length ? `<div class="lab">À faire</div>${q.ft.map((l, i) => `<div class="ob"><span class="x">${(q.fd || []).includes(i) ? flagIcon('dj') : '•'}</span><span>${esc(l)}</span></div>`).join('')}` : ''}
     ${pre.length ? `<div class="lab">Prérequis</div>${pre.join('')}` : ''}
     ${owners.length ? `<div class="lab">Succès</div>${owners.map(a => `<div class="ob${achDone(a.id) ? ' done' : ''}">${okx(achDone(a.id))}<span><span class="sgo" data-pick="a:${a.id}">${esc(a.n)}</span></span></div>`).join('')}` : ''}
     ${next.length ? `<div class="lab">Débloque</div>${next.map(n => `<div class="ob${qDoneS(n) ? ' done' : ''}">${okx(qDoneS(n))}<span>${qLink(n)}</span><span class="lv">${SC.quetes[n] && SC.quetes[n].lv ? 'Niv. ' + SC.quetes[n].lv : ''}</span></div>`).join('')}` : ''}

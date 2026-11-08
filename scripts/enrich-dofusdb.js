@@ -1,7 +1,7 @@
 // Enrichit data/dofusdb.json avec, pour chaque quête : étiquettes (donjon, combat, farm, craft, exploration),
 // donjons concernés et liste lisible de ce qu'il y a à faire. Source : DofusDB uniquement.
 // Usage : node scripts/enrich-dofusdb.js data/dofusdb.json   (réécrit le fichier ; à relancer après fetch-dofusdb.js)
-const fs = require('fs');
+const fs = require('fs'), path = require('path');
 const { createClient } = require('./lib/dofusdb.js');
 const fr = n => (n && (n.fr || n.en)) || '';
 
@@ -16,7 +16,7 @@ async function run(client, FILE) {
   if (missing.length) { Object.assign(full, await client.byIds('quests', missing, [], { chunk: 20 })); client.cache.write('quetes-full.json', full); }
 
   // 2. identifiants à résoudre : objets, monstres, zones
-  const want = { item: new Set(), monster: new Set(), subarea: new Set() };
+  const want = { item: new Set(), monster: new Set(), subarea: new Set(), npc: new Set() };
   const TOK = /\{(item|monster|subarea|npc|map|alteration),(\d+)(?:::[^}]*)?\}/g;
   for (const q of Object.values(full)) for (const s of q.steps) for (const o of s.objectives) {
     for (const m of fr(o.text).matchAll(TOK)) if (want[m[1]]) want[m[1]].add(+m[2]);
@@ -39,6 +39,7 @@ async function run(client, FILE) {
   // Début des quêtes : PNJ à qui parler et position sur la carte (DofusDB : startPosition = [{ mapId, npcId }])
   const npcIds = new Set(), mapIds = new Set();
   for (const qid of qids) for (const p of (full[qid] && full[qid].startPosition) || []) { if (p.npcId) npcIds.add(p.npcId); if (p.mapId) mapIds.add(p.mapId); }
+  want.npc.forEach(id => npcIds.add(id));   // PNJ cités par les objectifs (« Aller voir … », « Ramener à … »)
   const npcs = await client.cached('npcs-min.json', () => client.byIds('npcs', [...npcIds], ['id', 'name']));
   const maps = await client.cached('maps-min.json', () => client.byIds('map-positions', [...mapIds], ['id', 'posX', 'posY', 'subAreaId', 'worldMap']));
   for (const [kind, store, ids, sel] of [['npcs', npcs, npcIds, ['id', 'name']], ['map-positions', maps, mapIds, ['id', 'posX', 'posY', 'subAreaId', 'worldMap']]]) {
@@ -48,10 +49,9 @@ async function run(client, FILE) {
   const zoneMiss = [...new Set(Object.values(maps).map(m => m.subAreaId))].filter(id => id != null && !subareas[id]);
   if (zoneMiss.length) Object.assign(subareas, await client.byIds('subareas', zoneMiss, ['id', 'name']));
 
-  const nameOf = { item: id => fr((items[id] || {}).name), monster: id => fr((monsters[id] || {}).name), subarea: id => fr((subareas[id] || {}).name) };
+  const nameOf = { item: id => fr((items[id] || {}).name), monster: id => fr((monsters[id] || {}).name), subarea: id => fr((subareas[id] || {}).name), npc: id => fr((npcs[id] || {}).name) };
   const clean = t => t
     .replace(/ sur la carte \{map,\d+(?:::[^}]*)?\}/g, '')
-    .replace(/ (?:à|au|aux) \{npc,\d+\}/g, '')
     .replace(TOK, (m, k, id) => (nameOf[k] ? nameOf[k](+id) : '') || '')
     .replace(/\s+en un seul combat/, '')
     .replace(/^Vaincre x(\d+) (.+)$/, (m, n, nom) => +n > 1 ? `Vaincre ${n} × ${nom}` : `Vaincre ${nom}`)
@@ -60,40 +60,45 @@ async function run(client, FILE) {
   const FIGHT = /^QuestObjective(Multi)?FightMonster|FightMonstersOnMap/;
   const COMBAT_WORDS = /(?<![\p{L}])(vaincre|neutralis\w*|affronter|éliminer|tuer)(?![\p{L}])/iu;   // mots entiers : « situer » ne compte pas
 
+  // Corrections manuelles des trous de DofusDB (data/dofusdb-fixes.json, à côté du fichier de données)
+  const fixFile = path.join(path.dirname(FILE), 'dofusdb-fixes.json');
+  const fixes = (fs.existsSync(fixFile) ? JSON.parse(fs.readFileSync(fixFile, 'utf8')).quetes : null) || {};
+  const applyFixes = (qid, lines) => {
+    const fx = fixes[qid] && fixes[qid].dansDonjon; if (fx === undefined) return;
+    if (fx === 'tout' || fx === 'rien') { lines.forEach(l => { l.dj = fx === 'tout'; }); return; }
+    for (const t of fx) { const l = lines.find(x => x.t === t); if (l) l.dj = true; else console.warn(`correction obsolète : quête ${qid}, ligne introuvable « ${t} »`); }
+  };
+
   const used = new Set();
   let nTag = 0;
   for (const qid of qids) {
     const q = full[qid], d = data.quetes[qid];
     if (!q) continue;
-    const tg = new Set(), lines = [], disco = [], dj = new Set();
+    const tg = new Set(), lines = [], dj = new Set();
     if (q.isDungeonQuest) tg.add('dj');
+    // une ligne par objectif, dans l'ordre de DofusDB ; `dj` : l'objectif se fait dans un donjon (même règle que le site : need.generated.dungeons non vide)
     for (const s of q.steps) for (const o of s.objectives) {
       const g = (o.need && o.need.generated) || {};
       (g.dungeons || []).forEach(id => dj.add(id));
       const c = o.className, txt = clean(fr(o.text));
-      if (FIGHT.test(c)) { tg.add('cb'); lines.push(txt); }
-      else if (c === 'QuestObjectiveBringSoulToNpcData') { tg.add('fm'); lines.push(txt); }
-      else if (c === 'QuestObjectiveCraftItemData') { tg.add('cr'); lines.push(txt); }
+      if (FIGHT.test(c)) tg.add('cb');
+      else if (c === 'QuestObjectiveBringSoulToNpcData') tg.add('fm');
+      else if (c === 'QuestObjectiveCraftItemData') tg.add('cr');
       else if (c === 'QuestObjectiveBringItemToNpcData') {
-        (g.items || []).forEach((id, i) => {
+        (g.items || []).forEach(id => {
           const it = items[id]; if (!it) return;
-          const farm = (it.dropMonsterIds || []).length > 0;
-          if (it.hasRecipe && !farm) tg.add('cr'); else tg.add('fm');
-          lines.push(`Rapporter ${(g.quantities || [])[i] || 1} × ${fr(it.name)}`);
+          if (it.hasRecipe && !(it.dropMonsterIds || []).length) tg.add('cr'); else tg.add('fm');
         });
       }
-      else if (c === 'QuestObjectiveDiscoverMapData' || c === 'QuestObjectiveDiscoverSubAreaData') { tg.add('ex'); disco.push(txt); }
-      else if (c === 'QuestObjectiveFreeFormData') { if (txt) { lines.push(txt); if (COMBAT_WORDS.test(txt)) tg.add('cb'); } }
-      // « Aller voir un PNJ » : trop courant pour être utile
+      else if (c === 'QuestObjectiveDiscoverMapData' || c === 'QuestObjectiveDiscoverSubAreaData') tg.add('ex');
+      else if (c === 'QuestObjectiveFreeFormData' && COMBAT_WORDS.test(txt)) tg.add('cb');
+      if (txt) lines.push({ t: txt, dj: !!(g.dungeons || []).length });
     }
-    // cartes à découvrir : listées si peu nombreuses, sinon résumées
-    if (disco.length > 3) lines.push(`Découvrir ${disco.length} cartes ou zones`); else lines.push(...disco);
     if (dj.size) tg.add('dj');
-    // exploration seule = sans intérêt si la quête fait autre chose : on la garde quand même comme étiquette
     // « Rapporter 1 âme de X » répété pour beaucoup de monstres (L'éternelle moisson : 337) : une seule ligne
-    const SOUL = /^Rapporter \d+ âme de /, souls = lines.filter(l => SOUL.test(l));
-    if (souls.length > 5) { const i = lines.findIndex(l => SOUL.test(l)); lines.splice(i, 0, `Rapporter l’âme de ${souls.length} monstres différents`); for (let j = lines.length - 1; j > i; j--) if (SOUL.test(lines[j])) lines.splice(j, 1); }
-    const seen = new Set(), uniq = lines.filter(l => l && !seen.has(l) && seen.add(l));
+    const SOUL = /^Rapporter \d+ âmes? de /, souls = lines.filter(l => SOUL.test(l.t));
+    if (souls.length > 5) { const i = lines.findIndex(l => SOUL.test(l.t)); lines.splice(i, 0, { t: `Rapporter l’âme de ${souls.length} monstres différents`, dj: souls.every(l => l.dj) }); for (let j = lines.length - 1; j > i; j--) if (SOUL.test(lines[j].t)) lines.splice(j, 1); }
+    applyFixes(qid, lines);
     d.tg = [...tg]; if (!d.tg.length) delete d.tg;
     // début : « PNJ · [x,y] · zone » (jusqu'à 3 endroits) ; les maps d'intérieur (worldMap -1) donnent les coordonnées de l'extérieur
     const sp = ((q.startPosition || []).map(p => { const m = maps[p.mapId], n = npcs[p.npcId]; if (!m && !n) return null;
@@ -102,8 +107,9 @@ async function run(client, FILE) {
     if (q.type) d.ty = q.type;                                         // 0 normale, 1 / 2 anneau vert / jaune, 3 étoile (icônes du jeu)
     if (q.levelMax && q.levelMax !== q.levelMin) d.lx = q.levelMax;    // « Niv. 40-200 »
     d.dj = [...dj]; if (!d.dj.length) delete d.dj; else d.dj.forEach(id => used.add(id));
-    if (uniq.length) d.ft = uniq;   // liste complète, sans « … et N autres »
-    else delete d.ft;
+    if (lines.length) d.ft = lines.map(l => l.t); else delete d.ft;   // liste complète, sans « … et N autres »
+    const fd = lines.flatMap((l, i) => l.dj ? [i] : []);              // indices des lignes de `ft` à faire dans un donjon
+    if (fd.length) d.fd = fd; else delete d.fd;
     if (d.tg) nTag++;
   }
   // PNJ qui remettent certains Dofus : absents de DofusDB, à renseigner à la main si besoin, ex. { 27803: 'Gobdepin (Albuera)' }

@@ -38,12 +38,12 @@ function fluxList(qs) {
 }
 // Section de fiche : titre, compteur de quêtes, bascule liste / graphe
 function fluxSection(qs, target, lab = 'Il reste') {
-  const todo = [...qs].filter(q => SC.quetes[q]), avail = todo.filter(q => qStatus(q) === 'av').length;
+  const todo = [...qs].filter(q => SC.quetes[q]);
   if (!todo.length) return '';
-  const lead = `<div class="ob"><span>${plural(todo.length, 'quête')} à faire${avail ? `, dont ${avail} disponible${avail > 1 ? 's' : ''}` : ''}</span></div>`;
-  if (todo.length < 2) return `<div class="lab">${lab}</div>${lead}${fluxList(todo)}`;
+  const count = plural(todo.length, 'quête') + ' à faire';
+  if (todo.length < 2) return `<div class="lab">${lab}</div><div class="ob"><span>${count}</span></div>${fluxList(todo)}`;
   const seg = `<div class="seg fx-seg" role="group" aria-label="Présentation">${[['graph', 'Graphe'], ['list', 'Liste']].map(([k, l]) => `<button type="button" class="seg-b" data-fxmode="${k}" aria-pressed="${fxMode === k}">${l}</button>`).join('')}</div>`;
-  return `<div class="lab">${lab}</div>${lead}${seg}${fxMode === 'list' ? fluxList(todo) : fluxHtml(todo, target)}`;
+  return `<div class="lab">${lab}</div><div class="fx-head"><span>${count}</span>${seg}</div>${fxMode === 'list' ? fluxList(todo) : fluxHtml(todo, target)}`;
 }
 function fluxHtml(qs, target) {
   const m = fxModel(qs); if (m.S.size < 2) return '';

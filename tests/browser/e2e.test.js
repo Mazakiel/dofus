@@ -463,7 +463,7 @@ test('flux de quêtes : la bascule Liste / Graphe change la présentation et se 
   const r = await p.eval(`(() => { const d = SDZL.find(x => x.n === 'Dofus Forgelave'); sPick = { k: 'd', id: d.id }; renderScList(); renderDetail();
     const det = () => document.getElementById('scDetail'), need = collectPrereqs('d', d.id).q.size, g = !!det().querySelector('svg.fx-svg, .fx svg');
     det().querySelector('[data-fxmode="list"]').click();
-    const rows = det().querySelectorAll('.fx-list .ob').length, svg = !!det().querySelector('.fx svg'), lead = det().querySelector('.fx-seg').previousElementSibling.textContent;
+    const rows = det().querySelectorAll('.fx-list .ob').length, svg = !!det().querySelector('.fx svg'), lead = det().querySelector('.fx-head > span').textContent;
     return { need, g, rows, svg, lead, saved: store.get('fxMode', '') }; })()`);
   assert.equal(r.g, true); assert.equal(r.svg, false); assert.equal(r.rows, r.need); assert.equal(r.saved, 'list');
   assert.match(r.lead, new RegExp('^' + r.need + ' quêtes à faire'));

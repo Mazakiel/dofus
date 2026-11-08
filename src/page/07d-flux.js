@@ -34,7 +34,7 @@ function fxModel(qs) {
 function fluxList(qs) {
   const m = fxModel(qs);
   return `<div class="fx-list">${[...m.S].sort((x, y) => m.rank.get(x) - m.rank.get(y) || (SC.quetes[x].lv || 0) - (SC.quetes[y].lv || 0) || x - y).map(q =>
-    `<div class="ob"><span class="fx-dot ${qStatus(q)}"></span><span><span class="sgo" data-pick="q:${q}">${esc(qName(q))}</span></span><span class="lv">${SC.quetes[q].lv ? 'Niv. ' + SC.quetes[q].lv : ''}</span></div>`).join('')}</div>`;
+    `<div class="ob"><span class="gcn round ${qCls(q)}"></span><span><span class="sgo" data-pick="q:${q}">${esc(qName(q))}</span></span><span class="lv">${SC.quetes[q].lv ? 'Niv. ' + SC.quetes[q].lv : ''}</span></div>`).join('')}</div>`;
 }
 // Section de fiche : titre, compteur de quêtes, bascule liste / graphe
 function fluxSection(qs, target, lab = 'Il reste') {
@@ -47,29 +47,27 @@ function fluxSection(qs, target, lab = 'Il reste') {
 }
 function fluxHtml(qs, target) {
   const m = fxModel(qs); if (m.S.size < 2) return '';
-  const W = Math.max(150, FX_PAD * 2 + (m.nc - 1) * FX_CW), off = (W - (FX_PAD * 2 + (m.nc - 1) * FX_CW)) / 2;
+  const W = Math.max(150, FX_PAD * 2 + (m.nc - 1) * FX_CW), off = (W - (FX_PAD * 2 + (m.nc - 1) * FX_CW)) / 2, R = 9;   // R : rayon des pastilles (toutes de même taille)
   const X = q => off + FX_PAD + m.col.get(q) * FX_CW, Y = q => FX_PAD + m.rank.get(q) * FX_RH;
-  const ty = FX_PAD * 2 + m.maxr * FX_RH + FX_RH * 0.9, bus = ty - 24, H = ty + 34;
+  const ty = FX_PAD * 2 + m.maxr * FX_RH + FX_RH * 0.9, bus = ty - 24, H = ty + FX_PAD;
   const xs = [...m.sinks].map(X), cx = (Math.min(...xs) + Math.max(...xs)) / 2;
   let e = '', n = '';
   for (const q of m.S) for (const p of m.pre.get(q)) {
-    const x1 = X(p), y1 = Y(p) + 8, x2 = X(q), y2 = Y(q) - 8, mid = y2 - FX_RH / 2 + 4;
+    const x1 = X(p), y1 = Y(p) + R, x2 = X(q), y2 = Y(q) - R, mid = y2 - FX_RH / 2 + 4;
     e += `<path class="fx-e${m.dashed.has(p + '>' + q) ? ' d' : ''}" d="M${x1} ${y1}V${x1 === x2 ? y2 : `${mid}H${x2}V${y2}`}"/>`;
   }
-  for (const q of m.sinks) e += `<path class="fx-e" d="M${X(q)} ${Y(q) + 12}V${bus}"/>`;
-  e += `<path class="fx-e" d="M${Math.min(...xs)} ${bus}H${Math.max(...xs)}"/><path class="fx-e" d="M${cx} ${bus}V${ty - 12}"/>`;
-  for (const q of m.S) {
-    const sink = m.sinks.has(q);
-    n += `<circle class="fx-n ${qStatus(q)}${sink ? ' obj' : ''}${isPick('q', q) ? ' sel' : ''}" cx="${X(q)}" cy="${Y(q)}" r="${sink ? 11 : 7.5}" data-pick="q:${q}" data-fx="${q}" tabindex="0" role="button" aria-label="${esc(qName(q))}"/>`;
-  }
-  n += `<circle class="fx-t" cx="${cx}" cy="${ty}" r="12"/>`;
-  return `<div class="fx" aria-label="Flux de quêtes jusqu'à ${esc(target)}"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${e}${n}</svg></div>`;
+  for (const q of m.sinks) e += `<path class="fx-e" d="M${X(q)} ${Y(q) + R}V${bus}"/>`;
+  e += `<path class="fx-e" d="M${Math.min(...xs)} ${bus}H${Math.max(...xs)}"/><path class="fx-e" d="M${cx} ${bus}V${ty - R}"/>`;
+  // les pastilles sont celles des listes (vert disponible, jaune commencée, rouge bloquée, pointillé indisponible)
+  for (const q of m.S) n += `<span class="gcn round ${qCls(q)}${isPick('q', q) ? ' sel' : ''}" style="left:${X(q) - R}px;top:${Y(q) - R}px" data-pick="q:${q}" data-fx="${q}" tabindex="0" role="button" aria-label="${esc(qName(q))}"></span>`;
+  n += `<span class="fx-t" style="left:${cx - R}px;top:${ty - R}px" title="${esc(target)}"></span>`;
+  return `<div class="fx" aria-label="Flux de quêtes jusqu'à ${esc(target)}"><div class="fx-c" style="width:${W}px;height:${H}px"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${e}</svg>${n}</div></div>`;
 }
 // Infobulle au survol d'un rond
 (() => {
   const tip = document.createElement('div'); tip.id = 'fxTip'; document.body.appendChild(tip);
   document.addEventListener('mouseover', ev => {
-    const c = ev.target.closest && ev.target.closest('.fx-n'); if (!c) { tip.style.display = 'none'; return; }
+    const c = ev.target.closest && ev.target.closest('.gcn[data-fx]'); if (!c) { tip.style.display = 'none'; return; }
     const id = +c.dataset.fx, q = SC.quetes[id] || {}, sp = (q.sp || [])[0], ft = (q.ft || [])[0];
     tip.innerHTML = `<b>${esc(qName(id))}</b>${q.lv ? `niv. ${q.lv} · ` : ''}${FX_LBL[qStatus(id)]}${sp ? `<br>Début : ${esc(sp.n || 'PNJ')}${sp.x !== undefined ? ` [${sp.x}, ${sp.y}]` : ''}` : ''}${ft ? `<br>${esc(ft)}` : ''}`;
     tip.style.display = 'block';

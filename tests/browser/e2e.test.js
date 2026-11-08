@@ -449,7 +449,7 @@ test('parcours : en masquant les obtenus, les lignes vides disparaissent et la g
 test('flux de quêtes : la fiche d’un Dofus dessine les quêtes restantes, le survol renseigne, le clic ouvre la quête', { skip }, () => withPage(async p => {
   await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(600);
   const r = await p.eval(`(() => { const d = SDZL.find(x => x.n === 'Dofus Forgelave'); sPick = { k: 'd', id: d.id }; renderScList(); renderDetail();
-    const nodes = [...document.querySelectorAll('#scDetail .fx-n')], need = collectPrereqs('d', d.id).q.size;
+    const nodes = [...document.querySelectorAll('#scDetail .fx .gcn')], need = collectPrereqs('d', d.id).q.size;
     const target = !!document.querySelector('#scDetail .fx-t'), c = nodes[0]; c.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
     const tip = document.getElementById('fxTip'), shown = tip.style.display === 'block', txt = tip.textContent;
     c.dispatchEvent(new MouseEvent('click', { bubbles: true }));

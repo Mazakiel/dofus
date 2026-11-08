@@ -113,7 +113,7 @@ test("l'affichage suit les cases « obtenus » et « indisponibles »", () => {
   assert.equal(P.questShown(1, off), false);         // faite, masquée
   assert.equal(P.questShown(1, all), true);
   assert.equal(P.achShown(1, off), true);            // A1 pas finie, mais Q2 est faisable
-  assert.equal(P.achShown(2, off), false);           // A2 exige le sous-succès A1 : indisponible
+  assert.equal(P.achShown(2, off), true);            // A2 exige le sous-succès A1, mais A1 est faisable : A2 l’est en cascade
   assert.equal(P.achShown(2, all), true);
 });
 

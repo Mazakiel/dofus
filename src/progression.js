@@ -159,7 +159,7 @@
       const a = SACH[id]; if (!a) return false;
       return achAvailable(id) || a.ob.some(oid => { const o = SC.objectifs[oid]; return o && o.t === 'a' && !objDone(oid) && achDoable(o.r, seen); });
     }
-    const achShown = (id, o) => achDone(id) ? !!o.showDone : (!!o.showLocked || achAvailable(id));
+    const achShown = (id, o) => achDone(id) ? !!o.showDone : (!!o.showLocked || achDoable(id));
 
     // ---- cascade : ce que valider (collectPrereqs) ou décocher (collectDependents) un élément entraîne ----
     // Un succès implique ses objectifs (sous-succès, quêtes, autres). Une quête implique ses conditions de départ :

@@ -531,3 +531,6 @@ input.gc:focus-visible{outline-offset:3px}
 @media (max-width:700px){.tgt{width:34px;height:34px}}
 @media (prefers-reduced-motion:reduce){.det,.scrim{transition:none !important}}
 input[type=checkbox]:not(.gc){accent-color:var(--gold)}
+.cz-c{display:flex;flex:none}
+.cz-c .tgt{width:22px;height:22px}.cz-c .tgt svg{width:12px;height:12px}
+@media (max-width:700px){.cz-c .tgt{width:34px;height:34px}}

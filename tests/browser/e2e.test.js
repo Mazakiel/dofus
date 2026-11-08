@@ -469,3 +469,15 @@ test('flux de quêtes : la bascule Liste / Graphe change la présentation et se 
   assert.match(r.lead, new RegExp('^' + r.need + ' quêtes à faire'));
   assert.doesNotMatch(r.lead, /succès/);
 }));
+
+test('fiches : une flèche retour ramène à la fiche d’où l’on vient, et seulement après une navigation de fiche en fiche', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(600);
+  const r = await p.eval(`(() => { const d = SDZL.find(x => x.n === 'Dofus Forgelave'); sPick = { k: 'd', id: d.id }; renderScList(); renderDetail();
+    const det = () => document.getElementById('scDetail'), first = !!det().querySelector('[data-pickback]');
+    det().querySelector('.sgo[data-pick^="a:"]').click();
+    const second = !!det().querySelector('[data-pickback]'), onAch = sPick.k;
+    det().querySelector('[data-pickback]').click();
+    return { first, second, onAch, back: sPick.k + ':' + (sPick.id === d.id), gone: !det().querySelector('[data-pickback]') }; })()`);
+  assert.equal(r.first, false, 'pas de flèche sur une fiche ouverte depuis la liste'); assert.equal(r.second, true); assert.equal(r.onAch, 'a');
+  assert.equal(r.back, 'd:true'); assert.equal(r.gone, true);
+}));

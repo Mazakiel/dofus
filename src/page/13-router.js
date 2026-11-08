@@ -39,7 +39,7 @@ function applyRoute(hash) {
   const s = Route.parse(hash); if (!s) return false;
   routing.applying = true;
   try {
-    sPick = null;
+    sPick = null; pickBack = [];
     if (s.view === 'recompenses') {
       mTab = 'recomp'; sMode = 'recomp'; store.set('sMode', sMode);
       if (s.cat && TOKEN_KIND[s.cat] && TOKEN_KIND[s.cat] !== rKind) { rKind = TOKEN_KIND[s.cat]; store.set('rKind', rKind); rCat = SALL; store.set('rCat', rCat); }

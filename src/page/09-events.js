@@ -12,6 +12,7 @@ function onScClick(e){
   }
   if (e.target.closest('input,label')) return;
   if (e.target.closest('[data-closedet]')) { dismissSheet(); return; }
+  if (e.target.closest('[data-pickback]')) { const prev = pickBack.pop(); if (prev) { sPick = prev; renderScList(); renderDetail(); routeSync(); } return; }
   const gv = e.target.closest('[data-goalview]');
   if (gv) { sMode = 'quetes'; mTab = 'quetes'; store.set('sMode', sMode); sCat = QGOAL; store.set('sCat', sCat); sPick = null; sSearch = ''; document.getElementById('scSearch').value = ''; renderSucces(); document.getElementById('viewSucces').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   const pf = e.target.closest('[data-progf]');
@@ -55,8 +56,9 @@ function onScClick(e){
     return; }
   const pk = e.target.closest('[data-pick]');
   if (pk) {
-    const [k, id] = pk.dataset.pick.split(':'); sPick = { k, id: +id };
-    const fromDetail = !!pk.closest('#scDetail');
+    const [k, id] = pk.dataset.pick.split(':'), fromDetail = !!pk.closest('#scDetail');
+    if (fromDetail && sPick && !(sPick.k === k && sPick.id === +id)) pickBack.push(sPick); else if (!fromDetail) pickBack = [];   // une fiche ouverte depuis une autre se souvient d'où l'on vient
+    sPick = { k, id: +id };
     renderScList(); renderDetail();
     if (fromDetail) { const r = document.getElementById((k === 'a' ? 'ach' : 'q') + id); if (r) r.scrollIntoView({ block: 'nearest' }); }
     else if (isMobile()) openSheet();

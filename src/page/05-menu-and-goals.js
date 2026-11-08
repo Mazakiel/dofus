@@ -54,6 +54,7 @@ for (const d of SDZL) { if (d.pre || d.pa) continue;
 const rewChips = list => list.map(d => `<span class="rew" title="Récompense : ${esc(d.n)}"><img src="${itemImg(d)}" alt="" referrerpolicy="no-referrer">${esc(d.n)}</span>`).join(" ");
 // ---- Sélection : la liste reste compacte, le détail s'affiche dans le panneau de droite ----
 let sPick = null;   // { k:'a'|'q', id }
+let pickBack = [];   // fiches d'où l'on vient quand on navigue de fiche en fiche (flèche retour de la fiche)
 const isPick = (k, id) => !!sPick && sPick.k === k && sPick.id === id;
 const imgErr = el => el.querySelectorAll('img').forEach(img => img.addEventListener('error', () => { img.style.visibility = 'hidden'; }, { once: true }));
 const pctOf = (d, n) => n ? Math.floor(100 * d / n) : 0;

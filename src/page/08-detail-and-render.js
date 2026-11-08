@@ -54,7 +54,9 @@ function questDetailHtml(qid){
 }
 function renderDetail(){
   const el = document.getElementById('scDetail');
-  const CLOSE = '<button class="det-close" data-closedet aria-label="Fermer">✕</button>';
+  if (!sPick) pickBack = [];
+  const prev = pickBack[pickBack.length - 1], prevName = prev ? (prev.k === 'a' ? (SACH[prev.id] || {}).n : prev.k === 'q' ? qName(prev.id) : (rwOf(prev.k, prev.id) || {}).n) : '';
+  const CLOSE = (prev ? `<button class="det-back" data-pickback aria-label="Retour à ${esc(prevName || 'la fiche précédente')}" title="Retour à ${esc(prevName || 'la fiche précédente')}">←</button>` : '') + '<button class="det-close" data-closedet aria-label="Fermer">✕</button>';
   if (sPick && sPick.k === 'a' && SACH[sPick.id]) el.innerHTML = CLOSE + achDetailHtml(SACH[sPick.id]);
   else if (sPick && sPick.k === 'q' && SC.quetes[sPick.id]) el.innerHTML = CLOSE + questDetailHtml(sPick.id);
   else if (sPick && ['d', 't', 'o'].includes(sPick.k) && rwOf(sPick.k, sPick.id)) el.innerHTML = CLOSE + rwDetailHtml(rwOf(sPick.k, sPick.id));

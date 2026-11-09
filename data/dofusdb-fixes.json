@@ -1,8 +1,23 @@
 {
-  "_doc": "Corrections manuelles des données DofusDB, appliquées par scripts/enrich-dofusdb.js. dansDonjon : \"tout\", \"rien\", ou la liste des lignes (texte exact de `ft`) à marquer « dans le donjon ». La règle de base est celle du site : objectif avec need.generated.dungeons non vide.",
+  "_doc": "Corrections manuelles des données DofusDB, appliquées par scripts/enrich-dofusdb.js. dansDonjon : \"tout\", \"rien\", ou la liste des lignes (texte exact de `ft`) à marquer « dans le donjon ». La règle de base est celle du site : objectif avec need.generated.dungeons non vide. donjon : id du donjon des lignes que DofusDB ne rattache à aucun. donjons › id › salles : ordre des salles du donjon (noms tels qu'affichés), les autres suivent d'après leur nom.",
   "quetes": {
-    "692": { "dansDonjon": "tout", "note": "Porte, Kolosso : DofusDB ne rattache pas « Dernière salle des cavernes » au donjon (carte d'entrée)" },
-    "1315": { "dansDonjon": "tout", "note": "Porte, Comte Harebourg : objectif sans carte ni donjon dans DofusDB" },
-    "1775": { "dansDonjon": ["Vaincre Capsaaloocke"], "note": "Voler dans les plumes : combat au milieu du donjon sans donjon rattaché dans DofusDB" }
-  }
+    "692": {
+      "dansDonjon": "tout",
+      "note": "Porte, Kolosso : DofusDB ne rattache pas « Dernière salle des cavernes » au donjon (carte d'entrée)",
+      "donjon": 60
+    },
+    "1315": {
+      "dansDonjon": "tout",
+      "note": "Porte, Comte Harebourg : objectif sans carte ni donjon dans DofusDB",
+      "donjon": 71
+    },
+    "1775": {
+      "dansDonjon": [
+        "Vaincre Capsaaloocke"
+      ],
+      "note": "Voler dans les plumes : combat au milieu du donjon sans donjon rattaché dans DofusDB",
+      "donjon": 3
+    }
+  },
+  "donjons": {}
 }

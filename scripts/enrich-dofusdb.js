@@ -27,6 +27,13 @@ async function run(client, FILE) {
   const subareas = await client.cached('subareas-min.json', () => client.byIds('subareas', [...want.subarea], ['id', 'name']));
   // donjons : toutes les pages (l'API plafonne à 50 par page, géré par le client)
   const dungeons = Object.fromEntries((await client.all('dungeons', ['id', 'name', 'optimalPlayerLevel', 'bosses'])).map(d => [d.id, d]));
+  // salles des donjons (cartes intérieures, porte, sous-zone) : de quoi dire dans quelle salle se fait un objectif
+  const roomsOf = await client.cached('dungeons-rooms.json', () => client.byIds('dungeons', Object.keys(dungeons).map(Number), ['id', 'mapIds', 'entranceMapId', 'exitMapId', 'subarea']));
+  const objMaps = new Set();
+  for (const q of Object.values(full)) for (const s of q.steps) for (const o of s.objectives) if (o.mapId && ((o.need && o.need.generated && o.need.generated.dungeons) || []).length) objMaps.add(o.mapId);
+  const mapRooms = await client.cached('map-rooms.json', () => client.byIds('map-positions', [...objMaps], ['id', 'subAreaId', 'name']));
+  const mapMiss = [...objMaps].filter(id => !mapRooms[id]);
+  if (mapMiss.length) { Object.assign(mapRooms, await client.byIds('map-positions', mapMiss, ['id', 'subAreaId', 'name'])); client.cache.write('map-rooms.json', mapRooms); }
   // noms des boss de donjon
   const bossIds = [...new Set(Object.values(dungeons).flatMap(d => d.bosses || []))].filter(id => !monsters[id]);
   if (bossIds.length) Object.assign(monsters, await client.byIds('monsters', bossIds, ['id', 'name']));
@@ -63,11 +70,37 @@ async function run(client, FILE) {
   // Corrections manuelles des trous de DofusDB (data/dofusdb-fixes.json, à côté du fichier de données)
   const fixFile = path.join(path.dirname(FILE), 'dofusdb-fixes.json');
   const fixes = (fs.existsSync(fixFile) ? JSON.parse(fs.readFileSync(fixFile, 'utf8')).quetes : null) || {};
+  const fixDj = (JSON.parse(fs.existsSync(fixFile) ? fs.readFileSync(fixFile, 'utf8') : '{}').donjons) || {};
   const applyFixes = (qid, lines) => {
     const fx = fixes[qid] && fixes[qid].dansDonjon; if (fx === undefined) return;
+    if (fixes[qid].donjon) lines.forEach(l => { if (!l.d) l.d = fixes[qid].donjon; });   // donjon d'une ligne que DofusDB ne rattache à aucun
     if (fx === 'tout' || fx === 'rien') { lines.forEach(l => { l.dj = fx === 'tout'; }); return; }
     for (const t of fx) { const l = lines.find(x => x.t === t); if (l) l.dj = true; else console.warn(`correction obsolète : quête ${qid}, ligne introuvable « ${t} »`); }
   };
+
+  // Salle d'un objectif dans un donjon : nom de la carte sans le nom du donjon (« Serre du Royalmouth - Sixième salle » → « Sixième salle »)
+  const plain = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const PORTE = 'Porte du donjon', SANS = 'Salle non précisée', HORS = 'Hors du donjon';
+  function roomLabel(dId, mapId) {
+    if (!mapId) return SANS;
+    const r = roomsOf[dId] || {}, g = dungeons[dId] || {}, m = mapRooms[mapId] || {}, name = fr(m.name), dn = fr(g.name);
+    const byName = name && dn && plain(name).startsWith(plain(dn));
+    const inside = (r.mapIds || []).includes(mapId) || (r.subarea && m.subAreaId === r.subarea) || byName;
+    if (!inside) return [r.entranceMapId, r.exitMapId].includes(mapId) ? PORTE : HORS;
+    const cut = byName ? name.slice(dn.length).replace(/^\s*[-–:]\s*/, '').trim() : '';
+    return cut || name || 'Salle ' + mapId;
+  }
+  const ORD = ['premiere', 'deuxieme', 'troisieme', 'quatrieme', 'cinquieme', 'sixieme', 'septieme', 'huitieme', 'neuvieme', 'dixieme', 'onzieme', 'douzieme', 'treizieme', 'quatorzieme', 'quinzieme', 'seizieme'];
+  function roomRank(l) {
+    if (l === PORTE) return 0; if (l === SANS) return 1000; if (l === HORS) return 1100;
+    const p = plain(l), n = ORD.findIndex(w => p.includes(w));
+    if (n >= 0) return 100 + n * 10;
+    if (/antichambre|entree|hall|vestibule/.test(p)) return 10;
+    if (/sortie/.test(p)) return 900;
+    if (/trone|derniere salle|boss|repaire/.test(p)) return 800;
+    return 500;
+  }
+  const roomHits = [];   // { qid, i (ligne de ft), d (donjon), l (salle) }
 
   const used = new Set();
   let nTag = 0;
@@ -92,13 +125,14 @@ async function run(client, FILE) {
       }
       else if (c === 'QuestObjectiveDiscoverMapData' || c === 'QuestObjectiveDiscoverSubAreaData') tg.add('ex');
       else if (c === 'QuestObjectiveFreeFormData' && COMBAT_WORDS.test(txt)) tg.add('cb');
-      if (txt) lines.push({ t: txt, dj: !!(g.dungeons || []).length });
+      if (txt) lines.push({ t: txt, dj: !!(g.dungeons || []).length, d: (g.dungeons || [])[0], m: o.mapId || 0 });
     }
     if (dj.size) tg.add('dj');
     // « Rapporter 1 âme de X » répété pour beaucoup de monstres (L'éternelle moisson : 337) : une seule ligne
     const SOUL = /^Rapporter \d+ âmes? de /, souls = lines.filter(l => SOUL.test(l.t));
     if (souls.length > 5) { const i = lines.findIndex(l => SOUL.test(l.t)); lines.splice(i, 0, { t: `Rapporter l’âme de ${souls.length} monstres différents`, dj: souls.every(l => l.dj) }); for (let j = lines.length - 1; j > i; j--) if (SOUL.test(lines[j].t)) lines.splice(j, 1); }
     applyFixes(qid, lines);
+    if (fixes[qid] && fixes[qid].donjon) dj.add(fixes[qid].donjon);
     d.tg = [...tg]; if (!d.tg.length) delete d.tg;
     // début : « PNJ · [x,y] · zone » (jusqu'à 3 endroits) ; les maps d'intérieur (worldMap -1) donnent les coordonnées de l'extérieur
     const sp = ((q.startPosition || []).map(p => { const m = maps[p.mapId], n = npcs[p.npcId]; if (!m && !n) return null;
@@ -107,16 +141,27 @@ async function run(client, FILE) {
     if (q.type) d.ty = q.type;                                         // 0 normale, 1 / 2 anneau vert / jaune, 3 étoile (icônes du jeu)
     if (q.levelMax && q.levelMax !== q.levelMin) d.lx = q.levelMax;    // « Niv. 40-200 »
     d.dj = [...dj]; if (!d.dj.length) delete d.dj; else d.dj.forEach(id => used.add(id));
+    delete d.fr;
     if (lines.length) d.ft = lines.map(l => l.t); else delete d.ft;   // liste complète, sans « … et N autres »
+    lines.forEach((l, i) => { if (l.dj && l.d) roomHits.push({ qid, i, d: l.d, l: roomLabel(l.d, l.m) }); });
     const fd = lines.flatMap((l, i) => l.dj ? [i] : []);              // indices des lignes de `ft` à faire dans un donjon
     if (fd.length) d.fd = fd; else delete d.fd;
     if (d.tg) nTag++;
   }
+  // Salles de chaque donjon, dans l'ordre : réglage manuel (data/dofusdb-fixes.json › donjons › id › salles) puis rang déduit du nom
+  const slOf = {};
+  for (const id of new Set(roomHits.map(h => h.d))) {
+    const labels = [...new Set(roomHits.filter(h => h.d === id).map(h => h.l))], manual = (fixDj[id] && fixDj[id].salles) || [];
+    const pos = l => { const k = manual.indexOf(l); return k >= 0 ? -1000 + k : roomRank(l); };
+    slOf[id] = labels.sort((a, b) => pos(a) - pos(b) || a.localeCompare(b, 'fr'));
+  }
+  for (const h of roomHits) { const d = data.quetes[h.qid]; (d.fr = d.fr || []).push([h.i, h.d, slOf[h.d].indexOf(h.l)]); }   // fr : [ligne de ft, donjon, salle]
   // PNJ qui remettent certains Dofus : absents de DofusDB, à renseigner à la main si besoin, ex. { 27803: 'Gobdepin (Albuera)' }
   const DOFUS_PNJ = {};
   for (const z of data.dofus || []) { if (DOFUS_PNJ[z.id]) z.pnj = DOFUS_PNJ[z.id]; }
+  roomHits.forEach(h => used.add(h.d));
   data.donjons = Object.fromEntries([...used].sort((a, b) => a - b).map(id => { const g = dungeons[id] || {};
-    return [id, { n: fr(g.name) || `Donjon ${id}`, lv: g.optimalPlayerLevel || 0, b: (g.bosses || []).map(b => fr((monsters[b] || {}).name)).filter(Boolean) }]; }));
+    return [id, { n: fr(g.name) || `Donjon ${id}`, lv: g.optimalPlayerLevel || 0, b: (g.bosses || []).map(b => fr((monsters[b] || {}).name)).filter(Boolean), ...(slOf[id] ? { sl: slOf[id] } : {}) }]; }));
   fs.writeFileSync(FILE, JSON.stringify(data));
   const cnt = {};
   for (const d of Object.values(data.quetes)) for (const t of d.tg || []) cnt[t] = (cnt[t] || 0) + 1;

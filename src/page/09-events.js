@@ -72,7 +72,7 @@ function onScClick(e){
   }
 }
 document.getElementById('scList').addEventListener('click', onScClick);
-document.getElementById('scList').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.row[data-pick]')) { e.preventDefault(); e.target.click(); } });
+document.getElementById('scList').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.row[data-pick], .ob[data-pick]')) { e.preventDefault(); e.target.click(); } });
 document.getElementById('scDetail').addEventListener('click', onScClick);
 document.getElementById('scDetail').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-godj]')) { e.preventDefault(); e.target.click(); } });
 // Succès : même principe que les quêtes

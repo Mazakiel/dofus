@@ -112,6 +112,14 @@ function renderDjTree(){
   const cur = SDJ[sDj], st = cur ? djStats(sDj) : null;
   document.getElementById('catBtn').innerHTML = cur ? `<span class="cb-n">${esc(cur.n)}</span><span class="pct">${st.d}/${st.n}</span><span aria-hidden="true">▾</span>` : 'Choisir un donjon';
 }
+// Vue d'ensemble d'un donjon : ce qu'il y a à y faire pour les quêtes affichées, salle par salle (ordre : SDJ[id].sl), objectif puis quête
+function djPlanHtml(djId, qids){
+  const sl = (SDJ[djId] || {}).sl || [], rooms = sl.map(() => []);
+  for (const qid of qids) { const q = SC.quetes[qid] || {}; for (const [i, d, r] of q.fr || []) if (d === djId && rooms[r] && q.ft && q.ft[i]) rooms[r].push({ qid, t: q.ft[i] }); }
+  const body = sl.map((label, r) => rooms[r].length ? `<div class="dj-room"><span>${esc(label)}</span><span>${rooms[r].length}</span></div>`
+    + rooms[r].map(x => `<div class="ob go${qDoneS(x.qid) ? ' done' : ''}${sPick && sPick.k === 'q' && sPick.id === x.qid ? ' sel' : ''}" data-pick="q:${x.qid}" role="link" tabindex="0"><span class="x">•</span><span>${esc(x.t)} <span class="muted">· ${esc(qName(x.qid))}</span></span></div>`).join('') : '').join('');
+  return body ? `<div class="dj-plan"><div class="lab">À faire dans le donjon</div>${body}</div>` : '';
+}
 function renderDjMain(el){
   const dj = SDJ[sDj];
   if (!dj) { el.innerHTML = '<div class="empty">Choisis un donjon à gauche.</div>'; return; }
@@ -120,7 +128,7 @@ function renderDjMain(el){
   const shown = shownAll.filter(bar.keep).sort((x, y) => lvl(x) - lvl(y) || qName(x).localeCompare(qName(y), 'fr'));
   el.innerHTML = head(esc(dj.n), `${st.d} / ${st.n} faites · ${plural(shown.length, 'affichée')}`)
     + `<div class="dj-meta"><span>Niveau optimal <b>${dj.lv}</b></span>${dj.b.length ? `<span>Boss <b>${esc(dj.b.join(', '))}</b></span>` : ''}${ddbLink('j', sDj)}${dj.dp ? `<a class="ddb" href="${DPLN}${dj.dp}" target="_blank" rel="noopener noreferrer" title="Guide du donjon sur Dofus pour les Noobs">Guide Dofus pour les Noobs ↗</a>` : ''}</div>`
-    + bar.chips + (shown.length ? shown.map(id => questRow(id)).join('') : EMPTY);
+    + bar.chips + djPlanHtml(sDj, shown) + (shown.length ? `<div class="lab">Quêtes</div>` + shown.map(id => questRow(id)).join('') : EMPTY);
   imgErr(el);
 }
 function renderScList(){

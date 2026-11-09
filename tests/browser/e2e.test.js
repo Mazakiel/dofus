@@ -294,6 +294,35 @@ test('quête commencée ou bloquée : ses prérequis sont proposés en cascade, 
   assert.equal(await p.eval(`qState[${q}]`), 's'); assert.equal(await p.eval(`qDoneS(${pre})`), false);
 }));
 
+const DJ_PLAN = async (p) => {
+  await p.eval(`localStorage.clear(); 1`); await p.reload();
+  await p.eval(`sShowLocked = true; sShowDone = true; 1`);   // toutes les quêtes sont affichées
+  const dj = await p.eval(`DJ_IDS.find(id => (SDJ[id].sl || []).length > 1 && djOwn(id).filter(qShown).some(q => (SC.quetes[q].fr || []).some(f => f[1] === id)))`);
+  assert.ok(dj, 'un donjon avec des salles');
+  await p.eval(`mTab='donjons'; sMode='donjons'; sDj=${dj}; sPick=null; renderSucces(); 1`); await p.wait(300);
+  return dj;
+};
+test('donjon : la vue salle par salle liste objectif et quête, un clic ouvre la quête dans le panneau', { skip }, () => withPage(async p => {
+  const dj = await DJ_PLAN(p);
+  assert.ok(await p.eval(`document.querySelectorAll('#scList .dj-plan .dj-room').length`) >= 1, 'des salles');
+  const row = await p.eval(`(() => { const r = document.querySelector('#scList .dj-plan .ob[data-pick]'); return { pick: r.dataset.pick, txt: r.textContent }; })()`);
+  assert.match(row.txt, /·/, 'l\'objectif est suivi du nom de la quête');
+  const [, qid] = row.pick.split(':');
+  assert.ok(row.txt.includes(await p.eval(`qName(${qid})`)), 'nom de la quête sur la ligne');
+  await p.eval(`document.querySelector('#scList .dj-plan .ob[data-pick]').click(); 1`); await p.wait(300);
+  assert.deepEqual(await p.eval('sPick'), { k: 'q', id: +qid });
+  assert.match(await p.eval(`document.getElementById('scDetail').textContent`), new RegExp((await p.eval(`qName(${qid})`)).slice(0, 12).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  // les filtres s'appliquent : une quête faite disparaît de la vue quand « Afficher les obtenus » est décoché
+  await p.eval(`sShowDone = false; sq.add(${qid}); renderSucces(); 1`); await p.wait(200);
+  assert.equal(await p.eval(`!!document.querySelector('#scList .dj-plan [data-pick="q:${qid}"]')`), false, 'quête faite masquée par le filtre');
+}));
+
+test('donjon (mobile) : un clic sur une ligne de la vue salle par salle ouvre la quête en feuille', { skip }, () => withPage(async p => {
+  await DJ_PLAN(p);
+  await p.eval(`document.querySelector('#scList .dj-plan .ob[data-pick]').click(); 1`); await p.wait(300);
+  assert.equal(await p.eval(`document.body.classList.contains('sheet-open')`), true);
+}, { width: 390, height: 800, mobile: true }));
+
 test('annuler : une action en masse affiche un bandeau, « Annuler » rend la progression d\'avant', { skip }, () => withPage(async p => {
   await p.eval(`localStorage.clear(); 1`); await p.reload();
   const avant = await p.eval(`JSON.stringify(P.snapshot())`);

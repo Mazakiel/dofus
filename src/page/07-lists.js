@@ -119,7 +119,7 @@ function renderDjMain(el){
   const shownAll = djOwn(sDj).filter(qShown), bar = progBar(shownAll);
   const shown = shownAll.filter(bar.keep).sort((x, y) => lvl(x) - lvl(y) || qName(x).localeCompare(qName(y), 'fr'));
   el.innerHTML = head(esc(dj.n), `${st.d} / ${st.n} faites · ${plural(shown.length, 'affichée')}`)
-    + `<div class="dj-meta"><span>Niveau optimal <b>${dj.lv}</b></span>${dj.b.length ? `<span>Boss <b>${esc(dj.b.join(', '))}</b></span>` : ''}${dj.dp ? `<a class="ddb" href="${DPLN}${dj.dp}" target="_blank" rel="noopener noreferrer" title="Guide du donjon sur Dofus pour les Noobs">Guide Dofus pour les Noobs ↗</a>` : ''}</div>`
+    + `<div class="dj-meta"><span>Niveau optimal <b>${dj.lv}</b></span>${dj.b.length ? `<span>Boss <b>${esc(dj.b.join(', '))}</b></span>` : ''}${ddbLink('j', sDj)}${dj.dp ? `<a class="ddb" href="${DPLN}${dj.dp}" target="_blank" rel="noopener noreferrer" title="Guide du donjon sur Dofus pour les Noobs">Guide Dofus pour les Noobs ↗</a>` : ''}</div>`
     + bar.chips + (shown.length ? shown.map(id => questRow(id)).join('') : EMPTY);
   imgErr(el);
 }

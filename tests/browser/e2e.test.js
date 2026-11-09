@@ -267,6 +267,7 @@ test('fiche de quête : la ligne Donjon mène à la page du donjon, le statut n\
   const dj = await p.eval(`+document.querySelector('#scDetail [data-godj]').dataset.godj`);
   await p.eval(`document.querySelector('#scDetail [data-godj]').click(); 1`); await p.wait(300);
   assert.equal(await p.eval(`sMode`), 'donjons'); assert.equal(await p.eval(`sDj`), dj);
+  assert.equal(await p.eval(`document.querySelector('#scList .dj-meta a.ddb').href`), 'https://dofusdb.fr/fr/database/dungeon/' + dj, 'lien DofusDB du donjon');
   // statut : pas de pastille « Commencée / Bloquée » en doublon des boutons
   await p.eval(`mTab='quetes'; sMode='quetes'; sPick={k:'q',id:${q}}; qState[${q}]='b'; renderSucces(); 1`); await p.wait(200);
   assert.equal(await p.eval(`!!document.querySelector('#scDetail .stat .badge.bl')`), false, 'pas de badge Bloquée en plus du bouton');

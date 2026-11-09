@@ -4,9 +4,9 @@ const copyBtn = (text, what = 'le nom') => `<button type="button" class="copy" d
 // Coordonnées d'une carte : le bouton copie la commande de déplacement du jeu ([-63,-93] → « /travel -63 -93 »), à coller dans le chat
 const travelCmd = p => `/travel ${p.x} ${p.y}`;
 const coordBtn = p => p.x == null ? '' : `<button type="button" class="coord" data-copy="${travelCmd(p)}" title="Copier ${travelCmd(p)}" aria-label="Copier la commande ${travelCmd(p)}">[${p.x},${p.y}]</button>`;
-// Fiche DofusDB (adresses du site : quêtes et objets au singulier, succès au pluriel)
+// Fiche DofusDB (adresses du site : quêtes, objets et donjons au singulier, succès au pluriel)
 const DDB = 'https://dofusdb.fr/fr/database/';
-const ddbUrl = { q: id => `${DDB}quest/${id}`, a: id => `${DDB}achievements/${id}`, d: id => `${DDB}item/${id}` };
+const ddbUrl = { q: id => `${DDB}quest/${id}`, a: id => `${DDB}achievements/${id}`, d: id => `${DDB}item/${id}`, j: id => `${DDB}dungeon/${id}` };
 const DPLN = 'https://www.dofuspourlesnoobs.com';   // guides de donjons : une page par donjon, adresses dans data/dpln-links.json
 const ddbLink = (kind, id, label = 'Voir sur DofusDB') => `<a class="ddb" href="${ddbUrl[kind](id)}" target="_blank" rel="noopener noreferrer">${label} ↗</a>`;
 

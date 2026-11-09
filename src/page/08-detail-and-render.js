@@ -96,7 +96,7 @@ document.getElementById('scTree').addEventListener('click', e => {
   const rc = e.target.closest('[data-rcat]');
   if (rc) {
     rCat = +rc.dataset.rcat; store.set('rCat', rCat); sPick = null; sSearch = ''; document.getElementById('scSearch').value = '';
-    document.querySelector('.side').classList.remove('open'); document.getElementById('catBtn').setAttribute('aria-expanded', 'false');
+    closeCats();
     renderScTree(); renderScList(); renderDetail(); routeSync();
     if (isMobile()) window.scrollTo({ top: 0 });
     return;
@@ -104,7 +104,7 @@ document.getElementById('scTree').addEventListener('click', e => {
   const dj = e.target.closest('[data-sdj]');
   if (dj) {
     sDj = +dj.dataset.sdj; store.set('sDj', sDj); sPick = null;
-    document.querySelector('.side').classList.remove('open'); document.getElementById('catBtn').setAttribute('aria-expanded', 'false');
+    closeCats();
     renderScTree(); renderScList(); renderDetail(); routeSync();
     if (isMobile()) window.scrollTo({ top: 0 });
     return;
@@ -113,7 +113,7 @@ document.getElementById('scTree').addEventListener('click', e => {
   const id = +c.dataset.scat;
   sCat = id; store.set('sCat', id);
   sSearch = ''; document.getElementById('scSearch').value = '';
-  document.querySelector('.side').classList.remove('open'); document.getElementById('catBtn').setAttribute('aria-expanded', 'false');
+  closeCats();
   renderScTree(); renderScList(); routeSync();
   if (isMobile()) window.scrollTo({ top: 0 });
 });

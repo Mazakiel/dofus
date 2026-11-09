@@ -101,7 +101,7 @@ function onScChange(e){
 document.getElementById('scList').addEventListener('change', onScChange);
 document.getElementById('scDetail').addEventListener('change', onScChange);
 let scSearchT;
-document.getElementById('scSearch').addEventListener('input', e => { clearTimeout(scSearchT); scSearchT = setTimeout(() => { sSearch = e.target.value; renderScList(); if (sMode === 'donjons') renderScTree(); }, 200); });
+document.getElementById('scSearch').addEventListener('input', e => { clearTimeout(scSearchT); scSearchT = setTimeout(() => { sSearch = e.target.value; if (sSearch) closeCats(); renderScList(); if (sMode === 'donjons') renderScTree(); }, 200); });
 document.getElementById('scLevel').addEventListener('change', e => { P.state.level = Math.max(1, Math.min(200, +e.target.value || 200)); renderSucces(); });
 document.getElementById('scShowDone').onchange = e => { sShowDone = e.target.checked; store.set('sShowDone', sShowDone); renderSucces(); };
 document.getElementById('scShowLocked').onchange = e => { sShowLocked = e.target.checked; store.set('sShowLocked', sShowLocked); renderSucces(); };

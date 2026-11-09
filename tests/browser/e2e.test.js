@@ -228,6 +228,22 @@ test('navigation mobile : retour ferme la fiche au lieu de quitter la vue', { sk
   assert.ok(await p.eval('history.length') >= before);
 }, { width: 390, height: 800, mobile: true }));
 
+test('mobile : un onglet s\'ouvre sur la liste des catégories, le choix d\'une catégorie affiche sa liste', { skip }, () => withPage(async p => {
+  const vis = sel => p.eval(`(() => { const e = document.querySelector('${sel}'); return !!e && e.offsetParent !== null && e.offsetHeight > 0; })()`);
+  for (const tab of ['succes', 'quetes', 'donjons']) {
+    await p.eval(`document.querySelector('#tabbar [data-tab="${tab}"]').click(); 1`); await p.wait(300);
+    assert.equal(await vis('#scTree'), true, tab + ' : les catégories sont affichées');
+    assert.equal(await vis('#scList .row'), false, tab + ' : la liste est masquée derrière');
+    const sel = tab === 'donjons' ? '[data-sdj]' : '[data-scat]';
+    await p.eval(`document.querySelector('#scTree ${sel}').click(); 1`); await p.wait(300);
+    assert.equal(await vis('#scTree'), false, tab + ' : le choix referme les catégories');
+    assert.equal(await vis('#scList'), true, tab + ' : la liste est de retour');
+    await p.eval(`document.getElementById('catBtn').click(); 1`); await p.wait(200);
+    assert.equal(await p.eval(`document.body.classList.contains('cats-first')`), false, 'le bouton de catégorie reste un menu déroulant');
+    await p.eval(`closeCats(); 1`);
+  }
+}, { width: 390, height: 800, mobile: true }));
+
 test('annuler : une action en masse affiche un bandeau, « Annuler » rend la progression d\'avant', { skip }, () => withPage(async p => {
   await p.eval(`localStorage.clear(); 1`); await p.reload();
   const avant = await p.eval(`JSON.stringify(P.snapshot())`);

@@ -407,6 +407,11 @@ input.gc:focus-visible{outline-offset:3px}
   .cat-btn .pct{color:var(--gold-txt);font-weight:800}
   #scTree{display:none;position:absolute;left:0;right:0;top:100%;max-height:55vh;overflow:auto;background:var(--win);border-bottom:1px solid var(--line);box-shadow:0 12px 24px rgba(0,0,0,.2);z-index:7;position:absolute}
   .side.open #scTree{display:block}
+  /* arrivée sur un onglet : les catégories remplacent la liste, en pleine page */
+  body.cats-first #scList{display:none}
+  body.cats-first #scTree{position:static;max-height:none;box-shadow:none;border-bottom:0}
+  body.cats-first .cat-btn{display:none}
+  body.cats-first .side{position:static}
   .sc-cat{min-height:48px;align-items:center;padding:8px 14px;font-size:.95rem}
 
   /* lignes plus hautes, cases plus grandes */

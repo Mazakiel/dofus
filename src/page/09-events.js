@@ -8,7 +8,7 @@ function onScClick(e){
   if (qs && sPick && sPick.k === 'q') {   // Commencée / Bloquée : un second clic retire l'état
     const id = sPick.id, v = qs.dataset.qst;
     if (qState[id] === v) delete qState[id]; else qState[id] = v;
-    renderSucces(); return;
+    renderSucces(); offerPrereqs(id, v); return;
   }
   if (e.target.closest('input,label')) return;
   if (e.target.closest('[data-closedet]')) { dismissSheet(); return; }

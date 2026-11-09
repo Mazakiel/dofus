@@ -39,7 +39,7 @@ function swipeApply(info) {
   }
   const v = act === 'st' ? 's' : 'b';
   withUndo(qState[id] === v ? 'Statut retiré' : act === 'st' ? 'Quête commencée' : 'Quête bloquée', () => { if (qState[id] === v) delete qState[id]; else qState[id] = v; });
-  renderSucces();
+  renderSucces(); offerPrereqs(id, v);
 }
 (() => {
   const list = document.getElementById('scList');

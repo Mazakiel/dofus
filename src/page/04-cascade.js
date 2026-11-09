@@ -2,9 +2,9 @@
 // ---- Boîte de dialogue : aperçu en arbre de ce qui sera validé en cascade ----
 let DLG = null;   // { k:'a'|'q', id, a:Set, q:Set, o:Set, open:Set('a12'|'q34') }
 const dlgEl = document.getElementById('scDialog');
-function openDlg(k, id){
+function openDlg(k, id, st){   // st : 's' / 'b' quand la quête est seulement commencée / bloquée (ses prérequis sont proposés, pas elle)
   const acc = collectPrereqs(k, id);
-  DLG = { k, id, a: new Set(acc.a), q: new Set(acc.q), o: new Set(acc.o), d: new Set(acc.d), open: new Set() };
+  DLG = { k, id, st, a: new Set(acc.a), q: new Set(acc.q), o: new Set(acc.o), d: new Set(acc.d), open: new Set() };
   renderDlg();
   if (typeof dlgEl.showModal === 'function') dlgEl.showModal(); else dlgEl.setAttribute('open', '');
 }
@@ -103,7 +103,7 @@ function dlAchKids(aid, seen){
 function alsoCompleted(){
   const before = new Set(SC.succes.filter(a => achDone(a.id)).map(a => a.id));
   return P.simulate(() => {   // on applique la sélection, on regarde ce qui devient complet, puis l'état d'origine revient
-    DLG.a.forEach(x => sdone.add(x)); DLG.q.forEach(x => sq.add(x)); DLG.o.forEach(x => sodone.add(x)); if (DLG.k === 'a') sdone.add(DLG.id); else if (DLG.k === 'q') sq.add(DLG.id);
+    DLG.a.forEach(x => sdone.add(x)); DLG.q.forEach(x => sq.add(x)); DLG.o.forEach(x => sodone.add(x)); if (DLG.k === 'a') sdone.add(DLG.id); else if (DLG.k === 'q' && !DLG.st) sq.add(DLG.id);
     return SC.succes.filter(a => !before.has(a.id) && sVisible(a) && achDone(a.id) && a.id !== DLG.id);
   });
 }
@@ -117,6 +117,7 @@ function renderDlg(){
   document.getElementById('scDlgTitle').textContent = isA ? r.n : isD ? dz.n : qName(DLG.id);
   document.getElementById('scDlgSub').textContent = isA ? `${catPath(r.c)} — tu viens de le marquer obtenu. Tout ce qu’il contient et exige sera validé.`
     : isD ? `Dofus ${dz.pa ? "qui nécessite" : dz.pre ? "lié à" : "donné par"} ${sdzSrc(dz)} — tu viens de le marquer obtenu. Tout ce qu’il exige sera validé.`
+    : DLG.st ? `Quête${q.lv ? ' niv. ' + q.lv : ''} — tu viens de la marquer ${DLG.st === 's' ? 'commencée' : 'bloquée'}. Ses prérequis peuvent être validés ; elle reste ${DLG.st === 's' ? 'commencée' : 'bloquée'}.`
     : `Quête${q.lv ? ' niv. ' + q.lv : ''} — tu viens de la cocher. Ses prérequis seront validés.`;
   const tot = collectPrereqs(DLG.k, DLG.id);
   // « 53 quêtes », ou « 40 / 53 quêtes » si tu as retiré des éléments ; rien si zéro
@@ -127,7 +128,7 @@ function renderDlg(){
   const alsoIds = new Set(also.map(a => a.id)); if (DLG.k === "a") alsoIds.add(DLG.id);
   const dzAlso = SDZL.filter(d => !sdzOwned(d) && (DLG.k !== "d" || d.id !== DLG.id) && (DLG.d.has(d.id) || (!d.pre && d.a && alsoIds.has(d.a)) || (!d.pre && d.q && DLG.q.has(d.q))));
   document.getElementById('scDlgSum').innerHTML =
-    (parts.length ? `${isA ? 'Avec ce succès' : isD ? 'Avec ce Dofus' : 'Avec cette quête'}, tu valides aussi ${parts.join(' et ')}.` : `Rien d’autre n’est sélectionné : seul${isA ? ' ce succès' : isD ? ' ce Dofus' : 'e cette quête'} sera validé${isA || isD ? '' : 'e'}.`)
+    (parts.length ? `${isA ? 'Avec ce succès' : isD ? 'Avec ce Dofus' : DLG.st ? 'Pour cette quête' : 'Avec cette quête'}, tu valides aussi ${parts.join(' et ')}.` : `Rien d’autre n’est sélectionné : seul${isA ? ' ce succès' : isD ? ' ce Dofus' : 'e cette quête'} sera validé${isA || isD ? '' : 'e'}.`)
     + (dzAlso.length ? `<div style="margin-top:4px">Dofus obtenus en plus (${dzAlso.length}) : ${rewChips(dzAlso)}</div>` : '')
     + (also.length ? `<div style="margin-top:4px">Succès obtenus en plus (${also.length}) : ${also.slice(0, 10).map(a => `<b>${esc(a.n)}</b>`).join(', ')}${also.length > 10 ? ` et ${also.length - 10} autres` : ''}.</div>` : '');
   document.getElementById('scDlgApply').textContent = 'Valider';
@@ -159,7 +160,7 @@ dlgEl.addEventListener('click', e => {
     if (k === 'apply') { DLG.a.forEach(id => sdone.add(id)); DLG.q.forEach(id => sq.add(id)); DLG.o.forEach(id => sodone.add(id)); DLG.d.forEach(id => setSdzOwned(SDZ[id], true)); }
     if (k === 'apply') {
       if (DLG.k === 'a') sdone.add(DLG.id);
-      else if (DLG.k === 'q') sq.add(DLG.id);
+      else if (DLG.k === 'q') { if (!DLG.st) sq.add(DLG.id); }   // commencée / bloquée : seuls ses prérequis sont validés
       else { const d = SDZ[DLG.id]; setSdzOwned(d, true); }   // Dofus : obtenu (calculé, ou forcé s'il manque des coches)
     }
     if (before && JSON.stringify(before) !== JSON.stringify(P.snapshot())) showUndo('Éléments cochés', before);
@@ -171,6 +172,12 @@ dlgEl.addEventListener('cancel', e => { e.preventDefault(); if (DLG) { closeDlg(
 // Pas de cascade : une simple confirmation évite les coches par accident. Dans tous les cas on redessine (la case est remise à son état réel).
 function confirmCheck(msg, apply){
   askConfirm(msg, 'Valider').then(ok => { if (ok) { apply(); closeSheet(); } saveSc(); });
+}
+// Une quête passée en « Commencée » ou « Bloquée » : si ses prérequis ne sont pas faits, on propose de les valider comme pour une quête faite
+function offerPrereqs(id, v){
+  if (qState[id] !== v || qDoneS(id)) return;   // statut retiré, ou quête déjà faite
+  const acc = collectPrereqs('q', id);
+  if (acc.a.size + acc.q.size + acc.o.size + acc.d.size) openDlg('q', id, v);
 }
 function saveSc(){ for (const k of Object.keys(qState)) if (qDoneS(+k)) delete qState[k]; renderSucces(); }
 

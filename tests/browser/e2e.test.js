@@ -273,6 +273,26 @@ test('fiche de quête : la ligne Donjon mène à la page du donjon, le statut n\
   assert.equal(await p.eval(`document.querySelector('#scDetail [data-qst="b"]').getAttribute('aria-pressed')`), 'true');
 }));
 
+test('quête commencée ou bloquée : ses prérequis sont proposés en cascade, elle ne devient pas faite', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); 1`); await p.reload();
+  const q = await p.eval(`Object.keys(SC.quetes).map(Number).find(id => (SC.quetes[id].pre || []).some(x => SC.quetes[x]) && !qDoneS(id))`);
+  const pre = await p.eval(`SC.quetes[${q}].pre.filter(x => SC.quetes[x])[0]`);
+  for (const [btn, v] of [['s', 's'], ['b', 'b']]) {
+    await p.eval(`delete qState[${q}]; sq.delete(${pre}); mTab='quetes'; sMode='quetes'; sPick={k:'q',id:${q}}; renderSucces(); 1`); await p.wait(200);
+    await p.eval(`document.querySelector('#scDetail [data-qst="${btn}"]').click(); 1`); await p.wait(300);
+    assert.equal(await p.eval(`document.getElementById('scDialog').open`), true, 'la fenêtre de cascade s\'ouvre');
+    assert.equal(await p.eval(`DLG.st`), v);
+    await p.eval(`document.querySelector('[data-dlact="apply"]').click(); 1`); await p.wait(300);
+    assert.equal(await p.eval(`qDoneS(${pre})`), true, 'le prérequis est validé');
+    assert.equal(await p.eval(`qDoneS(${q})`), false, 'la quête elle-même n\'est pas faite');
+    assert.equal(await p.eval(`qState[${q}]`), v, 'elle garde son statut');
+  }
+  // « Annuler » : le statut reste, rien n'est validé
+  await p.eval(`delete qState[${q}]; sq.delete(${pre}); renderSucces(); sPick={k:'q',id:${q}}; renderScList(); renderDetail(); document.querySelector('#scDetail [data-qst="s"]').click(); 1`); await p.wait(300);
+  await p.eval(`document.querySelector('[data-dlact="cancel"]').click(); 1`); await p.wait(300);
+  assert.equal(await p.eval(`qState[${q}]`), 's'); assert.equal(await p.eval(`qDoneS(${pre})`), false);
+}));
+
 test('annuler : une action en masse affiche un bandeau, « Annuler » rend la progression d\'avant', { skip }, () => withPage(async p => {
   await p.eval(`localStorage.clear(); 1`); await p.reload();
   const avant = await p.eval(`JSON.stringify(P.snapshot())`);

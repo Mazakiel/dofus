@@ -58,16 +58,13 @@
   <section class="win body" id="viewSucces">
     <aside class="side">
       <div class="sc-modes" role="tablist"><button class="sc-mode" data-smode="recomp" aria-label="Récompenses" title="Récompenses"><span class="ti fbk c-dofus"><img src="https://api.dofusdb.fr/img/achievements/459.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c4.2 0 7.5 6.3 7.5 11.5A7.5 7.5 0 0 1 12 21a7.5 7.5 0 0 1-7.5-7.5C4.5 8.3 7.8 2 12 2z"/></svg></span></button><button class="sc-mode" data-smode="succes" aria-label="Succès" title="Succès"><span class="ti fbk c-trophy"><img src="https://api.dofusdb.fr/img/achievements/82.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h12V9a6 6 0 0 1-5 5.9v2.1h3.2V19.5H18V22H6v-2.5h1.8V17H11v-2.1A6 6 0 0 1 6 9z"/><path d="M6 4.5H2.2v3.2c0 2.6 1.7 4.2 4.2 4.6V10c-1.1-.4-1.7-1.3-1.7-2.7v-.7H6zM18 4.5h3.8v3.2c0 2.6-1.7 4.2-4.2 4.6V10c1.1-.4 1.7-1.3 1.7-2.7v-.7H18z"/></svg></span></button><button class="sc-mode" data-smode="quetes" aria-label="Quêtes" title="Quêtes"><span class="ti fbk c-quest"><img src="https://dofusdb.fr/icons/effects/quete.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9.2" y="2" width="5.6" height="13.8" rx="2.8"/><circle cx="12" cy="20" r="2.8"/></svg></span></button><button class="sc-mode" data-smode="donjons" aria-label="Donjons" title="Donjons"><span class="ti fbk c-dj"><img src="https://dofusdb.fr/icons/dungeon.png" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fb')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3.5c.3 4.6 2.6 7 5.6 7.5l.5-2.4C5.8 7.6 4.3 6 2 3.5zM22 3.5c-.3 4.6-2.6 7-5.6 7.5l-.5-2.4c2.3-1 3.8-2.6 6.1-5.1z"/><path fill-rule="evenodd" d="M12 6.5c-3.7 0-6.2 2.6-6.2 6 0 2 .9 3.4 2.2 4.3V21h8v-4.2c1.3-.9 2.2-2.3 2.2-4.3 0-3.4-2.5-6-6.2-6zM9.1 11.2a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6zm5.8 0a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6zM12 14.8l1.1 2.2h-2.2z"/></svg></span></button></div>
-      <div class="search"><input type="search" id="scSearch" placeholder="Rechercher…"></div>
+      <div class="search"><input type="search" id="scSearch" placeholder="Rechercher…"><button type="button" class="filt-btn" id="filtBtn" aria-label="Filtres d’affichage" title="Filtres d’affichage" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4.5h18l-7 8.2V19l-4 2v-8.3z"/></svg><i class="filt-dot" id="filtDot" hidden></i></button></div>
       <button class="cat-btn" id="catBtn" aria-expanded="false" aria-controls="scTree"></button>
       <div id="scTree"></div>
     </aside>
     <div class="sc-main" id="scList"></div>
     <aside class="det" aria-label="Détail"><div class="det-grab"></div><div class="det-in" id="scDetail"></div></aside>
     <footer class="foot">
-      <label><input type="checkbox" class="gc" id="scShowDone"> Afficher les obtenus</label>
-      <label title="Quêtes au-dessus de ton niveau ou dont les prérequis (quêtes, succès, Dofus) ne sont pas faits, et succès sur lesquels tu ne peux pas encore avancer"><input type="checkbox" class="gc" id="scShowLocked"> Afficher les indisponibles</label>
-      <label title="Vulkania, Île de Nowel, Halouine et Île de Pwâk (Pâques) : succès, quêtes et Dofus"><input type="checkbox" class="gc" id="scSeasonal"> Afficher les contenus saisonniers</label>
       <span class="note">Données DofusDB · Dofus est une marque d’Ankama, ce site n’y est pas affilié</span>
     </footer>
   </section>
@@ -80,6 +77,16 @@
     <div class="plus-row"><div><b>Thème</b><small>Clair, sombre ou selon ton appareil</small></div><button class="btn" id="mTheme"></button></div>
     <div class="plus-note">Tes coches sont enregistrées dans ce navigateur, par personnage. Connecté, elles sont aussi copiées chez Google (Firebase) pour passer d’un appareil à l’autre : rien d’autre que tes coches et ton niveau. L’export / import reste disponible dans « Gérer ».</div>
   </section>
+
+  <dialog id="filtDialog" aria-labelledby="filtTitle">
+    <div class="dl-head"><h2 id="filtTitle">Filtres</h2></div>
+    <div class="filt-list">
+      <label><input type="checkbox" class="gc" id="scShowDone"><span>Afficher les obtenus</span></label>
+      <label title="Quêtes au-dessus de ton niveau ou dont les prérequis (quêtes, succès, Dofus) ne sont pas faits, et succès sur lesquels tu ne peux pas encore avancer"><input type="checkbox" class="gc" id="scShowLocked"><span>Afficher les indisponibles</span><small>Niveau trop bas, prérequis non faits</small></label>
+      <label title="Vulkania, Île de Nowel, Halouine et Île de Pwâk (Pâques) : succès, quêtes et Dofus"><input type="checkbox" class="gc" id="scSeasonal"><span>Afficher les contenus saisonniers</span><small>Vulkania, Nowel, Halouine, Pwâk</small></label>
+    </div>
+    <div class="dl-foot"><span style="flex:1"></span><button type="button" class="btn primary" data-filtclose>Fermer</button></div>
+  </dialog>
 
   <dialog id="cfDialog" aria-labelledby="cfMsg">
     <p id="cfMsg" style="margin:0;padding:18px 18px 8px;font-size:.95rem"></p>

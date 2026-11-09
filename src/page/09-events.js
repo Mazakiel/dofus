@@ -13,6 +13,12 @@ function onScClick(e){
   if (e.target.closest('input,label')) return;
   if (e.target.closest('[data-closedet]')) { dismissSheet(); return; }
   if (e.target.closest('[data-pickback]')) { const prev = pickBack.pop(); if (prev) { sPick = prev; renderScList(); renderDetail(); routeSync(); } return; }
+  const gd = e.target.closest('[data-godj]');
+  if (gd) {   // ligne « Donjon » d'une fiche de quête : ouvre la page du donjon
+    sMode = 'donjons'; mTab = 'donjons'; store.set('sMode', sMode); sDj = +gd.dataset.godj; store.set('sDj', sDj);
+    sPick = null; sSearch = ''; document.getElementById('scSearch').value = '';
+    closeSheet(); closeCats(); renderSucces(); window.scrollTo({ top: 0 }); return;
+  }
   const gv = e.target.closest('[data-goalview]');
   if (gv) { sMode = 'quetes'; mTab = 'quetes'; store.set('sMode', sMode); sCat = QGOAL; store.set('sCat', sCat); sPick = null; sSearch = ''; document.getElementById('scSearch').value = ''; renderSucces(); document.getElementById('viewSucces').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   const pf = e.target.closest('[data-progf]');
@@ -68,6 +74,7 @@ function onScClick(e){
 document.getElementById('scList').addEventListener('click', onScClick);
 document.getElementById('scList').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.row[data-pick]')) { e.preventDefault(); e.target.click(); } });
 document.getElementById('scDetail').addEventListener('click', onScClick);
+document.getElementById('scDetail').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-godj]')) { e.preventDefault(); e.target.click(); } });
 // Succès : même principe que les quêtes
 function setAchDone(id, on){
   if (on) {
@@ -103,6 +110,9 @@ document.getElementById('scDetail').addEventListener('change', onScChange);
 let scSearchT;
 document.getElementById('scSearch').addEventListener('input', e => { clearTimeout(scSearchT); scSearchT = setTimeout(() => { sSearch = e.target.value; if (sSearch) closeCats(); renderScList(); if (sMode === 'donjons') renderScTree(); }, 200); });
 document.getElementById('scLevel').addEventListener('change', e => { P.state.level = Math.max(1, Math.min(200, +e.target.value || 200)); renderSucces(); });
+const filtDlg = document.getElementById('filtDialog');
+document.getElementById('filtBtn').addEventListener('click', () => { if (typeof filtDlg.showModal === 'function') filtDlg.showModal(); else filtDlg.setAttribute('open', ''); });
+filtDlg.addEventListener('click', e => { if (e.target === filtDlg || e.target.closest('[data-filtclose]')) filtDlg.close(); });   // hors de la boîte ou « Fermer »
 document.getElementById('scShowDone').onchange = e => { sShowDone = e.target.checked; store.set('sShowDone', sShowDone); renderSucces(); };
 document.getElementById('scShowLocked').onchange = e => { sShowLocked = e.target.checked; store.set('sShowLocked', sShowLocked); renderSucces(); };
 document.getElementById('scSeasonal').onchange = e => { sSeasonal = e.target.checked; store.set('sSeasonal', sSeasonal); renderSucces(); };

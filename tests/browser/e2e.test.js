@@ -244,6 +244,35 @@ test('mobile : un onglet s\'ouvre sur la liste des catégories, le choix d\'une 
   }
 }, { width: 390, height: 800, mobile: true }));
 
+test('filtres : une modale ouverte par le bouton à droite de la recherche, point quand un filtre est actif', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); 1`); await p.reload();
+  assert.equal(await p.eval(`!document.querySelector('.foot #scShowDone')`), true, 'plus de cases en bas de la fenêtre');
+  assert.equal(await p.eval(`document.getElementById('filtDot').hidden`), true, 'réglage par défaut : pas de point');
+  await p.eval(`document.getElementById('filtBtn').click(); 1`); await p.wait(200);
+  assert.equal(await p.eval(`document.getElementById('filtDialog').open`), true);
+  await p.eval(`document.getElementById('scShowLocked').click(); 1`); await p.wait(300);
+  assert.equal(await p.eval(`sShowLocked`), true, 'la case de la modale agit');
+  assert.equal(await p.eval(`document.getElementById('filtDot').hidden`), false, 'filtre actif : point');
+  await p.eval(`document.querySelector('[data-filtclose]').click(); 1`); await p.wait(200);
+  assert.equal(await p.eval(`document.getElementById('filtDialog').open`), false);
+}));
+
+test('fiche de quête : la ligne Donjon mène à la page du donjon, le statut n\'est pas répété', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); 1`); await p.reload();
+  const q = await p.eval(`Object.keys(SC.quetes).map(Number).find(id => (SC.quetes[id].dj || []).some(d => (QDJ[d] || []).length))`);
+  assert.ok(q, 'une quête avec un donjon');
+  await p.eval(`mTab='quetes'; sMode='quetes'; renderSucces(); sPick={k:'q',id:${q}}; renderScList(); renderDetail(); 1`); await p.wait(200);
+  assert.equal(await p.eval(`!!document.querySelector('#scDetail [data-godj] .ri.dj')`), true, 'icône de donjon sur la ligne');
+  assert.equal(await p.eval(`document.querySelector('#scDetail .tag.dj') && document.querySelector('#scDetail [data-godj] .tag.dj')`), null, 'plus de pastille DJ en texte sur la ligne');
+  const dj = await p.eval(`+document.querySelector('#scDetail [data-godj]').dataset.godj`);
+  await p.eval(`document.querySelector('#scDetail [data-godj]').click(); 1`); await p.wait(300);
+  assert.equal(await p.eval(`sMode`), 'donjons'); assert.equal(await p.eval(`sDj`), dj);
+  // statut : pas de pastille « Commencée / Bloquée » en doublon des boutons
+  await p.eval(`mTab='quetes'; sMode='quetes'; sPick={k:'q',id:${q}}; qState[${q}]='b'; renderSucces(); 1`); await p.wait(200);
+  assert.equal(await p.eval(`!!document.querySelector('#scDetail .stat .badge.bl')`), false, 'pas de badge Bloquée en plus du bouton');
+  assert.equal(await p.eval(`document.querySelector('#scDetail [data-qst="b"]').getAttribute('aria-pressed')`), 'true');
+}));
+
 test('annuler : une action en masse affiche un bandeau, « Annuler » rend la progression d\'avant', { skip }, () => withPage(async p => {
   await p.eval(`localStorage.clear(); 1`); await p.reload();
   const avant = await p.eval(`JSON.stringify(P.snapshot())`);

@@ -1,7 +1,7 @@
 // ===== Listes : filtres d'avancement, vue Mes objectifs, vue Donjons, liste des quêtes et des succès.
 // ---------- listes ----------
 const head = (title, info, btns = '') => `<div class="sc-head"><h2>${title}</h2><span class="n">${info}</span><span class="sp"></span>${btns}</div>`;
-const EMPTY = '<div class="empty">Rien à afficher : tout est fait, ou masqué par les options en bas de la fenêtre.</div>';
+const EMPTY = '<div class="empty">Rien à afficher : tout est fait, ou masqué par les filtres.</div>';
 const LV_BANDS = [[1, 49], [50, 99], [100, 149], [150, 199], [200, 200]];
 // Filtres d'avancement : mêmes puces et même règle dans toutes les listes de quêtes (catégories, objectifs Dofus, donjons)
 function progBar(list){
@@ -108,7 +108,7 @@ function renderDjTree(){
   let html = '';
   for (const [lo, hi] of LV_BANDS) { const g = rows.filter(id => SDJ[id].lv >= lo && SDJ[id].lv <= hi); if (!g.length) continue;
     html += `<div class="band"><span>${lo === hi ? `Niveau ${lo}` : `Niveau ${lo} – ${hi}`}</span><span>${g.length}</span></div>${g.map(row).join('')}`; }
-  el.innerHTML = html || '<div class="empty">Aucun donjon à afficher : tout est fait, ou masqué par les options en bas de la fenêtre.</div>';
+  el.innerHTML = html || '<div class="empty">Aucun donjon à afficher : tout est fait, ou masqué par les filtres.</div>';
   const cur = SDJ[sDj], st = cur ? djStats(sDj) : null;
   document.getElementById('catBtn').innerHTML = cur ? `<span class="cb-n">${esc(cur.n)}</span><span class="pct">${st.d}/${st.n}</span><span aria-hidden="true">▾</span>` : 'Choisir un donjon';
 }
@@ -119,7 +119,7 @@ function renderDjMain(el){
   const shownAll = djOwn(sDj).filter(qShown), bar = progBar(shownAll);
   const shown = shownAll.filter(bar.keep).sort((x, y) => lvl(x) - lvl(y) || qName(x).localeCompare(qName(y), 'fr'));
   el.innerHTML = head(esc(dj.n), `${st.d} / ${st.n} faites · ${plural(shown.length, 'affichée')}`)
-    + `<div class="dj-meta"><span>Niveau optimal <b>${dj.lv}</b></span>${dj.b.length ? `<span>${dj.b.length > 1 ? 'Boss' : 'Boss'} <b>${esc(dj.b.join(', '))}</b></span>` : ''}</div>`
+    + `<div class="dj-meta"><span>Niveau optimal <b>${dj.lv}</b></span>${dj.b.length ? `<span>Boss <b>${esc(dj.b.join(', '))}</b></span>` : ''}${dj.dp ? `<a class="ddb" href="${DPLN}${dj.dp}" target="_blank" rel="noopener noreferrer" title="Guide du donjon sur Dofus pour les Noobs">Guide Dofus pour les Noobs ↗</a>` : ''}</div>`
     + bar.chips + (shown.length ? shown.map(id => questRow(id)).join('') : EMPTY);
   imgErr(el);
 }

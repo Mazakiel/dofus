@@ -7,6 +7,9 @@ const [succes, out] = process.argv.slice(2);
 const { trackedContent } = require('./lib/tracked-content.js');
 const D = JSON.parse(fs.readFileSync(succes, 'utf8'));
 const light = trackedContent(D);   // la règle « ce qui est suivi » vit dans scripts/lib/tracked-content.js
+// Pages du site « Dofus pour les Noobs » par donjon (data/dpln-links.json, produit par scripts/map-dpln.js) : champ `dp` de chaque donjon
+const dpFile = path.join(path.dirname(succes), 'dpln-links.json');
+if (fs.existsSync(dpFile)) { const dp = JSON.parse(fs.readFileSync(dpFile, 'utf8')).donjons || {}; light.donjons = Object.fromEntries(Object.entries(light.donjons || {}).map(([id, d]) => [id, dp[id] ? { ...d, dp: dp[id] } : d])); }
 // La page est assemblée : coquille HTML + feuille de style + fichiers de src/page/ concaténés dans l'ordre de leur nom (un même script).
 const src = f => fs.readFileSync(path.join(__dirname, '..', 'src', f), 'utf8');
 const pageJs = fs.readdirSync(path.join(__dirname, '..', 'src', 'page')).filter(f => f.endsWith('.js')).sort().map(f => src('page/' + f)).join('');

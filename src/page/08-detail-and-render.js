@@ -40,10 +40,10 @@ function questDetailHtml(qid){
   const DJN = SC.donjons || {};
   return `<div class="hd"><h3>${qIcon(q, qid)}${esc(qName(qid))}${copyBtn(qName(qid))}</h3><div class="k">${(QTYPE[q.ty || 0] || QTYPE[0])[2]}${q.lv ? ` · niveau ${q.lv}${q.lx ? ' à ' + q.lx : ''}` : ''}${q.ev ? ' · événement' : ''}</div><div class="tags" style="justify-content:center;margin-top:6px">${qTags(q).map(c => `<span class="tag ${c}">${TAGS[c]}</span>`).join('')}</div></div>
     <div class="orn">!</div>
-    <div class="stat"><span class="badge ${qStatus(qid)}">${QSTAT_LBL[qStatus(qid)]}</span>${qStatus(qid) === 'lock' ? `<span class="muted">${esc(why.slice(0, 2).join(' · '))}${why.length > 2 ? ` (+${why.length - 2})` : ''}</span>` : ''}</div>
+    ${['av', 'lock'].includes(qStatus(qid)) ? `<div class="stat"><span class="badge ${qStatus(qid)}">${QSTAT_LBL[qStatus(qid)]}</span>${qStatus(qid) === 'lock' ? `<span class="muted">${esc(why.slice(0, 2).join(' · '))}${why.length > 2 ? ` (+${why.length - 2})` : ''}</span>` : ''}</div>` : ''}
     <div class="acts prog">${dn ? '' : `<button class="btn" data-qst="s" aria-pressed="${qState[qid] === 's'}">Commencée</button><button class="btn" data-qst="b" aria-pressed="${qState[qid] === 'b'}">Bloquée</button>`}<button class="btn" data-qdone aria-pressed="${dn}">Faite</button></div>
     ${goalBox(GOALQ[qid], DZ_REW_Q[qid])}
-    ${(q.dj || []).length ? `<div class="lab">${(q.dj || []).length > 1 ? 'Donjons' : 'Donjon'}</div>${q.dj.map(id => `<div class="ob"><span class="tag dj">DJ</span><span>${esc((DJN[id] || {}).n || 'Donjon ' + id)}${(DJN[id] || {}).lv ? ` <span class="muted">· niveau ${DJN[id].lv}</span>` : ''}</span></div>`).join('')}` : ''}
+    ${(q.dj || []).length ? `<div class="lab">${(q.dj || []).length > 1 ? 'Donjons' : 'Donjon'}</div>${q.dj.map(id => `<div class="ob${(QDJ[id] || []).length ? ' go' : ''}"${(QDJ[id] || []).length ? ` data-godj="${id}" role="link" tabindex="0"` : ''}><span class="x">${flagIcon('dj')}</span><span>${esc((DJN[id] || {}).n || 'Donjon ' + id)}${(DJN[id] || {}).lv ? ` <span class="muted">· niveau ${DJN[id].lv}</span>` : ''}</span></div>`).join('')}` : ''}
     ${(q.sp || []).length ? `<div class="lab">${q.sp.length > 1 ? 'Débuts possibles' : 'Début'}</div>${q.sp.map(p => `<div class="ob"><span class="x">•</span><span>${esc(p.n || 'PNJ')}${p.z ? ` <span class="muted">· ${esc(p.z)}</span>` : ''}</span><span class="lv">${coordBtn(p)}</span></div>`).join('')}` : ''}
     ${(q.ft || []).length ? `<div class="lab">À faire</div>${q.ft.map((l, i) => `<div class="ob"><span class="x">${(q.fd || []).includes(i) ? flagIcon('dj') : '•'}</span><span>${esc(l)}</span></div>`).join('')}` : ''}
     ${pre.length ? `<div class="lab">Prérequis</div>${pre.join('')}` : ''}
@@ -84,6 +84,7 @@ function renderSucces(){
   document.getElementById('scShowDone').checked = sShowDone;
   document.getElementById('scShowLocked').checked = sShowLocked;
   document.getElementById('scSeasonal').checked = sSeasonal;
+  document.getElementById('filtDot').hidden = sShowDone && !sShowLocked && !sSeasonal;   // point : un filtre s'écarte du réglage par défaut
   document.querySelectorAll('[data-smode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.smode === sMode)));
   document.getElementById('scSearch').placeholder = sMode === 'quetes' ? 'Rechercher une quête…' : sMode === 'donjons' ? 'Rechercher un donjon ou un boss…' : sMode === 'recomp' ? 'Rechercher une récompense…' : 'Rechercher un succès…';
   if (mTab !== 'plus') mTab = sMode;

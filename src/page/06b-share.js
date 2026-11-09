@@ -7,6 +7,7 @@ const coordBtn = p => p.x == null ? '' : `<button type="button" class="coord" da
 // Fiche DofusDB (adresses du site : quêtes et objets au singulier, succès au pluriel)
 const DDB = 'https://dofusdb.fr/fr/database/';
 const ddbUrl = { q: id => `${DDB}quest/${id}`, a: id => `${DDB}achievements/${id}`, d: id => `${DDB}item/${id}` };
+const DPLN = 'https://www.dofuspourlesnoobs.com';   // guides de donjons : une page par donjon, adresses dans data/dpln-links.json
 const ddbLink = (kind, id, label = 'Voir sur DofusDB') => `<a class="ddb" href="${ddbUrl[kind](id)}" target="_blank" rel="noopener noreferrer">${label} ↗</a>`;
 
 // Copie dans le presse-papiers ; sans l'API (page non sécurisée, ancien navigateur) on passe par une zone de texte cachée

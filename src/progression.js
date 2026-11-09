@@ -119,8 +119,12 @@
       if (on === dofusAuto(d)) delete state.sdzState[d.id]; else state.sdzState[d.id] = on ? 'owned' : 'missing';
       if (on) state.sdzGoals.delete(d.id);
     }
+    // Niveau exigé pour lancer une quête : le critère de départ (PL>179 → 180) prime sur le niveau indicatif de la fiche
+    const reqLevel = q => q.pl != null ? q.pl + 1 : (q.lv || 0);
+    // « Quête en cours » (Qa=) : commencée ou bloquée à la main, ou déjà terminée
+    const questOngoing = p => questDone(p) || state.qState[p] === 's' || state.qState[p] === 'b';
     const questAvailable = qid => { const q = SC.quetes[qid] || {};
-      return (q.lv || 0) <= level && (q.pre || []).every(questDone) && (q.preA || []).every(a => achDone(a)) && (q.preD || []).every(d => !SDZ[d] || dofusOwned(SDZ[d])); };
+      return reqLevel(q) <= level && (q.pre || []).every(questDone) && (q.preE || []).every(questOngoing) && (q.preA || []).every(a => achDone(a)) && (q.preD || []).every(d => !SDZ[d] || dofusOwned(SDZ[d])); };
     function achAvailable(id, stack = new Set()) {
       if (memoAvail.has(id)) return memoAvail.get(id);
       if (stack.has(id)) return false;
@@ -144,8 +148,9 @@
     // Ce qui manque pour pouvoir faire une quête (niveau, quêtes, succès, Dofus à posséder)
     function lockReasons(qid) {
       const q = SC.quetes[qid] || {}, out = [];
-      if ((q.lv || 0) > level) out.push(`niveau ${q.lv} requis`);
+      if (reqLevel(q) > level) out.push(`niveau ${reqLevel(q)} requis`);
       for (const p of q.pre || []) if (!questDone(p)) out.push(`quête « ${qName(p)} »`);
+      for (const p of q.preE || []) if (!questOngoing(p)) out.push(`quête « ${qName(p)} » en cours`);
       for (const a of q.preA || []) if (!achDone(a)) out.push(`succès « ${SACH[a] ? SACH[a].n : a} »`);
       for (const d of q.preD || []) if (SDZ[d] && !dofusOwned(SDZ[d])) out.push(`posséder le ${SDZ[d].n}`);
       return out;
@@ -327,7 +332,7 @@
       state, index: { SACH, SDZ, QOWN, QNEXT, SPARENTS, RW, RWBY },
       load, snapshot, simulate, subscribe,
       questDone, achDone, objDone, achProg, dofusAuto, dofusOwned, setDofusOwned, rewardOwned, suggest, suggestInfo: { base: SUGGEST_BASE, presets: SUGGEST_PRESETS },
-      questAvailable, achAvailable, achDoable, questStatus, lockReasons, questShown, achShown,
+      questAvailable, achAvailable, achDoable, questStatus, lockReasons, reqLevel, questOngoing, questShown, achShown,
       collectPrereqs, collectDependents, applyRemoval, goalsFor,
     };
   }

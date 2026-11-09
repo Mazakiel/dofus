@@ -102,6 +102,10 @@ async function run(client, FILE) {
   }
   const roomHits = [];   // { qid, i (ligne de ft), d (donjon), l (salle) }
 
+  // Objectifs de quête exigés au départ d'une autre quête (Qo>id) : quête et texte de l'objectif
+  const objIndex = new Map();
+  for (const q of Object.values(full)) for (const s of q.steps) for (const o of s.objectives) objIndex.set(o.id, { q: q.id, t: clean(fr(o.text)) });
+
   const used = new Set();
   let nTag = 0;
   for (const qid of qids) {
@@ -142,6 +146,7 @@ async function run(client, FILE) {
     if (q.levelMax && q.levelMax !== q.levelMin) d.lx = q.levelMax;    // « Niv. 40-200 »
     d.dj = [...dj]; if (!d.dj.length) delete d.dj; else d.dj.forEach(id => used.add(id));
     delete d.fr;
+    if (d.ob) { const po = d.ob.map(id => objIndex.get(id)).filter(Boolean).map(x => [x.q, x.t]); if (po.length) d.preO = po; else delete d.preO; } else delete d.preO;
     if (lines.length) d.ft = lines.map(l => l.t); else delete d.ft;   // liste complète, sans « … et N autres »
     lines.forEach((l, i) => { if (l.dj && l.d) roomHits.push({ qid, i, d: l.d, l: roomLabel(l.d, l.m) }); });
     const fd = lines.flatMap((l, i) => l.dj ? [i] : []);              // indices des lignes de `ft` à faire dans un donjon

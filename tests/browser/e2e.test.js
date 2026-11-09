@@ -323,6 +323,19 @@ test('donjon (mobile) : un clic sur une ligne de la vue salle par salle ouvre la
   assert.equal(await p.eval(`document.body.classList.contains('sheet-open')`), true);
 }, { width: 390, height: 800, mobile: true }));
 
+test('prérequis de départ : niveau exact, quête en cours, objectif achevé (comme DofusDB)', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); 1`); await p.reload();
+  const [q, pre] = await p.eval(`(() => { const ids = Object.keys(SC.quetes).map(Number); const q = ids[5], pre = ids[6]; return [q, pre]; })()`);
+  await p.eval(`(() => { const x = SC.quetes[${q}]; delete x.pre; delete x.preA; delete x.preD; x.lv = 200; x.pl = 179; x.preE = [${pre}]; x.preO = [[${pre}, 'Parler au premier Huppermage']]; P.state.level = 190; sq.delete(${pre}); delete qState[${pre}]; delete qState[${q}]; sq.delete(${q}); mTab = 'quetes'; sMode = 'quetes'; sShowLocked = true; sPick = { k: 'q', id: ${q} }; renderSucces(); })(); 1`); await p.wait(300);
+  const det = await p.eval(`document.getElementById('scDetail').textContent`);
+  assert.match(det, /Niveau > 179/, 'le niveau vient du critère de départ, pas du niveau indicatif');
+  assert.match(det, /en cours/, 'quête en cours');
+  assert.match(det, /Objectif « Parler au premier Huppermage » achevé/);
+  assert.equal(await p.eval(`qStatus(${q})`), 'lock', 'quête non commencée : indisponible');
+  await p.eval(`qState[${pre}] = 's'; renderSucces(); 1`); await p.wait(200);
+  assert.equal(await p.eval(`qStatus(${q})`), 'av', 'une fois la quête exigée commencée : disponible (niveau 190 > 179)');
+}));
+
 test('annuler : une action en masse affiche un bandeau, « Annuler » rend la progression d\'avant', { skip }, () => withPage(async p => {
   await p.eval(`localStorage.clear(); 1`); await p.reload();
   const avant = await p.eval(`JSON.stringify(P.snapshot())`);

@@ -12,12 +12,15 @@ function parseObjective(c) {
   return { t: 'x' };
 }
 
-// Conditions de départ d'une quête (startCriterion) : { pre: quêtes à avoir terminées, preA: succès à avoir obtenus, po: objets à posséder }.
-// Qf=X → la quête X doit être terminée ; OA=Y → le succès Y doit être obtenu ; PO=Z → posséder l'objet Z.
+// Conditions de départ d'une quête (startCriterion) : { pre: quêtes à avoir terminées, preA: succès à avoir obtenus, po: objets à posséder,
+//   en: quêtes qui doivent être en cours, ob: objectifs de quête à avoir achevés, pl: niveau à dépasser (PL>179 → 179, sinon null) }.
+// Qf=X → la quête X doit être terminée ; OA=Y → le succès Y doit être obtenu ; PO=Z → posséder l'objet Z ;
+// Qa=X → la quête X doit être en cours ; Qo>O (ou Qo=O) → l'objectif O doit être achevé ; PL>N → niveau supérieur à N.
 // Les alternatives « a|b » sont ignorées, sauf quand une même quête figure dans toutes : elle est alors exigée.
 function parseStart(c) {
   c = normalize(c);
-  const pre = new Set(), preA = new Set(), po = new Set();
+  const pre = new Set(), preA = new Set(), po = new Set(), en = new Set(), ob = new Set();
+  let pl = null;
   // découpe au niveau 0 des parenthèses : a&(b|c)&d → [a, (b|c), d]
   const split = (s, sep) => { const out = []; let depth = 0, cur = '';
     for (const ch of s) { if (ch === '(') depth++; else if (ch === ')') depth--; if (ch === sep && !depth) { out.push(cur); cur = ''; } else cur += ch; }
@@ -36,8 +39,11 @@ function parseStart(c) {
     }
     let m; if ((m = part.match(/Qf=(\d+)/))) pre.add(+m[1]); if ((m = part.match(/OA=(\d+)/))) preA.add(+m[1]);
     if ((m = part.match(/PO=(\d+)/))) po.add(+m[1]);   // posséder un objet (filtré ensuite sur les Dofus)
+    if ((m = part.match(/Qa=(\d+)/))) en.add(+m[1]);
+    if ((m = part.match(/Qo[=>](\d+)/))) ob.add(+m[1]);
+    if ((m = part.match(/PL>(\d+)/))) pl = Math.max(pl ?? 0, +m[1]);
   }
-  return { pre: [...pre], preA: [...preA], po: [...po] };
+  return { pre: [...pre], preA: [...preA], po: [...po], en: [...en], ob: [...ob], pl };
 }
 
 module.exports = { parseObjective, parseStart };

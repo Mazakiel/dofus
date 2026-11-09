@@ -74,10 +74,11 @@ test('critère d’objectif : quête, succès ou autre', () => {
 });
 
 test('conditions de départ : quêtes, succès, objets ; une alternative n’exige que ce qui est commun', () => {
-  assert.deepEqual(parseStart('PL>19&Qf=12&OA=5&PO=300'), { pre: [12], preA: [5], po: [300] });
-  assert.deepEqual(parseStart('(Qa=7|Qf=7)&Qf=8'), { pre: [7, 8], preA: [], po: [] }, 'Q7 est dans les deux branches : exigée');
+  assert.deepEqual(parseStart('PL>19&Qf=12&OA=5&PO=300'), { pre: [12], preA: [5], po: [300], en: [], ob: [], pl: 19 });
+  assert.deepEqual(parseStart('PL>179&Qa=2423&Qo>18283'), { pre: [], preA: [], po: [], en: [2423], ob: [18283], pl: 179 }, 'quête en cours, objectif achevé, niveau');
+  assert.deepEqual(parseStart('(Qa=7|Qf=7)&Qf=8'), { pre: [7, 8], preA: [], po: [], en: [], ob: [], pl: null }, 'Q7 est dans les deux branches : exigée');
   assert.deepEqual(parseStart('Qf=1|Qf=2').pre, [], 'quêtes différentes dans les alternatives : ignorées');
-  assert.deepEqual(parseStart('QF>1423,0&PL>9&Sc=822'), { pre: [1423], preA: [], po: [] }, 'quête terminée, autre écriture');
-  assert.deepEqual(parseStart('((Qf=3))&(OA=4)'), { pre: [3], preA: [4], po: [] }, 'parenthèses redondantes retirées');
-  assert.deepEqual(parseStart(''), { pre: [], preA: [], po: [] });
+  assert.deepEqual(parseStart('QF>1423,0&PL>9&Sc=822'), { pre: [1423], preA: [], po: [], en: [], ob: [], pl: 9 }, 'quête terminée, autre écriture');
+  assert.deepEqual(parseStart('((Qf=3))&(OA=4)'), { pre: [3], preA: [4], po: [], en: [], ob: [], pl: null }, 'parenthèses redondantes retirées');
+  assert.deepEqual(parseStart(''), { pre: [], preA: [], po: [], en: [], ob: [], pl: null });
 });

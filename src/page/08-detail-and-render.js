@@ -31,7 +31,9 @@ function achDetailHtml(a){
 function questDetailHtml(qid){
   const q = SC.quetes[qid] || {}, dn = qDoneS(qid), av = !dn && qAvailNow(qid), why = lockReasons(qid);
   const pre = [
-    q.lv ? `<div class="ob">${okx(P.state.level >= q.lv)}<span>Niveau ${q.lv}</span></div>` : '',
+    reqLevel(q) ? `<div class="ob">${okx(P.state.level >= reqLevel(q))}<span>${q.pl != null ? `Niveau > ${q.pl}` : `Niveau ${q.lv}`}</span></div>` : '',
+    ...(q.preE || []).map(p => `<div class="ob">${okx(questOngoing(p))}<span>Quête ${qLink(p)} en cours</span><span class="lv">${SC.quetes[p] && SC.quetes[p].lv ? 'Niv. ' + SC.quetes[p].lv : ''}</span></div>`),
+    ...(q.preO || []).map(([p, t]) => `<div class="ob"><span class="x">•</span><span>Objectif « ${esc(t)} » achevé <span class="muted">· quête ${qLink(p)}</span></span></div>`),
     ...(q.pre || []).map(p => `<div class="ob">${okx(qDoneS(p))}<span>Quête ${qLink(p)}</span><span class="lv">${SC.quetes[p] && SC.quetes[p].lv ? 'Niv. ' + SC.quetes[p].lv : ''}</span></div>`),
     ...(q.preA || []).map(a => `<div class="ob">${okx(achDone(a))}<span>Succès ${SACH[a] ? `<span class="sgo" data-pick="a:${a}">${esc(SACH[a].n)}</span>` : a}</span></div>`),
     ...(q.preD || []).filter(d => SDZ[d]).map(d => `<div class="ob">${okx(sdzOwned(SDZ[d]))}<span>Posséder le ${esc(SDZ[d].n)}</span></div>`)].filter(Boolean);

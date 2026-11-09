@@ -8,7 +8,7 @@ let persistQueued = false;
 P.subscribe(() => { if (persistQueued) return; persistQueued = true; queueMicrotask(() => { persistQueued = false; persistNow(); }); });
 const { SACH, SDZ, QOWN, QNEXT, SPARENTS } = P.index;
 const { sdone, sq, sodone, sdzGoals, qState } = P.state;   // états suivis : toute modification invalide les caches du module
-const { achDone, objDone, achProg, collectPrereqs, collectDependents, lockReasons } = P;
+const { achDone, objDone, achProg, collectPrereqs, collectDependents, lockReasons, reqLevel, questOngoing } = P;
 const { questDone: qDoneS, questAvailable: qAvailNow, achAvailable: achAvailNow, questStatus: qStatus, dofusOwned: sdzOwned } = P;
 const SCAT = Object.fromEntries(SC.categories.map(c => [c.id, c]));
 const SBYCAT = {}; for (const a of SC.succes) (SBYCAT[a.c] = SBYCAT[a.c] || []).push(a);

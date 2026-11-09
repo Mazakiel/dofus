@@ -113,7 +113,7 @@ async function run(client, OUT) {
     const got = await fetchQuests(frontier);
     Object.assign(quests, got);
     const next = new Set();
-    for (const id of frontier) { const q = got[id]; if (!q) continue; for (const p of parseStart(q.startCriterion).pre) if (!(p in quests)) next.add(p); }
+    for (const id of frontier) { const q = got[id]; if (!q) continue; const st = parseStart(q.startCriterion); for (const p of [...st.pre, ...st.en]) if (!(p in quests)) next.add(p); }
     frontier = [...next].filter(id => !(id in quests));
   }
   // objet Dofus (tous les objets de type Dofus, y compris les doublons) → Dofus retenu dans la liste
@@ -124,6 +124,7 @@ async function run(client, OUT) {
     const st = parseStart(q.startCriterion);
     const preD = [...new Set(st.po.map(i => dzOf[i]).filter(Boolean))];   // Dofus à posséder pour lancer la quête
     qOut[id] = { n: (q.name && q.name.fr) || '', lv: q.levelMin ?? null, ...(st.pre.length ? { pre: st.pre } : {}), ...(st.preA.length ? { preA: st.preA } : {}), ...(preD.length ? { preD } : {}),
+      ...(st.en.length ? { preE: st.en } : {}), ...(st.ob.length ? { ob: st.ob } : {}), ...(st.pl != null ? { pl: st.pl } : {}),
       ...(q.isPartyQuest ? { grp: 1 } : {}), ...(q.isEvent ? { ev: 1 } : {}) };
   }
   const qIds = Object.keys(qOut);

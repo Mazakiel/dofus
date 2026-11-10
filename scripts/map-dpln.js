@@ -1,66 +1,50 @@
-// Associe nos donjons à leur page du site « Dofus pour les Noobs » (une page par donjon), d'après la liste du site.
+// Associe nos donjons, quêtes et succès à leur page du site « Dofus pour les Noobs » (une page par donjon, par quête et par succès).
 // Usage : node scripts/map-dpln.js data/dofusdb.json data/dpln-links.json   (réécrit le fichier de liens ; à relancer après une mise à jour des données)
-// Seuls les donjons trouvés sont écrits : un donjon sans page n'affiche simplement pas de lien.
-const fs = require('fs');
+// Source : le plan du site (sitemap.xml, un seul téléchargement) : l'adresse d'une page est son titre. Les pages sont rapprochées par le nom.
+// Ce que la déduction ne trouve pas se règle à la main dans data/dpln-fixes.json (adresse par identifiant) ; sans page, aucun lien n'est affiché.
+const fs = require('fs'), path = require('path');
 const SITE = 'https://www.dofuspourlesnoobs.com';
-const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-// le site écrit ses adresses avec des accents mal encodés (« xeacutelorium », « quecirctes ») : on retire ces suites
-const stem = u => norm(u.replace(/^\//, '').replace(/\.html$/, '').replace(/(acute|grave|circ|uml|cedil)/g, '').replace(/-/g, ' '));
-// entités HTML du site (accents français, apostrophes, espaces) ; une entité inconnue est conservée telle quelle
-const ENT = { amp: '&', nbsp: ' ', quot: '"', apos: "'", lt: '<', gt: '>', rsquo: '’', lsquo: '‘', laquo: '«', raquo: '»', hellip: '…', oelig: 'œ', OElig: 'Œ', ccedil: 'ç', Ccedil: 'Ç', ndash: '–', mdash: '—' };
-const ACC = { grave: 'à è ì ò ù À È Ì Ò Ù'.split(' '), acute: 'á é í ó ú Á É Í Ó Ú'.split(' '), circ: 'â ê î ô û Â Ê Î Ô Û'.split(' '), uml: 'ä ë ï ö ü Ä Ë Ï Ö Ü'.split(' ') };
-for (const [kind, chars] of Object.entries(ACC)) for (const c of chars) ENT[c.normalize('NFD')[0] + kind] = c;
-const decode = t => t.replace(/<[^>]+>/g, '').replace(/&#(\d+);/g, (m, n) => String.fromCharCode(+n)).replace(/&([A-Za-z]+);/g, (m, k) => ENT[k] ?? m);
 
-const UA = { headers: { 'User-Agent': 'Mozilla/5.0' } };
-const get = async path => (await fetch(SITE + path, UA)).text();
+// Clés de rapprochement. Le site écrit ses adresses avec des accents mal encodés (« xeacutelorium », « quecirctes ») et traite les
+// apostrophes tantôt comme un tiret (« l-effet-dragon »), tantôt en les supprimant (« losmose ») : un nom donne donc deux clés.
+const ascii = s => s.toLowerCase().replace(/œ/g, 'oe').replace(/[’‘]/g, "'").normalize('NFD').replace(/[̀-ͯ]/g, '');
+const slug = s => s.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const keysOfName = n => { const a = ascii(n); return [...new Set([slug(a.replace(/'/g, '-')), slug(a.replace(/'/g, ''))])]; };
+const keyOfUrl = u => slug(u.replace(/^\//, '').replace(/\.html$/, '').replace(/([aeiouc])(acute|grave|circ|uml|cedil|tilde)/g, '$1').replace(/rsquo/g, '').replace(/oelig/g, 'oe'));
 
-// Page « Classées par succès » : une page de guide par succès de quêtes (liens nommés d'après le succès) ou par quête (hors succès, événements).
-// Une page est liée à un succès ou à une quête du même nom ; une quête hérite de la page de ses succès quand elle n'a pas la sienne.
-function parseGuides(html) {
-  const out = new Map(), i = html.indexOf('Premier temps'), body = html.slice(Math.max(0, i - 3000));
-  for (const m of body.matchAll(/<a[^>]+href="(\/[^"#]+\.html)"[^>]*>([\s\S]*?)<\/a>/g)) {
-    const t = decode(m[2]).replace(/\s+/g, ' ').trim().replace(/[.\s]+$/, ''); if (t && !out.has(m[1])) out.set(m[1], t);
-  }
-  return out;
+function parseSitemap(xml) {
+  return [...xml.matchAll(/<loc>https?:\/\/[^/<]+(\/[^<]+\.html)<\/loc>/g)].map(m => m[1]);
 }
-function mapGuides(guides, data) {
-  const ach = new Map(), qn = new Map();
-  for (const a of data.succes) { const k = norm(a.n); (ach.get(k) || ach.set(k, []).get(k)).push(a.id); }
-  for (const [id, q] of Object.entries(data.quetes)) { const k = norm(q.n); (qn.get(k) || qn.set(k, []).get(k)).push(+id); }
-  const owners = new Map();   // quête → succès qui la contiennent
-  for (const a of data.succes) for (const o of a.ob) { const ob = data.objectifs[o]; if (ob && ob.t === 'q') (owners.get(ob.r) || owners.set(ob.r, []).get(ob.r)).push(a.id); }
-  const achPage = new Map(), questPage = {};
-  for (const [u, t] of guides) {
-    const k = norm(t), page = [u, t];
-    for (const id of ach.get(k) || []) if (!achPage.has(id)) achPage.set(id, page);
-    for (const id of qn.get(k) || []) if (!questPage[id]) questPage[id] = [page];
-  }
-  for (const id of Object.keys(data.quetes)) {
-    if (questPage[id]) continue;
-    const pages = [], seen = new Set();
-    for (const a of owners.get(+id) || []) { const p = achPage.get(a); if (p && !seen.has(p[0])) { seen.add(p[0]); pages.push(p); } }
-    if (pages.length) questPage[id] = pages.slice(0, 3);
-  }
-  return { succes: Object.fromEntries([...achPage].map(([id, p]) => [id, p])), quetes: questPage };
+function siteIndex(urls) {
+  const idx = new Map();
+  for (const u of urls) { const k = keyOfUrl(u); if (!idx.has(k)) idx.set(k, u); }
+  return idx;
+}
+const findPage = (idx, name) => { for (const k of keysOfName(name)) if (idx.has(k)) return idx.get(k); return null; };
+
+// quêtes et succès : page du même nom ; fixes : { quetes: { id: adresse }, succes: {...}, donjons: {...} }
+function mapPages(idx, data, fixes = {}) {
+  const quetes = {}, succes = {};
+  for (const [id, q] of Object.entries(data.quetes)) { const u = (fixes.quetes || {})[id] || findPage(idx, q.n); if (u) quetes[id] = u; }
+  for (const a of data.succes) { const u = (fixes.succes || {})[a.id] || findPage(idx, a.n); if (u) succes[a.id] = u; }
+  return { quetes, succes };
 }
 
 async function run(dataFile, outFile) {
-  const html = await get('/donjons.html');
-  const byText = new Map(), byStem = new Map();
-  for (const m of html.matchAll(/<a[^>]+href="(\/[^"#]+\.html)"[^>]*>([\s\S]*?)<\/a>/g)) {
-    const t = norm(decode(m[2])); if (t && !byText.has(t)) byText.set(t, m[1]);
-    if (!byStem.has(stem(m[1]))) byStem.set(stem(m[1]), m[1]);
-  }
-  const donjons = JSON.parse(fs.readFileSync(dataFile, 'utf8')).donjons, out = {}, miss = [];
-  for (const [id, d] of Object.entries(donjons)) {
-    const n = norm(d.n), u = byText.get(n) || byStem.get(n);
-    if (u) out[id] = u; else miss.push(`${id} ${d.n}`);
-  }
-  const data = JSON.parse(fs.readFileSync(dataFile, 'utf8')), g = mapGuides(parseGuides(await get('/classeacutees-par-succegraves.html')), data);
-  fs.writeFileSync(outFile, JSON.stringify({ site: SITE, donjons: out, succes: g.succes, quetes: g.quetes }) + '\n');
-  console.log(`${Object.keys(out).length} / ${Object.keys(donjons).length} donjons liés`, miss.length ? `· sans page : ${miss.join(' | ')}` : '');
-  console.log(`${Object.keys(g.quetes).length} / ${Object.keys(data.quetes).length} quêtes liées (${Object.keys(g.succes).length} succès)`);
+  const data = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+  const fixFile = path.join(path.dirname(outFile), 'dpln-fixes.json'), fixes = fs.existsSync(fixFile) ? JSON.parse(fs.readFileSync(fixFile, 'utf8')) : {};
+  const get = async p => { const r = await fetch(SITE + p, { headers: { 'User-Agent': 'Mozilla/5.0' } }); if (!r.ok) throw new Error(p + ' ' + r.status); return r.text(); };
+  const urls = parseSitemap(await get('/sitemap.xml')), idx = siteIndex(urls);
+  // donjons : d'abord les pages de la liste des donjons du site (évite de confondre avec une quête du même nom), puis tout le site
+  const hub = new Set([...(await get('/donjons.html')).matchAll(/href="(\/[^"#]+\.html)"/g)].map(m => m[1]));
+  const hubIdx = siteIndex(urls.filter(u => hub.has(u))), donjons = {}, miss = [];
+  for (const [id, d] of Object.entries(data.donjons)) { const u = (fixes.donjons || {})[id] || findPage(hubIdx, d.n) || findPage(idx, d.n); if (u) donjons[id] = u; else miss.push(`${id} ${d.n}`); }
+  const { quetes, succes } = mapPages(idx, data, fixes);
+  fs.writeFileSync(outFile, JSON.stringify({ site: SITE, donjons, succes, quetes }) + '\n');
+  console.log(`${Object.keys(donjons).length} / ${Object.keys(data.donjons).length} donjons · ${Object.keys(quetes).length} / ${Object.keys(data.quetes).length} quêtes · ${Object.keys(succes).length} succès liés`);
+  if (miss.length) console.log('donjons sans page :', miss.join(' | '));
+  const noq = Object.keys(data.quetes).filter(id => !quetes[id]).map(id => `${id} ${data.quetes[id].n}`);
+  if (noq.length) console.log(`${noq.length} quêtes sans page (à corriger dans data/dpln-fixes.json si elles existent) :`, noq.slice(0, 15).join(' | ') + (noq.length > 15 ? ' …' : ''));
 }
-module.exports = { run, parseGuides, mapGuides };
+module.exports = { run, parseSitemap, siteIndex, keysOfName, keyOfUrl, findPage, mapPages };
 if (require.main === module) run(process.argv[2] || 'data/dofusdb.json', process.argv[3] || 'data/dpln-links.json').catch(e => { console.error(e); process.exit(1); });

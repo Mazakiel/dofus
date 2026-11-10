@@ -83,15 +83,14 @@ test('conditions de départ : quêtes, succès, objets ; une alternative n’exi
   assert.deepEqual(parseStart(''), { pre: [], preA: [], po: [], en: [], ob: [], pl: null });
 });
 
-test('Dofus pour les Noobs : une page de guide est liée au succès ou à la quête du même nom, une quête hérite de la page de son succès', () => {
-  const { parseGuides, mapGuides } = require('../scripts/map-dpln.js');
-  const html = 'x Premier temps <a href="/vert-eacutemeraude.html">Vert &eacute;meraude.</a><a href="/hors-succes.html"><span>Chargez&nbsp;!</span></a><a href="/vert-eacutemeraude.html">doublon</a>';
-  const g = parseGuides(html);
-  assert.deepEqual([...g], [['/vert-eacutemeraude.html', 'Vert émeraude'], ['/hors-succes.html', 'Chargez !']], 'entités décodées, point final retiré, un seul lien par adresse');
-  const data = { succes: [{ id: 1, n: 'Vert émeraude', ob: [10] }], objectifs: { 10: { t: 'q', r: 7 } }, quetes: { 7: { n: 'Une quête du succès' }, 8: { n: 'Chargez !' }, 9: { n: 'Sans page' } } };
-  const m = mapGuides(g, data);
-  assert.deepEqual(m.succes, { 1: ['/vert-eacutemeraude.html', 'Vert émeraude'] });
-  assert.deepEqual(m.quetes[7], [['/vert-eacutemeraude.html', 'Vert émeraude']], 'page héritée du succès');
-  assert.deepEqual(m.quetes[8], [['/hors-succes.html', 'Chargez !']], 'page portant le nom de la quête');
-  assert.equal(m.quetes[9], undefined);
+test('Dofus pour les Noobs : l\'adresse d\'une page se déduit du nom (accents mal encodés, apostrophes), les corrections manuelles priment', () => {
+  const { parseSitemap, siteIndex, mapPages } = require('../scripts/map-dpln.js');
+  const xml = ['/vert-eacutemeraude.html', '/l-effet-dragon.html', '/losmose.html', '/gros-oeliguvres-au-chacircteau.html', '/lrsquoeacutetoile-des-grincheux.html']
+    .map(u => `<url><loc>https://www.dofuspourlesnoobs.com${u}</loc></url>`).join('') + '<url><loc>https://www.dofuspourlesnoobs.com/news/x</loc></url>';
+  const urls = parseSitemap(xml);
+  assert.equal(urls.length, 5, 'seules les pages .html sont gardées');
+  const data = { succes: [{ id: 1, n: 'Vert émeraude' }], objectifs: {}, quetes: { 7: { n: "L'effet dragon" }, 8: { n: "L'osmose" }, 9: { n: "L'Étoile des Grincheux" }, 10: { n: 'Sans page' }, 11: { n: 'Gros œuvre au château' } } };
+  const m = mapPages(siteIndex(urls), data, { quetes: { 11: '/gros-oeliguvres-au-chacircteau.html' } });
+  assert.deepEqual(m.succes, { 1: '/vert-eacutemeraude.html' });
+  assert.deepEqual(m.quetes, { 7: '/l-effet-dragon.html', 8: '/losmose.html', 9: '/lrsquoeacutetoile-des-grincheux.html', 11: '/gros-oeliguvres-au-chacircteau.html' }, 'apostrophe en tiret ou supprimée, entités retirées ; sans page : rien');
 });

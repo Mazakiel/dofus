@@ -12,8 +12,8 @@ const dpFile = path.join(path.dirname(succes), 'dpln-links.json');
 if (fs.existsSync(dpFile)) {
   const links = JSON.parse(fs.readFileSync(dpFile, 'utf8')), dj = links.donjons || {}, qs = links.quetes || {}, as = links.succes || {};
   light.donjons = Object.fromEntries(Object.entries(light.donjons || {}).map(([id, d]) => [id, dj[id] ? { ...d, dp: dj[id] } : d]));   // donjon : une adresse
-  light.quetes = Object.fromEntries(Object.entries(light.quetes || {}).map(([id, q]) => [id, qs[id] ? { ...q, dp: qs[id] } : q]));      // quête : une ou plusieurs pages [adresse, titre]
-  light.succes = light.succes.map(a => as[a.id] ? { ...a, dp: [as[a.id]] } : a);
+  light.quetes = Object.fromEntries(Object.entries(light.quetes || {}).map(([id, q]) => [id, qs[id] ? { ...q, dp: qs[id] } : q]));      // quête : son adresse
+  light.succes = light.succes.map(a => as[a.id] ? { ...a, dp: as[a.id] } : a);
 }
 // La page est assemblée : coquille HTML + feuille de style + fichiers de src/page/ concaténés dans l'ordre de leur nom (un même script).
 const src = f => fs.readFileSync(path.join(__dirname, '..', 'src', f), 'utf8');

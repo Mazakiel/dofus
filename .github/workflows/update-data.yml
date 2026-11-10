@@ -52,7 +52,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/dofusdb.json
+          git add data/dofusdb.json data/dpln-links.json
           git commit -m "$TITLE" -m "Mise à jour automatique des données (workflow « Mise à jour des données DofusDB »). Détail dans le résumé de l'exécution."
           git pull --rebase origin "$GITHUB_REF_NAME"
           git push origin "HEAD:$GITHUB_REF_NAME"

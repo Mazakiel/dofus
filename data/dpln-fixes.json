@@ -1,0 +1,37 @@
+{
+ "_doc": "Corrections manuelles du rapprochement avec Dofus pour les Noobs (scripts/map-dpln.js) : identifiant de quête, de succès ou de donjon → adresse de la page. Pour les noms que la déduction ne retrouve pas (pluriel, abréviation, titre différent).",
+ "quetes": {
+  "132": "/gros-oeliguvres-au-chacircteau-dallister.html",
+  "164": "/bienvenue-au-krazybwok-saloon.html",
+  "650": "/lessentiel-est-dans-le-lac-geleacute.html",
+  "678": "/chaud-du-slip.html",
+  "703": "/ougrave-est-passeacutee-la-7-e-compagnie.html",
+  "737": "/le-safari-des-acircmes.html",
+  "738": "/le-safari-des-acircmes.html",
+  "739": "/le-safari-des-acircmes.html",
+  "740": "/le-safari-des-acircmes.html",
+  "1446": "/formation-des-premiegraveres-anneacutees.html",
+  "1447": "/formation-des-deuxiegravemes-anneacutees.html",
+  "1448": "/formation-des-troisiegravemes-anneacutees.html",
+  "1449": "/formation-des-quatriegravemes-anneacutees.html",
+  "1450": "/formation-des-cinquiegravemes-anneacutees.html",
+  "1451": "/formation-des-sixiegravemes-anneacutees.html",
+  "1452": "/formation-des-septiegravemes-anneacutees.html",
+  "1453": "/formation-des-huitiegravemes-anneacutees.html",
+  "1454": "/formation-des-neuviegravemes-anneacutees.html",
+  "1455": "/formation-des-dixiegravemes-anneacutees.html",
+  "1515": "/reconnaissance-de-dettes.html",
+  "1627": "/on-recherche-le-guerrier-du-ko.html",
+  "1669": "/squelettes-et-amulettes.html",
+  "1699": "/sanctuaire-de-famille.html",
+  "1791": "/le-dragon-des-foret.html",
+  "2007": "/l-invasion-des-profanateurs-de-sepulture.html",
+  "2468": "/la-complote-des-poms.html"
+ },
+ "succes": {},
+ "donjons": {
+  "39": "/arche-dotomaiuml.html",
+  "44": "/donjon-des-rats-du-chacircteau-damakna.html",
+  "77": "/fabrique-mallefisk.html"
+ }
+}

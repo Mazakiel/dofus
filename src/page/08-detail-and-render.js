@@ -71,7 +71,19 @@ function ensureCat(){
   const st = sMode === 'quetes' ? questStats : catStats, real = l.filter(c => ![QGOAL, QALL, SALL].includes(c.id));
   sCat = (real.find(c => { const x = st(c.id); return x.n && x.d < x.n; }) || real[0] || l[0]).id;   // première catégorie pas finie
 }
+// Fenêtre de filtres : cases de la page visée (filtTarget : la page affichée, ou « djq » depuis la liste de quêtes d'un donjon) ; point sur les boutons quand un filtre est actif
+let filtTarget = null;
+function syncFiltUi(){
+  filtSave();
+  const key = filtTarget || sMode, f = FILT[key];
+  document.getElementById('scShowDone').checked = f.done;
+  document.getElementById('scShowLocked').checked = f.locked;
+  document.getElementById('scSeasonal').checked = f.seas;
+  document.getElementById('filtTitle').textContent = key === 'djq' ? 'Filtres des quêtes du donjon' : key === 'donjons' ? 'Filtres des donjons' : 'Filtres';
+  document.getElementById('filtDot').hidden = !filtOff(FILT[sMode]);
+}
 function renderSucces(){
+  if (filtUse(sMode)) { const si = document.getElementById('scSearch'); if (si) si.value = sSearch; }   // les filtres changent avec la page
   if (!SC.succes.length) { document.getElementById('scList').innerHTML = '<div class="panel muted">Données des succès absentes.</div>'; return; }
   computeGoals();
   document.body.classList.remove('pc-wide');   // (remis par la vue Récompenses › Dofus quand elle s'affiche en parcours)
@@ -83,10 +95,7 @@ function renderSucces(){
   document.getElementById('progQ').innerHTML = `<div class="l"><span>Quêtes</span><span><b>${qd}</b> / ${qv.length} · ${pq} %</span></div><div class="bar" role="progressbar" aria-label="Quêtes faites" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pq}"><i style="width:${pq}%"></i></div>`;
   document.getElementById('progA').innerHTML = `<div class="l"><span>Succès de quêtes</span><span><b>${dn.length}</b> / ${vis.length} · ${pa} %</span></div><div class="bar gold" role="progressbar" aria-label="Succès de quêtes obtenus" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pa}"><i style="width:${pa}%"></i></div>`;
   document.getElementById('scLevel').value = P.state.level;
-  document.getElementById('scShowDone').checked = sShowDone;
-  document.getElementById('scShowLocked').checked = sShowLocked;
-  document.getElementById('scSeasonal').checked = sSeasonal;
-  document.getElementById('filtDot').hidden = sShowDone && !sShowLocked && !sSeasonal;   // point : un filtre s'écarte du réglage par défaut
+  syncFiltUi();
   document.querySelectorAll('[data-smode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.smode === sMode)));
   document.getElementById('scSearch').placeholder = sMode === 'quetes' ? 'Rechercher une quête…' : sMode === 'donjons' ? 'Rechercher un donjon ou un boss…' : sMode === 'recomp' ? 'Rechercher une récompense…' : 'Rechercher un succès…';
   if (mTab !== 'plus') mTab = sMode;

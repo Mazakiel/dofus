@@ -50,10 +50,10 @@ const PHOTO = `(()=>{
   o.compte=[qids.filter(qDoneS).length, aids.filter(id=>achDone(id)).length, SC.dofus.filter(sdzOwned).length].join('/');
   // contenu suivi : quels succès, quêtes et Dofus sont visibles (saisonniers inclus ou non), et comment les catégories se regroupent
   const parts=[]; const keep=sSeasonal;
-  for (const seas of [false,true]) { sSeasonal=seas;
+  for (const seas of [false,true]) { setFilt(filtActive,{seas:seas});
     parts.push(SC.succes.filter(sVisible).map(a=>a.id).join(','), qids.filter(qVisible).join(','), SC.dofus.filter(sdzVisible).map(d=>d.id).join(','),
       ['succes','quetes'].map(m=>{ sMode=m; return scCatList().map(c=>c.id+':'+c.n).join('|'); }).join('#')); }
-  sSeasonal=keep; sMode='succes';
+  setFilt(filtActive,{seas:keep}); sMode='succes';
   parts.push(SC.succes.map(a=>a.id+':'+groupOf(a.c)+':'+(catAllowed(a.c)?1:0)).join(','), scCatList().filter(c=>c.id>0).map(c=>c.id+'='+catIds(c.id).join('+')).join(';'));
   o.suivi=h(parts.join('§'));
   o.suiviNombres=[SC.succes.length, SC.succes.filter(a=>catAllowed(a.c)).length, qids.length].join('/');
@@ -77,7 +77,7 @@ test("états d'une quête : commencée, bloquée, filtres d'avancement, visibili
     out.chips=[...document.querySelectorAll('#scList [data-progf]')].map(b=>b.dataset.progf+':'+b.querySelector('small').innerText).join(',');
     document.querySelector('[data-progf=st]').click(); out.filtre=[...document.querySelectorAll('#scList .row')].length;
     document.querySelector('[data-progf=st]').click();
-    sShowLocked=false; sPick={k:'q',id:lock}; renderSucces(); document.querySelector('#scDetail [data-qst=s]').click(); out.indispoMarquee=!!document.getElementById('q'+lock);
+    setFilt(sMode,{locked:false}); sPick={k:'q',id:lock}; renderSucces(); document.querySelector('#scDetail [data-qst=s]').click(); out.indispoMarquee=!!document.getElementById('q'+lock);
     document.querySelector('#scDetail [data-qst=s]').click(); out.retiree=qState[lock]===undefined;
     window.AV0=av[0];
     return out; })()`);
@@ -90,11 +90,11 @@ test("états d'une quête : commencée, bloquée, filtres d'avancement, visibili
 
 test('« Mes objectifs » : mêmes règles que les autres listes, indisponibles seulement si la case est cochée', { skip }, () => withPage(async p => {
   const r = await p.eval(`(()=>{
-    const d=SDZL.find(x=>/Pourpre/.test(x.n)); sdzGoals.replace([d.id]); sMode='quetes'; sCat=QGOAL; sShowLocked=false; renderSucces();
+    const d=SDZL.find(x=>/Pourpre/.test(x.n)); sdzGoals.replace([d.id]); sMode='quetes'; sCat=QGOAL; setFilt(sMode,{locked:false}); renderSucces();
     const rows=()=>[...document.querySelectorAll('#scList .row')], locked=()=>rows().filter(r=>r.querySelector('input.gc.lock')).length;
     const off={n:rows().length,locked:locked(),menu:document.querySelector('[data-scat="-3"]').innerText.replace(/\\n/g,' ')};
-    sShowLocked=true; renderSucces(); const on={n:rows().length,locked:locked()};
-    sShowLocked=false; sCat=QALL; renderSucces(); const liste={locked:locked()};
+    setFilt(sMode,{locked:true}); renderSucces(); const on={n:rows().length,locked:locked()};
+    setFilt(sMode,{locked:false}); sCat=QALL; renderSucces(); const liste={locked:locked()};
     return {off,on,liste,chips:document.querySelectorAll('#scList .chips').length}; })()`);
   assert.equal(r.off.locked, 0); assert.ok(r.on.locked > 0); assert.ok(r.on.n > r.off.n);
   assert.match(r.off.menu, /Mes objectifs\s+\d+/); assert.equal(r.liste.locked, 0); assert.equal(r.chips, 1);
@@ -297,7 +297,7 @@ test('quête commencée ou bloquée : ses prérequis sont proposés en cascade, 
 
 const DJ_PLAN = async (p) => {
   await p.eval(`localStorage.clear(); 1`); await p.reload();
-  await p.eval(`sShowLocked = true; sShowDone = true; 1`);   // toutes les quêtes sont affichées
+  await p.eval(`setFilt('djq',{locked:true,done:true}); setFilt('donjons',{locked:true,done:true}); 1`);   // toutes les quêtes sont affichées
   const dj = await p.eval(`DJ_IDS.find(id => (SDJ[id].sl || []).length > 1 && djOwn(id).filter(qShown).some(q => (SC.quetes[q].fr || []).some(f => f[1] === id)))`);
   assert.ok(dj, 'un donjon avec des salles');
   await p.eval(`mTab='donjons'; sMode='donjons'; sDj=${dj}; sPick=null; renderSucces(); 1`); await p.wait(300);
@@ -314,7 +314,7 @@ test('donjon : la vue salle par salle liste objectif et quête, un clic ouvre la
   assert.deepEqual(await p.eval('sPick'), { k: 'q', id: +qid });
   assert.match(await p.eval(`document.getElementById('scDetail').textContent`), new RegExp((await p.eval(`qName(${qid})`)).slice(0, 12).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   // les filtres s'appliquent : une quête faite disparaît de la vue quand « Afficher les obtenus » est décoché
-  await p.eval(`sShowDone = false; sq.add(${qid}); renderSucces(); 1`); await p.wait(200);
+  await p.eval(`setFilt('djq',{done:false}); sq.add(${qid}); renderSucces(); 1`); await p.wait(200);
   assert.equal(await p.eval(`!!document.querySelector('#scList .dj-plan [data-pick="q:${qid}"]')`), false, 'quête faite masquée par le filtre');
 }));
 
@@ -327,7 +327,7 @@ test('donjon (mobile) : un clic sur une ligne de la vue salle par salle ouvre la
 test('prérequis de départ : niveau exact, quête en cours, objectif achevé (comme DofusDB)', { skip }, () => withPage(async p => {
   await p.eval(`localStorage.clear(); 1`); await p.reload();
   const [q, pre] = await p.eval(`(() => { const ids = Object.keys(SC.quetes).map(Number); const q = ids[5], pre = ids[6]; return [q, pre]; })()`);
-  await p.eval(`(() => { const x = SC.quetes[${q}]; delete x.pre; delete x.preA; delete x.preD; x.lv = 200; x.pl = 179; x.preE = [${pre}]; x.preO = [[${pre}, 'Parler au premier Huppermage']]; P.state.level = 190; sq.delete(${pre}); delete qState[${pre}]; delete qState[${q}]; sq.delete(${q}); mTab = 'quetes'; sMode = 'quetes'; sShowLocked = true; sPick = { k: 'q', id: ${q} }; renderSucces(); })(); 1`); await p.wait(300);
+  await p.eval(`(() => { const x = SC.quetes[${q}]; delete x.pre; delete x.preA; delete x.preD; x.lv = 200; x.pl = 179; x.preE = [${pre}]; x.preO = [[${pre}, 'Parler au premier Huppermage']]; P.state.level = 190; sq.delete(${pre}); delete qState[${pre}]; delete qState[${q}]; sq.delete(${q}); mTab = 'quetes'; sMode = 'quetes'; setFilt(sMode,{locked:true}); sPick = { k: 'q', id: ${q} }; renderSucces(); })(); 1`); await p.wait(300);
   const det = await p.eval(`document.getElementById('scDetail').textContent`);
   assert.match(det, /Niveau > 179/, 'le niveau vient du critère de départ, pas du niveau indicatif');
   assert.match(det, /en cours/, 'quête en cours');
@@ -336,6 +336,46 @@ test('prérequis de départ : niveau exact, quête en cours, objectif achevé (c
   await p.eval(`qState[${pre}] = 's'; renderSucces(); 1`); await p.wait(200);
   assert.equal(await p.eval(`qStatus(${q})`), 'av', 'une fois la quête exigée commencée : disponible (niveau 190 > 179)');
 }));
+
+test('filtres : chaque page a ses propres cases et sa propre recherche, conservées au rechargement', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); 1`); await p.reload();
+  const sw = mode => p.eval(`document.querySelector('[data-smode="${mode}"]').click(); 1`).then(() => p.wait(200));
+  await sw('quetes');
+  await p.eval(`document.getElementById('filtBtn').click(); 1`); await p.wait(150);
+  await p.eval(`document.getElementById('scShowLocked').click(); 1`); await p.wait(200);
+  await p.eval(`document.querySelector('[data-filtclose]').click(); 1`); await p.wait(100);
+  assert.equal(await p.eval(`FILT.quetes.locked`), true); assert.equal(await p.eval(`FILT.succes.locked`), false, 'les Succès ne sont pas touchés');
+  await p.eval(`(() => { const i = document.getElementById('scSearch'); i.value = 'zzz'; i.dispatchEvent(new Event('input')); })(); 1`); await p.wait(350);
+  await sw('succes');
+  assert.equal(await p.eval(`document.getElementById('scSearch').value`), '', 'recherche vide sur une autre page');
+  assert.equal(await p.eval(`document.getElementById('filtDot').hidden`), true, 'pas de point sur la page Succès');
+  await p.eval(`document.getElementById('filtBtn').click(); 1`); await p.wait(150);
+  assert.equal(await p.eval(`document.getElementById('scShowLocked').checked`), false, 'la fenêtre montre les cases de la page Succès');
+  await p.eval(`document.querySelector('[data-filtclose]').click(); 1`); await p.wait(100);
+  await sw('quetes');
+  assert.equal(await p.eval(`document.getElementById('scSearch').value`), 'zzz', 'la recherche des Quêtes est retrouvée');
+  assert.equal(await p.eval(`document.getElementById('filtDot').hidden`), false, 'point sur la page Quêtes');
+  await p.reload();
+  assert.equal(await p.eval(`FILT.quetes.locked`), true, 'cases conservées au rechargement'); assert.equal(await p.eval(`FILT.succes.locked`), false);
+}));
+
+test('page Donjons : les quêtes du donjon ont leurs propres filtres, distincts de la liste des donjons', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); 1`); await p.reload();
+  await p.eval(`document.querySelector('[data-smode="donjons"]').click(); 1`); await p.wait(300);
+  await p.eval(`document.getElementById('filtBtn').click(); 1`); await p.wait(150);
+  assert.equal(await p.eval(`document.getElementById('filtTitle').textContent`), 'Filtres des donjons');
+  await p.eval(`document.getElementById('scShowSeasonal') ? 0 : document.getElementById('scSeasonal').click(); 1`); await p.wait(250);
+  await p.eval(`document.querySelector('[data-filtclose]').click(); 1`); await p.wait(100);
+  assert.equal(await p.eval(`FILT.donjons.seas`), true); assert.equal(await p.eval(`FILT.djq.seas`), false, 'les quêtes du donjon gardent leur réglage');
+  assert.equal(await p.eval(`!!document.querySelector('#scList [data-filtopen="djq"]')`), true, 'bouton de filtres dans la liste des quêtes du donjon');
+  await p.eval(`document.querySelector('#scList [data-filtopen="djq"]').click(); 1`); await p.wait(150);
+  assert.equal(await p.eval(`document.getElementById('filtTitle').textContent`), 'Filtres des quêtes du donjon');
+  assert.equal(await p.eval(`document.getElementById('scSeasonal').checked`), false, 'la fenêtre montre les cases des quêtes du donjon');
+  await p.eval(`document.getElementById('scShowLocked').click(); 1`); await p.wait(250);
+  await p.eval(`document.querySelector('[data-filtclose]').click(); 1`); await p.wait(100);
+  assert.equal(await p.eval(`FILT.djq.locked`), true); assert.equal(await p.eval(`FILT.donjons.locked`), false, 'la liste des donjons n\'est pas touchée');
+  assert.equal(await p.eval(`document.querySelector('#scList [data-filtopen="djq"] .filt-dot').hidden`), false, 'point sur le bouton des quêtes du donjon');
+}, { width: 1280, height: 900 }));
 
 test('annuler : une action en masse affiche un bandeau, « Annuler » rend la progression d\'avant', { skip }, () => withPage(async p => {
   await p.eval(`localStorage.clear(); 1`); await p.reload();
@@ -377,7 +417,7 @@ test('récompenses : titres et ornements apparaissent sur la fiche du succès et
 
 test('onglet Récompenses : titres et ornements suivent leur succès, objectif posé et retrouvé', { skip }, () => withPage(async p => {
   const [a0, a1] = REWARDS.ids;
-  await p.eval(`localStorage.clear(); sShowLocked = true; mTab = 'recomp'; sMode = 'recomp'; rKind = 't'; rCat = SALL; renderSucces(); 1`);
+  await p.eval(`localStorage.clear(); setFilt(sMode,{locked:true}); mTab = 'recomp'; sMode = 'recomp'; rKind = 't'; rCat = SALL; renderSucces(); 1`);
   assert.equal(await p.eval(`document.querySelectorAll('#scList .rw-row').length`), 2, 'deux titres affichés');
   assert.equal(await p.eval(`document.querySelectorAll('#scList .rw-row.done').length`), 0);
   // objectif : sur le titre A
@@ -496,9 +536,9 @@ test('parcours des Dofus : grille par familles, Dofawa masqué, flèches, « Sui
   assert.ok(['a', 'q'].includes(await p.eval(`sPick.k`)));
   await p.eval(`document.querySelector('#scDetail [data-closedet]').click(); 1`); await p.wait(200);
   // un succès ou une quête du parcours, faits : masqués tant que « Afficher les obtenus » est décoché
-  await p.eval(`sdone.add(1036); sShowDone = false; renderSucces(); 1`);
+  await p.eval(`sdone.add(1036); setFilt(sMode,{done:false}); renderSucces(); 1`);
   assert.equal(await p.eval(`!!document.querySelector('#cz-mais')`), false, 'le succès fait n’est pas affiché');
-  await p.eval(`sShowDone = true; renderSucces(); 1`);
+  await p.eval(`setFilt(sMode,{done:true}); renderSucces(); 1`);
   assert.equal(await p.eval(`!!document.querySelector('#cz-mais.own')`), true);
   await p.eval(`sdone.delete(1036); renderSucces(); 1`);
   // un Dofus obtenu : sa carte passe en « obtenu » et il n'est plus « Suivant »
@@ -506,7 +546,7 @@ test('parcours des Dofus : grille par familles, Dofawa masqué, flèches, « Sui
   assert.equal(await p.eval(`!!document.querySelector('#scList .cz.own[title="Domakuro"]')`), true, own + ' obtenu');
   assert.equal(await p.eval(`!!document.querySelector('#scList .cz.ready[title="Domakuro"]')`), false);
   // « Afficher les obtenus » décoché : sa carte disparaît
-  await p.eval(`sShowDone = false; renderSucces(); 1`);
+  await p.eval(`setFilt(sMode,{done:false}); renderSucces(); 1`);
   assert.equal(await p.eval(`!!document.querySelector('#scList .cz[title="Domakuro"]')`), false);
 }));
 
@@ -544,7 +584,7 @@ test('parcours : en masquant les obtenus, les lignes vides disparaissent et la g
   await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(600);
   const full = await p.eval(`document.getElementById('pgrid').offsetHeight`);
   // tout ce qui est avant le niveau 200 est obtenu : seules restent les lignes du palier 200
-  await p.eval(`SDZL.filter(d => (SDZLV[d.id] || [200, 200])[1] < 200 && d.n !== 'Dom de Pin').forEach(d => setSdzOwned(d, true)); sdone.add(1036); sShowDone = false; renderSucces(); 1`); await p.wait(300);
+  await p.eval(`SDZL.filter(d => (SDZLV[d.id] || [200, 200])[1] < 200 && d.n !== 'Dom de Pin').forEach(d => setSdzOwned(d, true)); sdone.add(1036); setFilt(sMode,{done:false}); renderSucces(); 1`); await p.wait(300);
   const r = await p.eval(`(() => { const g = document.getElementById('pgrid'); const tops = [...g.querySelectorAll('.cz')].map(e => e.offsetTop);
     return { h: g.offsetHeight, minTop: Math.min(...tops), lines: [...g.querySelectorAll('.pband span')].map(e => e.textContent), n: tops.length }; })()`);
   assert.ok(r.n >= 5, 'des cartes restent');
@@ -592,7 +632,7 @@ test('fiches : une flèche retour ramène à la fiche d’où l’on vient, et s
 }));
 
 test('parcours : avec les contenus saisonniers, aucune carte n’en recouvre une autre', { skip }, () => withPage(async p => {
-  await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; sSeasonal = true; renderSucces(); 1`); await p.wait(500);
+  await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; setFilt(sMode,{seas:true}); renderSucces(); 1`); await p.wait(500);
   assert.deepEqual(await p.eval(`(() => { const cs = [...document.querySelectorAll('#pgrid .cz')].map(e => ({ id: e.id, l: e.offsetLeft, t: e.offsetTop, r: e.offsetLeft + e.offsetWidth, b: e.offsetTop + e.offsetHeight })); const bad = [];
     for (let i = 0; i < cs.length; i++) for (let j = i + 1; j < cs.length; j++) if (cs[i].l < cs[j].r && cs[i].r > cs[j].l && cs[i].t < cs[j].b && cs[i].b > cs[j].t) bad.push(cs[i].id + '/' + cs[j].id); return bad; })()`), []);
 }));

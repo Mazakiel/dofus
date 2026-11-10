@@ -112,7 +112,7 @@ async function run(client, FILE) {
     const inRoom = ![HORS, SANS].includes(room);
     if (c === 'QuestObjectiveBringSoulToNpcData') return inRoom ? 'a' : 'x';
     if (c === 'QuestObjectiveBringItemToNpcData') return l.it.some(id => ((items[id] || {}).dropMonsterIds || []).some(m => boss.includes(m))) ? 'd' : inRoom ? 'a' : 'x';
-    if (c === 'QuestObjectiveDiscoverMapData') return /sortie|derni[eè]re salle/i.test(l.t) ? 'd' : 'a';
+    if (c === 'QuestObjectiveDiscoverMapData') return /sortie|derni[eè]re salle/i.test(l.t) ? 'd' : 'x';   // découvrir une salle intermédiaire : jalon sans intérêt dans le détail
     if (c === 'QuestObjectiveFreeFormData') return COMBAT_WORDS.test(l.t) ? 'd' : 'a';
     return 'a';
   }
@@ -195,7 +195,7 @@ async function run(client, FILE) {
   for (const z of data.dofus || []) { if (DOFUS_PNJ[z.id]) z.pnj = DOFUS_PNJ[z.id]; }
   roomHits.forEach(h => used.add(h.d));
   data.donjons = Object.fromEntries([...used].sort((a, b) => a - b).map(id => { const g = dungeons[id] || {};
-    return [id, { n: fr(g.name) || `Donjon ${id}`, lv: g.optimalPlayerLevel || 0, b: (g.bosses || []).map(b => fr((monsters[b] || {}).name)).filter(Boolean), ...(slOf[id] ? { sl: slOf[id] } : {}) }]; }));
+    return [id, { n: fr(g.name) || `Donjon ${id}`, lv: g.optimalPlayerLevel || 0, b: (g.bosses || []).map(b => fr((monsters[b] || {}).name)).filter(Boolean), ...(slOf[id] ? { sl: slOf[id] } : {}), ...(fixDj[id] && fixDj[id].sortieLibre ? { lib: 1 } : {}) }]; }));
   fs.writeFileSync(FILE, JSON.stringify(data));
   const cnt = {};
   for (const d of Object.values(data.quetes)) for (const t of d.tg || []) cnt[t] = (cnt[t] || 0) + 1;

@@ -22,7 +22,9 @@ function onScClick(e){
   const gv = e.target.closest('[data-goalview]');
   if (gv) { sMode = 'quetes'; mTab = 'quetes'; store.set('sMode', sMode); sCat = QGOAL; store.set('sCat', sCat); sPick = null; sSearch = ''; document.getElementById('scSearch').value = ''; renderSucces(); document.getElementById('viewSucces').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   const pf = e.target.closest('[data-progf]');
-  if (pf) { sProg = sProg === pf.dataset.progf ? null : pf.dataset.progf; renderScList(); return; }
+  const fo = e.target.closest('[data-filtopen]');
+  if (fo) { openFilt(fo.dataset.filtopen); return; }
+  if (pf) { const k = sMode === 'donjons' ? 'djq' : sMode; setFilt(k, { prog: FILT[k].prog === pf.dataset.progf ? null : pf.dataset.progf }); renderScList(); return; }
   const inf = e.target.closest('[data-dzinfo]');
   if (inf) { const d = SDZ[+inf.dataset.dzinfo]; uiAlert(`${d.n} : ${dzWho(d)}`); return; }
   const own = e.target.closest('[data-sdzown]');
@@ -111,11 +113,14 @@ let scSearchT;
 document.getElementById('scSearch').addEventListener('input', e => { clearTimeout(scSearchT); scSearchT = setTimeout(() => { sSearch = e.target.value; if (sSearch) closeCats(); renderScList(); if (sMode === 'donjons') renderScTree(); }, 200); });
 document.getElementById('scLevel').addEventListener('change', e => { P.state.level = Math.max(1, Math.min(200, +e.target.value || 200)); renderSucces(); });
 const filtDlg = document.getElementById('filtDialog');
-document.getElementById('filtBtn').addEventListener('click', () => { if (typeof filtDlg.showModal === 'function') filtDlg.showModal(); else filtDlg.setAttribute('open', ''); });
+function openFilt(target){ filtTarget = target; syncFiltUi(); if (typeof filtDlg.showModal === 'function') filtDlg.showModal(); else filtDlg.setAttribute('open', ''); }
+document.getElementById('filtBtn').addEventListener('click', () => openFilt(sMode));
 filtDlg.addEventListener('click', e => { if (e.target === filtDlg || e.target.closest('[data-filtclose]')) filtDlg.close(); });   // hors de la boîte ou « Fermer »
-document.getElementById('scShowDone').onchange = e => { sShowDone = e.target.checked; store.set('sShowDone', sShowDone); renderSucces(); };
-document.getElementById('scShowLocked').onchange = e => { sShowLocked = e.target.checked; store.set('sShowLocked', sShowLocked); renderSucces(); };
-document.getElementById('scSeasonal').onchange = e => { sSeasonal = e.target.checked; store.set('sSeasonal', sSeasonal); renderSucces(); };
+filtDlg.addEventListener('close', () => { filtTarget = null; syncFiltUi(); });
+const onFilt = patch => e => { setFilt(filtTarget || sMode, patch(e.target.checked)); renderSucces(); };
+document.getElementById('scShowDone').onchange = onFilt(v => ({ done: v }));
+document.getElementById('scShowLocked').onchange = onFilt(v => ({ locked: v }));
+document.getElementById('scSeasonal').onchange = onFilt(v => ({ seas: v }));
 document.querySelectorAll('[data-smode]').forEach(b => b.onclick = () => { if (sMode !== b.dataset.smode) sPick = null; sMode = b.dataset.smode; store.set('sMode', sMode); renderSucces(); });
 
 

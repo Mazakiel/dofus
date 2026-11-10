@@ -126,18 +126,22 @@ function djPlanHtml(djId, qids){
     }
   }
   const head = (label, n, cls = '') => `<div class="dj-room${cls}"><span>${label}</span><span>${n}</span></div>`;
-  const body = (pure.length ? head('Faire le donjon', pure.length) + pure.map(qid => `<div class="ob go${qDoneS(qid) ? ' done' : ''}${sPick && sPick.k === 'q' && sPick.id === qid ? ' sel' : ''}" data-pick="q:${qid}" role="link" tabindex="0"><span class="x">${flagIcon('dj')}</span><span>${esc(qName(qid))} <span class="muted">· boss, butin ou salle finale</span></span></div>`).join('') : '')
+  const body = (pure.length ? head('Faire le donjon', pure.length) + pure.map(qid => `<div class="ob go${qDoneS(qid) ? ' done' : ''}${sPick && sPick.k === 'q' && sPick.id === qid ? ' sel' : ''}" data-pick="q:${qid}" role="link" tabindex="0"><span class="x">${flagIcon('dj')}</span><span>${esc(qName(qid))}</span></div>`).join('') : '')
     + sl.map((label, r) => rooms[r].length ? head(esc(label), rooms[r].length) + rooms[r].map(x => row(x.qid, x.t)).join('') : '').join('')
-    + (after.length ? head('⚠ Avant de sortir : après le boss', after.length, ' warn') + after.sort((a, b) => a.r - b.r).map(x => row(x.qid, x.t, ` · ${esc(sl[x.r])}`)).join('') : '');
+    + (after.length ? head((SDJ[djId] || {}).lib ? 'Après le boss' : '⚠ Avant de sortir : après le boss', after.length, (SDJ[djId] || {}).lib ? '' : ' warn') + after.sort((a, b) => a.r - b.r).map(x => row(x.qid, x.t, ` · ${esc(sl[x.r])}`)).join('') : '');
   return body ? `<div class="dj-plan"><div class="lab">À faire dans le donjon</div>${body}</div>` : '';
 }
-function renderDjMain(el){
+const FUNNEL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4.5h18l-7 8.2V19l-4 2v-8.3z"/></svg>';
+// Les quêtes d'un donjon ont leurs propres filtres (cases et avancement), distincts de ceux de la liste des donjons
+function renderDjMain(el){ withFilt('djq', () => djMainBody(el)); }
+function djMainBody(el){
   const dj = SDJ[sDj];
   if (!dj) { el.innerHTML = '<div class="empty">Choisis un donjon à gauche.</div>'; return; }
   const st = djStats(sDj), lvl = q => (SC.quetes[q] || {}).lv || 0;
   const shownAll = djOwn(sDj).filter(qShown), bar = progBar(shownAll);
   const shown = shownAll.filter(bar.keep).sort((x, y) => lvl(x) - lvl(y) || qName(x).localeCompare(qName(y), 'fr'));
-  el.innerHTML = head(esc(dj.n), `${st.d} / ${st.n} faites · ${plural(shown.length, 'affichée')}`)
+  const filtBtn = `<button type="button" class="filt-btn" data-filtopen="djq" aria-label="Filtres des quêtes du donjon" title="Filtres des quêtes du donjon">${FUNNEL}<i class="filt-dot"${!sShowDone || sShowLocked || sSeasonal ? '' : ' hidden'}></i></button>`;
+  el.innerHTML = head(esc(dj.n), `${st.d} / ${st.n} faites · ${plural(shown.length, 'affichée')}`, filtBtn)
     + `<div class="dj-meta"><span>Niveau optimal <b>${dj.lv}</b></span>${dj.b.length ? `<span>Boss <b>${esc(dj.b.join(', '))}</b></span>` : ''}${ddbLink('j', sDj)}${dplnLink(dj.dp)}</div>`
     + bar.chips + djPlanHtml(sDj, shown) + (shown.length ? `<div class="lab">Quêtes</div>` + shown.map(id => questRow(id)).join('') : EMPTY);
   imgErr(el);

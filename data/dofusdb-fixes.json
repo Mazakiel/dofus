@@ -1,5 +1,5 @@
 {
-  "_doc": "Corrections manuelles des données DofusDB, appliquées par scripts/enrich-dofusdb.js. dansDonjon : \"tout\", \"rien\", ou la liste des lignes (texte exact de `ft`) à marquer « dans le donjon ». La règle de base est celle du site : objectif avec need.generated.dungeons non vide. donjon : id du donjon des lignes que DofusDB ne rattache à aucun. donjons › id › salles : ordre des salles du donjon (noms tels qu'affichés), les autres suivent d'après leur nom.",
+  "_doc": "Corrections manuelles des données DofusDB, appliquées par scripts/enrich-dofusdb.js. dansDonjon : \"tout\", \"rien\", ou la liste des lignes (texte exact de `ft`) à marquer « dans le donjon ». La règle de base est celle du site : objectif avec need.generated.dungeons non vide. donjon : id du donjon des lignes que DofusDB ne rattache à aucun. donjons › id › salles : ordre des salles du donjon (noms tels qu'affichés), les autres suivent d'après leur nom. donjons › id › sortieLibre : on peut ressortir et rentrer librement ; l'avertissement « avant de sortir » n'est alors pas affiché.",
   "quetes": {
     "692": {
       "dansDonjon": "tout",
@@ -49,7 +49,8 @@
         "Salle du trône",
         "Antichambre"
       ],
-      "note": "Antichambre = salle de sortie après le boss (la quête 1775 demande d'y rendre le guide à Natacha « avant de sortir »)"
+      "note": "Antichambre = salle de sortie après le boss (la quête 1775 demande d'y rendre le guide à Natacha « avant de sortir ») ; sortie libre : depuis janvier 2025, on peut entrer et sortir du donjon à volonté (page DPLN du donjon), donc pas d'avertissement « avant de sortir ».",
+      "sortieLibre": true
     }
   }
 }

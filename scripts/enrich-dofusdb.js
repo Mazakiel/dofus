@@ -100,7 +100,31 @@ async function run(client, FILE) {
     if (/trone|derniere salle|boss|repaire/.test(p)) return 800;
     return 500;
   }
-  const roomHits = [];   // { qid, i (ligne de ft), d (donjon), l (salle) }
+  // Genre d'une ligne rattachée à un donjon : d = « faire le donjon » (tuer le boss, butin du boss, salle finale), a = action de salle,
+  // p = action à faire après le boss (à ne pas manquer avant de sortir), x = hors du détail du donjon (rapporter à un PNJ, hors du donjon).
+  const bossesOf = id => (dungeons[id] && dungeons[id].bosses) || [];
+  function lineKind(l, room) {
+    const c = l.c, boss = bossesOf(l.d);
+    if (FIGHT.test(c) && boss.includes(l.mon)) return 'd';   // le combat du boss compte même si DofusDB le place sur une carte hors du donjon
+    if (room === HORS) return 'x';
+    if (FIGHT.test(c)) return 'a';
+    // rapporter à un PNJ : lié à la quête, hors du détail du donjon, sauf quand il se fait dans une salle du donjon (ex. « avant de sortir, rends le guide au PNJ »)
+    const inRoom = ![HORS, SANS].includes(room);
+    if (c === 'QuestObjectiveBringSoulToNpcData') return inRoom ? 'a' : 'x';
+    if (c === 'QuestObjectiveBringItemToNpcData') return l.it.some(id => ((items[id] || {}).dropMonsterIds || []).some(m => boss.includes(m))) ? 'd' : inRoom ? 'a' : 'x';
+    if (c === 'QuestObjectiveDiscoverMapData') return /sortie|derni[eè]re salle/i.test(l.t) ? 'd' : 'a';
+    if (c === 'QuestObjectiveFreeFormData') return COMBAT_WORDS.test(l.t) ? 'd' : 'a';
+    return 'a';
+  }
+  // Corrections par ligne (data/dofusdb-fixes.json › quetes › id › lignes : [{ i, t, salle, genre }]) : i = numéro de la ligne de « À faire », t = son texte (garde-fou)
+  const applyLineFixes = (qid, lines) => {
+    for (const f of (fixes[qid] && fixes[qid].lignes) || []) {
+      const l = lines[f.i];
+      if (!l || (f.t && l.t !== f.t)) { console.warn(`correction obsolète : quête ${qid}, ligne ${f.i} « ${f.t} »`); continue; }
+      if (f.salle) l.room = f.salle; if (f.genre) l.k = f.genre; if (f.donjon) l.d = f.donjon;
+    }
+  };
+  const roomHits = [];   // { qid, i (ligne de ft), d (donjon), l (salle), k (genre) }
 
   // Objectifs de quête exigés au départ d'une autre quête (Qo>id) : quête et texte de l'objectif
   const objIndex = new Map();
@@ -129,14 +153,19 @@ async function run(client, FILE) {
       }
       else if (c === 'QuestObjectiveDiscoverMapData' || c === 'QuestObjectiveDiscoverSubAreaData') tg.add('ex');
       else if (c === 'QuestObjectiveFreeFormData' && COMBAT_WORDS.test(txt)) tg.add('cb');
-      if (txt) lines.push({ t: txt, dj: !!(g.dungeons || []).length, d: (g.dungeons || [])[0], m: o.mapId || 0 });
+      if (txt) lines.push({ t: txt, dj: !!(g.dungeons || []).length, d: (g.dungeons || [])[0], m: o.mapId || 0, c, mon: o.parameters && o.parameters.parameter0, it: g.items || [] });
     }
     if (dj.size) tg.add('dj');
     // « Rapporter 1 âme de X » répété pour beaucoup de monstres (L'éternelle moisson : 337) : une seule ligne
     const SOUL = /^Rapporter \d+ âmes? de /, souls = lines.filter(l => SOUL.test(l.t));
-    if (souls.length > 5) { const i = lines.findIndex(l => SOUL.test(l.t)); lines.splice(i, 0, { t: `Rapporter l’âme de ${souls.length} monstres différents`, dj: souls.every(l => l.dj) }); for (let j = lines.length - 1; j > i; j--) if (SOUL.test(lines[j].t)) lines.splice(j, 1); }
+    if (souls.length > 5) { const i = lines.findIndex(l => SOUL.test(l.t)); lines.splice(i, 0, { t: `Rapporter l’âme de ${souls.length} monstres différents`, dj: souls.every(l => l.dj), c: 'QuestObjectiveBringSoulToNpcData' }); for (let j = lines.length - 1; j > i; j--) if (SOUL.test(lines[j].t)) lines.splice(j, 1); }
     applyFixes(qid, lines);
     if (fixes[qid] && fixes[qid].donjon) dj.add(fixes[qid].donjon);
+    // salle et genre de chaque ligne rattachée à un donjon ; « après le boss » : une action qui suit, dans la quête, le combat du boss du même donjon
+    for (const l of lines) if (l.dj && l.d) { l.rl = roomLabel(l.d, l.m); l.k = lineKind(l, l.rl); }
+    for (const l of lines) if (l.dj && l.d && l.k === 'd' && FIGHT.test(l.c || '')) l.boss = true;
+    lines.forEach((l, i) => { if (l.k === 'a' && lines.slice(0, i).some(b => b.boss && b.d === l.d)) l.k = 'p'; });
+    applyLineFixes(qid, lines);
     d.tg = [...tg]; if (!d.tg.length) delete d.tg;
     // début : « PNJ · [x,y] · zone » (jusqu'à 3 endroits) ; les maps d'intérieur (worldMap -1) donnent les coordonnées de l'extérieur
     const sp = ((q.startPosition || []).map(p => { const m = maps[p.mapId], n = npcs[p.npcId]; if (!m && !n) return null;
@@ -148,7 +177,7 @@ async function run(client, FILE) {
     delete d.fr;
     if (d.ob) { const po = d.ob.map(id => objIndex.get(id)).filter(Boolean).map(x => [x.q, x.t]); if (po.length) d.preO = po; else delete d.preO; } else delete d.preO;
     if (lines.length) d.ft = lines.map(l => l.t); else delete d.ft;   // liste complète, sans « … et N autres »
-    lines.forEach((l, i) => { if (l.dj && l.d) roomHits.push({ qid, i, d: l.d, l: roomLabel(l.d, l.m) }); });
+    lines.forEach((l, i) => { if (l.dj && l.d) { const nom = l.room || l.rl, ren = (fixDj[l.d] && fixDj[l.d].noms) || {}; roomHits.push({ qid, i, d: l.d, l: ren[nom] || nom, k: l.k }); } });
     const fd = lines.flatMap((l, i) => l.dj ? [i] : []);              // indices des lignes de `ft` à faire dans un donjon
     if (fd.length) d.fd = fd; else delete d.fd;
     if (d.tg) nTag++;
@@ -156,11 +185,11 @@ async function run(client, FILE) {
   // Salles de chaque donjon, dans l'ordre : réglage manuel (data/dofusdb-fixes.json › donjons › id › salles) puis rang déduit du nom
   const slOf = {};
   for (const id of new Set(roomHits.map(h => h.d))) {
-    const labels = [...new Set(roomHits.filter(h => h.d === id).map(h => h.l))], manual = (fixDj[id] && fixDj[id].salles) || [];
+    const labels = [...new Set(roomHits.filter(h => h.d === id && (h.k === 'a' || h.k === 'p')).map(h => h.l))], manual = (fixDj[id] && fixDj[id].salles) || [];
     const pos = l => { const k = manual.indexOf(l); return k >= 0 ? -1000 + k : roomRank(l); };
     slOf[id] = labels.sort((a, b) => pos(a) - pos(b) || a.localeCompare(b, 'fr'));
   }
-  for (const h of roomHits) { const d = data.quetes[h.qid]; (d.fr = d.fr || []).push([h.i, h.d, slOf[h.d].indexOf(h.l)]); }   // fr : [ligne de ft, donjon, salle]
+  for (const h of roomHits) { const d = data.quetes[h.qid]; (d.fr = d.fr || []).push([h.i, h.d, (slOf[h.d] || []).indexOf(h.l), h.k]); }   // fr : [ligne de ft, donjon, salle (-1 : hors du détail), genre d / a / p / x]
   // PNJ qui remettent certains Dofus : absents de DofusDB, à renseigner à la main si besoin, ex. { 27803: 'Gobdepin (Albuera)' }
   const DOFUS_PNJ = {};
   for (const z of data.dofus || []) { if (DOFUS_PNJ[z.id]) z.pnj = DOFUS_PNJ[z.id]; }

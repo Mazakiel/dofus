@@ -112,12 +112,23 @@ function renderDjTree(){
   const cur = SDJ[sDj], st = cur ? djStats(sDj) : null;
   document.getElementById('catBtn').innerHTML = cur ? `<span class="cb-n">${esc(cur.n)}</span><span class="pct">${st.d}/${st.n}</span><span aria-hidden="true">▾</span>` : 'Choisir un donjon';
 }
-// Vue d'ensemble d'un donjon : ce qu'il y a à y faire pour les quêtes affichées, salle par salle (ordre : SDJ[id].sl), objectif puis quête
+// Vue d'ensemble d'un donjon, pour les quêtes affichées. fr : [ligne de « À faire », donjon, salle, genre]. Genres : d = faire le donjon (boss, butin, salle finale),
+// a = action de salle, p = action à faire après le boss, x = hors du détail (rapporter à un PNJ, hors du donjon).
 function djPlanHtml(djId, qids){
-  const sl = (SDJ[djId] || {}).sl || [], rooms = sl.map(() => []);
-  for (const qid of qids) { const q = SC.quetes[qid] || {}; for (const [i, d, r] of q.fr || []) if (d === djId && rooms[r] && q.ft && q.ft[i]) rooms[r].push({ qid, t: q.ft[i] }); }
-  const body = sl.map((label, r) => rooms[r].length ? `<div class="dj-room"><span>${esc(label)}</span><span>${rooms[r].length}</span></div>`
-    + rooms[r].map(x => `<div class="ob go${qDoneS(x.qid) ? ' done' : ''}${sPick && sPick.k === 'q' && sPick.id === x.qid ? ' sel' : ''}" data-pick="q:${x.qid}" role="link" tabindex="0"><span class="x">•</span><span>${esc(x.t)} <span class="muted">· ${esc(qName(x.qid))}</span></span></div>`).join('') : '').join('');
+  const sl = (SDJ[djId] || {}).sl || [], rooms = sl.map(() => []), after = [], pure = [];
+  const row = (qid, t, extra = '') => `<div class="ob go${qDoneS(qid) ? ' done' : ''}${sPick && sPick.k === 'q' && sPick.id === qid ? ' sel' : ''}" data-pick="q:${qid}" role="link" tabindex="0"><span class="x">•</span><span>${esc(t)} <span class="muted">· ${esc(qName(qid))}${extra}</span></span></div>`;
+  for (const qid of qids) {
+    const q = SC.quetes[qid] || {}, mine = (q.fr || []).filter(f => f[1] === djId && q.ft && q.ft[f[0]]);
+    if (mine.some(f => f[3] === 'd') && !mine.some(f => f[3] === 'a' || f[3] === 'p')) pure.push(qid);   // la quête ne demande que de faire le donjon
+    for (const [i, , r, k] of mine) {
+      if (k === 'a' && rooms[r]) rooms[r].push({ qid, t: q.ft[i] });
+      else if (k === 'p' && rooms[r]) after.push({ qid, t: q.ft[i], r });
+    }
+  }
+  const head = (label, n, cls = '') => `<div class="dj-room${cls}"><span>${label}</span><span>${n}</span></div>`;
+  const body = (pure.length ? head('Faire le donjon', pure.length) + pure.map(qid => `<div class="ob go${qDoneS(qid) ? ' done' : ''}${sPick && sPick.k === 'q' && sPick.id === qid ? ' sel' : ''}" data-pick="q:${qid}" role="link" tabindex="0"><span class="x">${flagIcon('dj')}</span><span>${esc(qName(qid))} <span class="muted">· boss, butin ou salle finale</span></span></div>`).join('') : '')
+    + sl.map((label, r) => rooms[r].length ? head(esc(label), rooms[r].length) + rooms[r].map(x => row(x.qid, x.t)).join('') : '').join('')
+    + (after.length ? head('⚠ Avant de sortir : après le boss', after.length, ' warn') + after.sort((a, b) => a.r - b.r).map(x => row(x.qid, x.t, ` · ${esc(sl[x.r])}`)).join('') : '');
   return body ? `<div class="dj-plan"><div class="lab">À faire dans le donjon</div>${body}</div>` : '';
 }
 function renderDjMain(el){

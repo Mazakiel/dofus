@@ -193,6 +193,7 @@ input.gc:disabled{opacity:.6;cursor:default}
 .ob.go{cursor:pointer}
 .ob.go.sel{background:var(--win2)}
 .dj-plan{padding-bottom:6px;border-bottom:1px solid var(--line)}
+.dj-room.warn{color:var(--red)}
 .dj-room{display:flex;justify-content:space-between;gap:10px;padding:8px 16px 2px;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-txt)}
 .ob.go:hover > span:nth-child(2){text-decoration:underline}
 .ob .x.ok{color:var(--green)}

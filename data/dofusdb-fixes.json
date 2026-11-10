@@ -16,8 +16,40 @@
         "Vaincre Capsaaloocke"
       ],
       "note": "Voler dans les plumes : combat au milieu du donjon sans donjon rattaché dans DofusDB",
-      "donjon": 3
+      "donjon": 3,
+      "lignes": [
+        {
+          "i": 4,
+          "t": "Vaincre Capsaaloocke",
+          "genre": "d",
+          "note": "Mini-boss obligatoire pour accéder au boss (page DPLN : « il faut maintenant trouver et vaincre Capsaaloocke »)"
+        }
+      ]
+    },
+    "1521": {
+      "donjon": 3,
+      "dansDonjon": [
+        "Voler le Livre des Taures au Maître Corbac et donner le livre à Mériana"
+      ],
+      "lignes": [
+        {
+          "i": 8,
+          "t": "Voler le Livre des Taures au Maître Corbac et donner le livre à Mériana",
+          "genre": "d",
+          "note": "DofusDB ne rattache pas cet objectif au donjon ; la page DPLN liste la quête dans « Quêtes liées à ce donjon » (À prévoir : Donjon Bibliothèque du Maitre Corbac)"
+        }
+      ]
     }
   },
-  "donjons": {}
+  "donjons": {
+    "3": {
+      "salles": [
+        "Deuxième salle",
+        "Septième salle",
+        "Salle du trône",
+        "Antichambre"
+      ],
+      "note": "Antichambre = salle de sortie après le boss (la quête 1775 demande d'y rendre le guide à Natacha « avant de sortir »)"
+    }
+  }
 }

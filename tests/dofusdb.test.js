@@ -82,3 +82,16 @@ test('conditions de départ : quêtes, succès, objets ; une alternative n’exi
   assert.deepEqual(parseStart('((Qf=3))&(OA=4)'), { pre: [3], preA: [4], po: [], en: [], ob: [], pl: null }, 'parenthèses redondantes retirées');
   assert.deepEqual(parseStart(''), { pre: [], preA: [], po: [], en: [], ob: [], pl: null });
 });
+
+test('Dofus pour les Noobs : une page de guide est liée au succès ou à la quête du même nom, une quête hérite de la page de son succès', () => {
+  const { parseGuides, mapGuides } = require('../scripts/map-dpln.js');
+  const html = 'x Premier temps <a href="/vert-eacutemeraude.html">Vert &eacute;meraude.</a><a href="/hors-succes.html"><span>Chargez&nbsp;!</span></a><a href="/vert-eacutemeraude.html">doublon</a>';
+  const g = parseGuides(html);
+  assert.deepEqual([...g], [['/vert-eacutemeraude.html', 'Vert émeraude'], ['/hors-succes.html', 'Chargez !']], 'entités décodées, point final retiré, un seul lien par adresse');
+  const data = { succes: [{ id: 1, n: 'Vert émeraude', ob: [10] }], objectifs: { 10: { t: 'q', r: 7 } }, quetes: { 7: { n: 'Une quête du succès' }, 8: { n: 'Chargez !' }, 9: { n: 'Sans page' } } };
+  const m = mapGuides(g, data);
+  assert.deepEqual(m.succes, { 1: ['/vert-eacutemeraude.html', 'Vert émeraude'] });
+  assert.deepEqual(m.quetes[7], [['/vert-eacutemeraude.html', 'Vert émeraude']], 'page héritée du succès');
+  assert.deepEqual(m.quetes[8], [['/hors-succes.html', 'Chargez !']], 'page portant le nom de la quête');
+  assert.equal(m.quetes[9], undefined);
+});

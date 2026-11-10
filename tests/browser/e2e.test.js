@@ -263,6 +263,7 @@ test('fiche de quête : la ligne Donjon mène à la page du donjon, le statut n\
   assert.ok(q, 'une quête avec un donjon');
   await p.eval(`mTab='quetes'; sMode='quetes'; renderSucces(); sPick={k:'q',id:${q}}; renderScList(); renderDetail(); 1`); await p.wait(200);
   assert.equal(await p.eval(`!!document.querySelector('#scDetail [data-godj] .ri.dj')`), true, 'icône de donjon sur la ligne');
+  assert.match(await p.eval(`(document.querySelector('#scDetail .ddb-row a[href*="dofuspourlesnoobs"]') || {}).href || ''`), /^https:\/\/www\.dofuspourlesnoobs\.com\/.+\.html$/, 'lien Dofus pour les Noobs sur la fiche de quête');
   assert.equal(await p.eval(`document.querySelector('#scDetail .tag.dj') && document.querySelector('#scDetail [data-godj] .tag.dj')`), null, 'plus de pastille DJ en texte sur la ligne');
   const dj = await p.eval(`+document.querySelector('#scDetail [data-godj]').dataset.godj`);
   await p.eval(`document.querySelector('#scDetail [data-godj]').click(); 1`); await p.wait(300);

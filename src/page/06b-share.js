@@ -8,6 +8,8 @@ const coordBtn = p => p.x == null ? '' : `<button type="button" class="coord" da
 const DDB = 'https://dofusdb.fr/fr/database/';
 const ddbUrl = { q: id => `${DDB}quest/${id}`, a: id => `${DDB}achievements/${id}`, d: id => `${DDB}item/${id}`, j: id => `${DDB}dungeon/${id}` };
 const DPLN = 'https://www.dofuspourlesnoobs.com';   // guides de donjons : une page par donjon, adresses dans data/dpln-links.json
+// Pages « Dofus pour les Noobs » d'une quête ou d'un succès : liste de [adresse, titre]
+const dplnLinks = pages => (pages || []).map(([u, t], _, all) => `<a class="ddb" href="${DPLN}${u}" target="_blank" rel="noopener noreferrer" title="${esc(t)}">${all.length > 1 ? `Guide : ${esc(t)}` : 'Guide Dofus pour les Noobs'} ↗</a>`).join('');
 const ddbLink = (kind, id, label = 'Voir sur DofusDB') => `<a class="ddb" href="${ddbUrl[kind](id)}" target="_blank" rel="noopener noreferrer">${label} ↗</a>`;
 
 // Copie dans le presse-papiers ; sans l'API (page non sécurisée, ancien navigateur) on passe par une zone de texte cachée

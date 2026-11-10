@@ -478,7 +478,7 @@ input.gc:focus-visible{outline-offset:3px}
 .copy.copyfail,.coord.copyfail{border-color:var(--red);color:var(--red)}
 .coord{font:inherit;font-size:.8rem;font-weight:800;color:var(--gold-txt);background:none;border:1px dashed var(--line);border-radius:5px;padding:0 6px;cursor:pointer}
 .coord:hover,.coord:focus-visible{border-color:var(--gold)}
-.ddb-row{text-align:center;padding:12px 16px 0}
+.ddb-row{text-align:center;padding:12px 16px 0;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px}
 .ddb{font-size:.78rem;font-weight:700;color:var(--gold-txt);text-decoration:none;border-bottom:1px dotted currentColor}
 .ddb:hover,.ddb:focus-visible{border-bottom-style:solid}
 @media (max-width:700px){.copy{width:34px;height:34px}.coord{padding:4px 8px}}

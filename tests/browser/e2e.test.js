@@ -568,6 +568,16 @@ test('parcours : aucune flèche ne traverse une carte, aucune carte n’en cheva
   assert.deepEqual(r.cut, [], 'flèches qui traversent une carte');
 }));
 
+test('parcours : toute quête exigée par un Dofus est affichée (sa carte, un Dofus ou un succès qui le précède) ; le Cauchemar part de « Résonance »', { skip }, () => withPage(async p => {
+  await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(700);
+  assert.deepEqual(await p.eval(`pCoverage()`), {}, 'quêtes exigées mais affichées nulle part : ajouter le succès qui les contient au parcours');
+  const r = await p.eval(`(() => { const t = id => document.getElementById('cz-' + id).textContent; const ready = [...document.querySelectorAll('#pgrid .cz.ready')].map(e => e.id);
+    return { cauch: t('cauch'), pluie: t('pluie'), ready }; })()`);
+  assert.match(r.cauch, /après Ravagés, L'avenir du futur/, 'le Cauchemar indique ce qui le précède, pas seulement le Tacheté');
+  assert.match(r.pluie, /après Tacheté, Eliocalypse : Résonance/);
+  assert.ok(r.ready.includes('cz-reso') && !r.ready.includes('cz-cauch'), 'le point de départ est Résonance, pas le Cauchemar');
+}, {}, buildPage(path.join(__dirname, '..', '..', 'data', 'dofusdb.json'))));
+
 test('Dom de Pin : conditions d\'achat (succès, quête) et PNJ avec position copiable, placé sous « Six sur six »', { skip }, () => withPage(async p => {
   await p.eval(`window.__copied = []; Object.defineProperty(navigator, 'clipboard', { value: { writeText: t => { window.__copied.push(t); return Promise.resolve(); } }, configurable: true }); localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(600);
   const r = await p.eval(`(() => { const pin = pDofus('Dom de Pin'); sPick = { k: 'd', id: pin.id }; renderScList(); renderDetail(); const d = document.getElementById('scDetail').textContent;
@@ -584,7 +594,7 @@ test('parcours : en masquant les obtenus, les lignes vides disparaissent et la g
   await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(600);
   const full = await p.eval(`document.getElementById('pgrid').offsetHeight`);
   // tout ce qui est avant le niveau 200 est obtenu : seules restent les lignes du palier 200
-  await p.eval(`SDZL.filter(d => (SDZLV[d.id] || [200, 200])[1] < 200 && d.n !== 'Dom de Pin').forEach(d => setSdzOwned(d, true)); sdone.add(1036); setFilt(sMode,{done:false}); renderSucces(); 1`); await p.wait(300);
+  await p.eval(`SDZL.filter(d => (SDZLV[d.id] || [200, 200])[1] < 200 && d.n !== 'Dom de Pin').forEach(d => setSdzOwned(d, true)); [1036, 1678, 600, 2306].forEach(a => sdone.add(a)); setFilt(sMode,{done:false}); renderSucces(); 1`); await p.wait(300);
   const r = await p.eval(`(() => { const g = document.getElementById('pgrid'); const tops = [...g.querySelectorAll('.cz')].map(e => e.offsetTop);
     return { h: g.offsetHeight, minTop: Math.min(...tops), lines: [...g.querySelectorAll('.pband span')].map(e => e.textContent), n: tops.length }; })()`);
   assert.ok(r.n >= 5, 'des cartes restent');

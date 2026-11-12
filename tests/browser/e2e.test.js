@@ -568,14 +568,18 @@ test('parcours : aucune flèche ne traverse une carte, aucune carte n’en cheva
   assert.deepEqual(r.cut, [], 'flèches qui traversent une carte');
 }));
 
-test('parcours : toute quête exigée par un Dofus est affichée (sa carte, un Dofus ou un succès qui le précède) ; le Cauchemar part de « Résonance »', { skip }, () => withPage(async p => {
+test('parcours : toute quête exigée par un Dofus est affichée (sa carte ou un succès inclus) ; le Cauchemar inclut ses succès, la fiche les montre dans le graphe', { skip }, () => withPage(async p => {
   await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(700);
-  assert.deepEqual(await p.eval(`pCoverage()`), {}, 'quêtes exigées mais affichées nulle part : ajouter le succès qui les contient au parcours');
-  const r = await p.eval(`(() => { const t = id => document.getElementById('cz-' + id).textContent; const ready = [...document.querySelectorAll('#pgrid .cz.ready')].map(e => e.id);
-    return { cauch: t('cauch'), pluie: t('pluie'), ready }; })()`);
-  assert.match(r.cauch, /après Ravagés, L'avenir du futur/, 'le Cauchemar indique ce qui le précède, pas seulement le Tacheté');
-  assert.match(r.pluie, /après Tacheté, Eliocalypse : Résonance/);
-  assert.ok(r.ready.includes('cz-reso') && !r.ready.includes('cz-cauch'), 'le point de départ est Résonance, pas le Cauchemar');
+  assert.deepEqual(await p.eval(`pCoverage()`), {}, 'quêtes exigées mais affichées nulle part : ajouter le succès qui les contient à une carte (inc)');
+  const r = await p.eval(`(() => { const c = document.getElementById('cz-cauch'), m = document.getElementById('cz-mais');
+    return { cauch: c.querySelector('.cz-inc').textContent, tip: c.title, mais: m.querySelector('.cz-inc').textContent, cartes: ['reso', 'pluie', 'avenir', 'ravag', 'prol', 'citoyen', 'kradoc'].filter(id => document.getElementById('cz-' + id)) }; })()`);
+  assert.equal(r.cauch, '+4 succès'); assert.equal(r.mais, '+2 succès'); assert.deepEqual(r.cartes, [], 'les succès inclus n’ont pas de carte à eux');
+  assert.match(r.tip, /Eliocalypse : Résonance.*Après la pluie.*L'avenir du futur.*Ravagés/);
+  // la fiche du Cauchemar : une légende par succès, et un halo par quête dans le graphe
+  const f = await p.eval(`(() => { const d = pDofus('Dofus du Cauchemar'); sPick = { k: 'd', id: d.id }; renderScList(); renderDetail();
+    return { chips: [...document.querySelectorAll('#scDetail .fx-g')].map(e => e.textContent.trim()), halos: document.querySelectorAll('#scDetail .fx-h').length }; })()`);
+  assert.equal(f.chips.length, 5, 'le succès du Dofus et les quatre inclus : ' + f.chips.join(' | '));
+  assert.ok(f.halos >= 16, 'les quêtes des succès inclus sont marquées : ' + f.halos);
 }, {}, buildPage(path.join(__dirname, '..', '..', 'data', 'dofusdb.json'))));
 
 test('Dom de Pin : conditions d\'achat (succès, quête) et PNJ avec position copiable, placé sous « Six sur six »', { skip }, () => withPage(async p => {
@@ -594,7 +598,7 @@ test('parcours : en masquant les obtenus, les lignes vides disparaissent et la g
   await p.eval(`localStorage.clear(); location.hash = '#/recompenses/dofus'; 1`); await p.wait(600);
   const full = await p.eval(`document.getElementById('pgrid').offsetHeight`);
   // tout ce qui est avant le niveau 200 est obtenu : seules restent les lignes du palier 200
-  await p.eval(`SDZL.filter(d => (SDZLV[d.id] || [200, 200])[1] < 200 && d.n !== 'Dom de Pin').forEach(d => setSdzOwned(d, true)); [1036, 1678, 600, 2306].forEach(a => sdone.add(a)); setFilt(sMode,{done:false}); renderSucces(); 1`); await p.wait(300);
+  await p.eval(`SDZL.filter(d => (SDZLV[d.id] || [200, 200])[1] < 200 && d.n !== 'Dom de Pin').forEach(d => setSdzOwned(d, true)); sdone.add(1036); setFilt(sMode,{done:false}); renderSucces(); 1`); await p.wait(300);
   const r = await p.eval(`(() => { const g = document.getElementById('pgrid'); const tops = [...g.querySelectorAll('.cz')].map(e => e.offsetTop);
     return { h: g.offsetHeight, minTop: Math.min(...tops), lines: [...g.querySelectorAll('.pband span')].map(e => e.textContent), n: tops.length }; })()`);
   assert.ok(r.n >= 5, 'des cartes restent');

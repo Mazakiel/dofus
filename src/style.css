@@ -9,6 +9,7 @@
   --surface:var(--win); --surface2:var(--win2); --border:var(--line); --accent:var(--gold-txt); --accent-soft:#f3e4bd;
   --t1:var(--green); --t1s:#e3f0d6; --t4:var(--red); --tn:var(--muted); --tns:var(--sec);
   --shadow:0 6px 18px rgba(60,40,10,.10);
+  --g0:#3f78ad; --g1:#8a4fa3; --g2:#2a8f8a; --g3:#b8860b; --g4:#c0577f;   /* une teinte par succès inclus (légende et halos du graphe des quêtes) */
   --tg-dj:#a8352c; --tg-cb:#a85a1c; --tg-fm:#3d7a1f; --tg-cr:#7a5a07; --tg-ex:#5f5849; --tg-gr:#5f5849; --ic-grp:#3f78ad; --yel:#c99400;
   --star-filter:brightness(0) saturate(100%) invert(48%) sepia(68%) saturate(520%) hue-rotate(58deg) brightness(95%); --cup-filter:brightness(.5); --grp-filter:brightness(.78);
 }
@@ -21,6 +22,7 @@
     --detail1:#24221e; --detail2:#1d1c19; --quote:#3a362e;
     --accent-soft:rgba(240,197,58,.14); --t1s:rgba(140,207,77,.12);
     --shadow:0 10px 30px rgba(0,0,0,.45);
+    --g0:#6fb0e8; --g1:#c08ae0; --g2:#5fcfc9; --g3:#f0c53a; --g4:#f08fb0;
     --tg-dj:#e0605a; --tg-cb:#e0832f; --tg-fm:#8ccf4d; --tg-cr:#f0c53a; --tg-ex:#9da0a8; --tg-gr:#9da0a8; --ic-grp:#6fb0e8; --yel:#f0c53a;
     --star-filter:brightness(0) saturate(100%) invert(75%) sepia(45%) saturate(600%) hue-rotate(60deg) brightness(100%); --cup-filter:none; --grp-filter:none;
   }
@@ -33,6 +35,7 @@
   --detail1:#24221e; --detail2:#1d1c19; --quote:#3a362e;
   --accent-soft:rgba(240,197,58,.14); --t1s:rgba(140,207,77,.12);
   --shadow:0 10px 30px rgba(0,0,0,.45);
+  --g0:#6fb0e8; --g1:#c08ae0; --g2:#5fcfc9; --g3:#f0c53a; --g4:#f08fb0;
   --tg-dj:#e0605a; --tg-cb:#e0832f; --tg-fm:#8ccf4d; --tg-cr:#f0c53a; --tg-ex:#9da0a8; --tg-gr:#9da0a8; --ic-grp:#6fb0e8; --yel:#f0c53a;
   --star-filter:brightness(0) saturate(100%) invert(75%) sepia(45%) saturate(600%) hue-rotate(60deg) brightness(100%); --cup-filter:none; --grp-filter:none;
 }
@@ -505,6 +508,7 @@ input.gc:focus-visible{outline-offset:3px}
 .cz-t b{display:block;font-size:.8rem;font-weight:800;overflow-wrap:break-word;hyphens:manual}
 .cz-t small{display:block;font-size:.68rem;color:var(--muted);font-weight:600;white-space:nowrap}
 .cz-after{display:none !important}
+.cz-inc{position:absolute;top:-8px;left:8px;z-index:2;font-size:.56rem;font-weight:800;letter-spacing:.04em;background:var(--win);color:var(--gold-txt);border:1px solid var(--gold);border-radius:5px;padding:0 6px}
 .cz.own .cz.pv{border-style:dashed;background:var(--detail1)}
 .cz.pv img{width:28px;height:28px}
 /* Fiche (quête, succès, Dofus…) : n'occupe de place que quand quelque chose est choisi.
@@ -570,6 +574,11 @@ input[type=checkbox]:not(.gc){accent-color:var(--gold)}
 .gcn.st{border-color:var(--yel);box-shadow:inset 0 0 0 3px var(--win),inset 0 0 0 9px color-mix(in srgb,var(--yel) 55%,transparent)}
 .gcn.bl{border-color:var(--red);box-shadow:inset 0 0 0 3px var(--win),inset 0 0 0 9px color-mix(in srgb,var(--red) 55%,transparent)}
 .gcn.lock{border-style:dashed}
+.fx-h{opacity:.4}
+.fx-leg{display:flex;flex-wrap:wrap;gap:6px;margin:6px 14px 2px}
+.fx-g{display:inline-flex;align-items:center;gap:6px;padding:2px 9px 2px 7px;border:1px solid var(--line);border-radius:999px;background:var(--win);color:var(--text);font:inherit;font-size:.74rem;cursor:pointer}
+.fx-g:hover{border-color:var(--gold)}.fx-g i{width:10px;height:10px;border-radius:50%;background:var(--gc);flex:none}.fx-g b{color:var(--muted);font-weight:700}
+.fx-list .ob.fx-gi{box-shadow:inset 3px 0 0 var(--gc)}
 .fx-t{position:absolute;width:18px;height:18px;border-radius:50%;background:var(--orange)}
 #fxTip{position:fixed;display:none;pointer-events:none;z-index:60;max-width:260px;padding:7px 10px;border:1px solid var(--orange);border-radius:6px;background:var(--win);color:var(--text);font-size:.78rem;box-shadow:0 4px 14px rgba(0,0,0,.35)}
 #fxTip b{display:block;margin-bottom:2px}

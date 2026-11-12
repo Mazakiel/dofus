@@ -31,21 +31,28 @@ function fxModel(qs) {
   return { S, pre, dashed, rank, col, nc, sinks: new Set(sinks), maxr: Math.max(0, ...rank.values()) };
 }
 // Liste : dans l'ordre où on les fait (une quête après celles qu'elle exige)
-function fluxList(qs) {
+function fluxList(qs, groups) {
   const m = fxModel(qs);
   return `<div class="fx-list">${[...m.S].sort((x, y) => m.rank.get(x) - m.rank.get(y) || (SC.quetes[x].lv || 0) - (SC.quetes[y].lv || 0) || x - y).map(q =>
-    `<div class="ob"><span class="gcn round ${qCls(q)}"></span><span><span class="sgo" data-pick="q:${q}">${esc(qName(q))}</span></span><span class="lv">${SC.quetes[q].lv ? 'Niv. ' + SC.quetes[q].lv : ''}</span></div>`).join('')}</div>`;
+    `<div class="ob${fxG(groups, q) >= 0 ? ' fx-gi' : ''}"${fxG(groups, q) >= 0 ? ` style="--gc:var(--g${fxG(groups, q) % 5})"` : ''}><span class="gcn round ${qCls(q)}"></span><span><span class="sgo" data-pick="q:${q}">${esc(qName(q))}</span></span><span class="lv">${SC.quetes[q].lv ? 'Niv. ' + SC.quetes[q].lv : ''}</span></div>`).join('')}</div>`;
 }
+// Succès regroupés (cartes qui en incluent d'autres) : index du groupe d'une quête, et légende cliquable (un chip par succès qui a encore des quêtes)
+const fxG = (groups, q) => groups ? groups.findIndex(g => g.qs.has(q)) : -1;
+const fxLegend = (todo, groups) => {
+  if (!groups) return '';
+  const chips = groups.map((g, i) => [g, i, todo.filter(q => g.qs.has(q) && groups.findIndex(h => h.qs.has(q)) === i).length]).filter(c => c[2]);
+  return chips.length ? `<div class="fx-leg" aria-label="Succès inclus">${chips.map(([g, i, n]) => `<button type="button" class="fx-g" style="--gc:var(--g${i % 5})" data-pick="a:${g.a}" title="${esc(g.name)}"><i></i>${esc(g.name)} <b>${n}</b></button>`).join('')}</div>` : '';
+};
 // Section de fiche : titre, compteur de quêtes, bascule liste / graphe
-function fluxSection(qs, target, lab = 'Il reste') {
+function fluxSection(qs, target, lab = 'Il reste', groups = null) {
   const todo = [...qs].filter(q => SC.quetes[q]);
   if (!todo.length) return '';
   const count = plural(todo.length, 'quête') + ' à faire';
-  if (todo.length < 2) return `<div class="lab">${lab}</div><div class="ob"><span>${count}</span></div>${fluxList(todo)}`;
+  if (todo.length < 2) return `<div class="lab">${lab}</div><div class="ob"><span>${count}</span></div>${fxLegend(todo, groups)}${fluxList(todo, groups)}`;
   const seg = `<div class="seg fx-seg" role="group" aria-label="Présentation">${[['graph', 'Graphe'], ['list', 'Liste']].map(([k, l]) => `<button type="button" class="seg-b" data-fxmode="${k}" aria-pressed="${fxMode === k}">${l}</button>`).join('')}</div>`;
-  return `<div class="lab">${lab}</div><div class="fx-head"><span>${count}</span>${seg}</div>${fxMode === 'list' ? fluxList(todo) : fluxHtml(todo, target)}`;
+  return `<div class="lab">${lab}</div><div class="fx-head"><span>${count}</span>${seg}</div>${fxLegend(todo, groups)}${fxMode === 'list' ? fluxList(todo, groups) : fluxHtml(todo, target, groups)}`;
 }
-function fluxHtml(qs, target) {
+function fluxHtml(qs, target, groups) {
   const m = fxModel(qs); if (m.S.size < 2) return '';
   const cw = m.nc > 1 ? Math.max(FX_CWMIN, Math.min(FX_CW, (FX_MAXW - FX_PAD * 2) / (m.nc - 1))) : FX_CW, inner = FX_PAD * 2 + (m.nc - 1) * cw;
   const W = Math.max(150, inner), off = (W - inner) / 2, R = 9;   // R : rayon des pastilles (toutes de même taille)
@@ -53,6 +60,7 @@ function fluxHtml(qs, target) {
   const ty = FX_PAD * 2 + m.maxr * FX_RH + FX_RH * 0.9, bus = ty - 24, H = ty + FX_PAD;
   const xs = [...m.sinks].map(X), cx = W / 2;   // la cible est au milieu du graphe ; le bus va jusqu'à elle même si les départs sont d'un seul côté
   let e = '', n = '';
+  for (const q of m.S) { const g = fxG(groups, q); if (g >= 0) e += `<circle class="fx-h" cx="${X(q)}" cy="${Y(q)}" r="${R + 4}" style="fill:var(--g${g % 5})"/>`; }   // halo : le succès de la quête
   for (const q of m.S) for (const p of m.pre.get(q)) {
     const x1 = X(p), y1 = Y(p) + R, x2 = X(q), y2 = Y(q) - R, mid = y2 - FX_RH / 2 + 4;
     e += `<path class="fx-e${m.dashed.has(p + '>' + q) ? ' d' : ''}" d="M${x1} ${y1}V${x1 === x2 ? y2 : `${mid}H${x2}V${y2}`}"/>`;

@@ -7,46 +7,39 @@ const PRIM = ['Dofus Ocre', 'Dofus Émeraude', 'Dofus Pourpre', 'Dofus Turquoise
 // horizontalement, pas de colonnes régulières : chaque famille a son décalage (PLANES, en pixels). Ce qui dépend d'un autre Dofus est toujours plus bas.
 // Les Dofus sont désignés par leur nom, les succès et quêtes par leur identifiant. r = ligne, lane = position horizontale, s = largeur en cartes.
 const PW = 156, PSTEP = 172, PNH = 72, PGAP = 40, PGAP_STRAIGHT = 28, PGAP_MIN = 16;   // largeur d'une carte, pas entre deux cartes voisines, hauteur d'une ligne, espace avant une ligne où arrive un coude / une flèche droite / rien
-const PLANES = { A: 0, M1: 172, M2: 344, P: 532, E: 704, F: 876, D: 1048, I1: 1220, I2: 1392 };   // Argenté ; les deux colonnes des primordiaux ; Pandala ; les deux colonnes d'Éliocalypse (Cauchemar) ; Dimensions Divines ; indépendants
+const PLANES = { A: 0, M1: 172, M2: 344, P: 532, D: 704, I1: 876, I2: 1048 };   // Argenté ; les deux colonnes des primordiaux ; Pandala ; Dimensions Divines ; indépendants
 const PBANDS = [[3, 50], [4, 100], [6, 150], [7, 200]];   // [première ligne du palier, niveau où il commence] : un trait « niv. N » veut dire « niveau N ou plus » (un Dofus de niveau 100 est sous le trait 100)
 const PN = [
   { id: 'arg', d: 'Dofus Argenté', lane: 'A', r: 2 },                              // niv. 2–40
-  { id: 'citoyen', ach: 1678, lane: 'M1', s: 2, r: 1 },                          // « Un citoyen modèle » : « Ça sent le gaz » et « Balade en forêt » (niv. 25–30) exigées par « Le réceptacle des Dofus »
-  { id: 'kradoc', ach: 600, lane: 'P', r: 1 },                                   // « La grande kradoc » : « L'île des naufragés » (niv. 35) exigée par les quêtes d'Ocre d'ambre
-  { id: 'mais', ach: 1036, lane: 'M1', s: 2, r: 2 },                              // « Mais où sont les Dofus ? » : les quêtes d'introduction des Dofus (niv. 30–40), tronc commun des six primordiaux
+  { id: 'mais', ach: 1036, lane: 'M1', s: 2, r: 2, inc: [1678, 600] },            // « Mais où sont les Dofus ? » : les quêtes d'introduction des Dofus (niv. 30–40), tronc commun des six primordiaux. Inclut « Un citoyen modèle » (« Balade en forêt », exigée par « Le réceptacle des Dofus ») et « La grande kradoc » (« L'île des naufragés », exigée par les quêtes d'Ocre d'ambre)                              // « Mais où sont les Dofus ? » : les quêtes d'introduction des Dofus (niv. 30–40), tronc commun des six primordiaux
   { id: 'cawotte', d: 'Dofus Cawotte', lane: 'I1', r: 3 },                        // niv. 60 ; rattaché à l'introduction des Dofus (indication du joueur : DofusDB ne donne pas ce lien)
   { id: 'veill', d: 'Dofus des Veilleurs', lane: 'D', r: 4 },                    // niv. 100 ; Dimensions Divines : entre la série Pandala et les indépendants
   { id: 'domakuro', d: 'Domakuro', lane: 'P', r: 4 },                             // niv. 30–140
   { id: 'dorigami', d: 'Dorigami', lane: 'P', r: 6 },                              // niv. 160–170
   { id: 'tach', d: 'Dofus Tacheté', lane: 'P', r: 7 },                            // sa dernière quête, « En ce jardin qui nous unit », est exigée par « Après la pluie » (Cauchemar)
   { id: 'neb', d: 'Dofus Nébuleux', lane: 'D', r: 7 },                            // niv. 100–200 : niveau de fin 200
-  // Éliocalypse : ce que le Cauchemar exige en plus du Tacheté. Tout prérequis qu'aucun autre Dofus du parcours ne couvre a sa carte (succès qui contient la quête) ;
-  // pCoverage() le vérifie. La chaîne commence au niveau 50 (« Chaque chose en son temps »), sans rapport avec le Tacheté.
-  { id: 'reso', ach: 2306, lane: 'E', s: 2, r: 3 },                               // « Éliocalypse : Résonance » : 9 quêtes de niv. 50, la source des deux branches
-  { id: 'pluie', ach: 5076, lane: 'E', r: 8 },                                    // « Après la pluie » : « Quand l'éveil n'est qu'un songe » exige « En ce jardin qui nous unit » (Tacheté) et « La source de tous les maux » (Résonance)
-  { id: 'avenir', ach: 2304, lane: 'F', r: 8 },                                   // « L'avenir du futur » : « Prise de conscience » (exigée par « Un héritage tourmenté ») ; part de « Rêves translucides » (Résonance)
-  { id: 'ravag', ach: 5081, lane: 'E', r: 9 },                                    // « Ravagés » : les trois quêtes qui mènent à « La danse de la dissonance »
-  { id: 'cauch', d: 'Dofus du Cauchemar', lane: 'E', r: 10 },                     // ses quêtes : « La danse de la dissonance », « Descendre aux cendres », « Un héritage tourmenté », « Les totems de Maïmane »
-  { id: 'prol', ach: 5222, lane: 'E', r: 11 },                                    // « Le secret des Dofus : Prologue » : « Entretemps, une renaissance » exige « Descendre aux cendres » (Cauchemar), « Prise de conscience » et « Six sur six »
+  // Le Cauchemar inclut les succès d'Éliocalypse qu'il exige en plus du Tacheté (la chaîne commence au niveau 50, « Chaque chose en son temps ») : un succès qu'aucun autre Dofus ne couvre
+  // n'a pas sa carte, il est inclus dans celle qui l'exige (inc) ; pCoverage() vérifie que rien ne manque.
+  { id: 'cauch', d: 'Dofus du Cauchemar', lane: 'P', r: 8, inc: [2306, 5076, 2304, 5081] },   // Résonance, Après la pluie (exige « En ce jardin qui nous unit », du Tacheté), L'avenir du futur, Ravagés
   { id: 'six', ach: 1705, lane: 'M1', s: 2, r: 8 },                               // « Six sur six » (6/6) : les six primordiaux et leurs quêtes finales
   { id: 'scint', d: 'Dofus Argenté Scintillant', lane: 'M1', r: 9 },              // demande Argenté et presque tout « Six sur six » (il lui manque ses deux dernières quêtes)
-  { id: 'pin', d: 'Dom de Pin', lane: 'M2', r: 12 },                              // s'achète à un PNJ une fois « Six sur six », « L'héritage de l'île brisée » et la quête « Entretemps, une renaissance » faits ; exigé par « Flovoraison » (Sylvestre)
-  { id: 'sylv', d: 'Dofus Sylvestre', lane: 'P', r: 13 },                            // « Par ce serment s'écrit le monde » (Après la pluie) et la quête de Verdoyant, un objet de quête masqué
+  { id: 'pin', d: 'Dom de Pin', lane: 'M2', r: 9, inc: [5222] },                              // s'achète à un PNJ une fois « Six sur six », « L'héritage de l'île brisée » et la quête « Entretemps, une renaissance » faits ; exigé par « Flovoraison » (Sylvestre)
+  { id: 'sylv', d: 'Dofus Sylvestre', lane: 'P', r: 10 },                            // « Par ce serment s'écrit le monde » (Après la pluie) et la quête de Verdoyant, un objet de quête masqué
 ];
 // Les six primordiaux : deux par ligne (lignes 4, 6 et 7, selon leur niveau), dans un cadre commun, sans lien entre eux (ils dépendent tous du tronc commun)
 const PRIM_SLOTS = [[4, 'M1'], [4, 'M2'], [6, 'M1'], [6, 'M2'], [7, 'M1'], [7, 'M2']];
 const PBOX = { id: 'prim' };
 const PALONE_FIRST = [2, 3, 4, 6, 7];   // première ligne des indépendants pour : < 50, 50–99, 100–149, 150–199, 200
 // Flèches : ['de', 'vers']. Une flèche va toujours vers le bas (ce qui est dessous dépend de ce qui est dessus).
-const PE = [['citoyen', 'mais'], ['mais', 'cawotte'], ['mais', 'prim'], ['kradoc', 'prim'], ['prim', 'six'], ['arg', 'scint'], ['six', 'scint'],
-  ['domakuro', 'dorigami'], ['dorigami', 'tach'], ['tach', 'pluie'], ['reso', 'pluie'], ['reso', 'avenir'], ['pluie', 'ravag'], ['ravag', 'cauch'], ['avenir', 'cauch'],
-  ['cauch', 'prol'], ['prol', 'pin'], ['six', 'pin'], ['pin', 'sylv'], ['veill', 'neb']];
+const PE = [['mais', 'cawotte'], ['mais', 'prim'], ['prim', 'six'], ['arg', 'scint'], ['six', 'scint'],
+  ['domakuro', 'dorigami'], ['dorigami', 'tach'], ['tach', 'cauch'], ['cauch', 'pin'], ['six', 'pin'], ['pin', 'sylv'], ['veill', 'neb']];
 const pDofus = name => SDZL.find(d => d.n === name);
 const pNode = id => (id === 'prim' ? PBOX : PN.find(n => n.id === id));
 const pPlaced = new Set(PN.filter(n => n.d).map(n => n.d).concat(PRIM));
 // Contrôle : chaque quête qu'un Dofus du parcours exige doit figurer sur sa carte, sur celle d'un Dofus ou d'un succès qui le précède (flèches, de proche en proche).
 // Rend, par Dofus, les quêtes que rien n'affiche. Un Dofus ajouté au parcours qui exige une chaîne inconnue y apparaît ; la liste doit rester vide.
-const pOwn = n => n.id === 'prim' ? PRIM.map(pDofus).filter(Boolean).flatMap(sdzOwnQuests) : n.d ? (pDofus(n.d) ? sdzOwnQuests(pDofus(n.d)) : []) : n.ach ? sdzOwnQuests({ a: n.ach }) : [n.q];
+const pInc = n => (n.inc || []).flatMap(a => sdzOwnQuests({ a }));
+const pOwn = n => pInc(n).concat(n.id === 'prim' ? PRIM.map(pDofus).filter(Boolean).flatMap(sdzOwnQuests) : n.d ? (pDofus(n.d) ? sdzOwnQuests(pDofus(n.d)) : []) : n.ach ? sdzOwnQuests({ a: n.ach }) : [n.q]);
 function pCoverage() {
   const up = id => PE.filter(e => e[1] === id).map(e => e[0]), anc = id => { const s = new Set(); const w = x => up(x).forEach(a => { if (!s.has(a)) { s.add(a); w(a); } }); w(id); return s; };
   const out = {};
@@ -58,17 +51,28 @@ function pCoverage() {
   }
   return out;
 }
+// Succès d'une carte du parcours, pour regrouper les quêtes de la fiche : celui de la carte, puis ceux qu'elle inclut (une quête va au premier qui la contient)
+function pFluxGroups(kind, id) {
+  const n = PN.find(x => kind === 'd' ? x.d && pDofus(x.d) && pDofus(x.d).id === id : x.ach === id);
+  if (!n || !(n.inc || []).length) return null;
+  const ids = [kind === 'd' ? pDofus(n.d).a : n.ach, ...n.inc].filter(a => a && SACH[a]);
+  return ids.map(a => ({ a, name: SACH[a].n, qs: new Set(sdzOwnQuests({ a })) }));
+}
 const pLeft = d => collectPrereqs('d', d.id).q.size;
 const pDoneNode = n => n.id === 'prim' ? PRIM.map(pDofus).filter(Boolean).every(sdzOwned)
   : n.d ? (pDofus(n.d) ? sdzOwned(pDofus(n.d)) : true) : n.ach ? achDone(n.ach) : qDoneS(n.q);
 const pName = n => n.id === 'prim' ? 'les 6 primordiaux' : n.d ? n.d.replace(/^Dofus (?:(?:du|de|des) )?/, '') : n.ach ? (SACH[n.ach] || {}).n : qName(n.q);
 
+// Pastille « +N succès » d'une carte qui en inclut d'autres ; la liste est dans l'infobulle, et la fiche les montre dans le graphe des quêtes
+const pIncNames = n => (n.inc || []).map(a => (SACH[a] || {}).n).filter(Boolean);
+const pIncHtml = n => { const l = pIncNames(n); return l.length ? `<span class="cz-inc">+${l.length} succès</span>` : ''; };
+const pIncTip = (n, base) => { const l = pIncNames(n); return l.length ? `${base} — inclut : ${l.join(', ')}` : base; };
 // Carte compacte d'un Dofus : image, nom, niveau et effort. Un clic ouvre la fiche (objectif, obtenu) ; le ◎ suit le Dofus d'un geste ; l'état se lit sur la carte (verte : obtenu, contour orange : objectif).
-function pCard(d, id, pos, after, ready) {
+function pCard(d, id, pos, after, ready, n = {}) {
   const own = sdzOwned(d), goal = !own && sdzGoals.has(d.id), left = own ? 0 : pLeft(d), lv = SDZLV[d.id];
   const lvTxt = lv ? (lv[0] === lv[1] ? `niv. ${lv[0]}` : `niv. ${lv[0]}–${lv[1]}`) : '', link = d.a || d.q || d.pa;
   const eff = left ? `${plural(left, 'quête')}` : (!own && !link ? 'à cocher' : '');
-  return `<div class="cz${own ? ' own' : ''}${goal ? ' goal' : ''}${ready ? ' ready' : ''}${isPick('d', d.id) ? ' sel' : ''}" id="cz-${id}" style="${pos}" data-pick="d:${d.id}" tabindex="0" role="button" title="${esc(d.n)}">
+  return `<div class="cz${own ? ' own' : ''}${goal ? ' goal' : ''}${ready ? ' ready' : ''}${isPick('d', d.id) ? ' sel' : ''}" id="cz-${id}" style="${pos}" data-pick="d:${d.id}" tabindex="0" role="button" title="${esc(pIncTip(n, d.n))}">${pIncHtml(n)}
     <img src="${itemImg(d)}" alt="" loading="lazy" referrerpolicy="no-referrer">
     <span class="cz-t"><b>${esc(d.n.replace(/^Dofus (?=\S)/, 'Dofus '))}</b><small>${esc(lvTxt)}</small>${eff ? `<small>${esc(eff)}</small>` : ''}${after ? `<small class="cz-after">${esc(after)}</small>` : ''}</span>
     ${own ? '' : `<span class="cz-c"><button type="button" class="tgt${goal ? ' on' : ''}" data-rgoal="d:${d.id}" aria-pressed="${goal}" title="${goal ? 'Retirer des objectifs' : 'En faire un objectif'}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></button></span>`}
@@ -79,7 +83,7 @@ function pPivot(n, pos, after, ready) {
   const dn = pDoneNode(n);
   if (dn && !sShowDone) return '';   // comme partout : un succès ou une quête faits ne s'affichent que si « Afficher les obtenus » est coché
   if (n.ach) { const a = SACH[n.ach]; if (!a) return ''; const [d, t] = achProg(a);
-    return `<div class="cz pv${dn ? ' own' : ''}${ready ? ' ready' : ''}${n.ach && isPick('a', n.ach) ? ' sel' : ''}" id="cz-${n.id}" style="${pos}" data-pick="a:${a.id}" tabindex="0" role="button" title="${esc(a.n)}"><img src="${achImg(a)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="cz-t"><b>${esc(a.n)}</b><small>Succès · ${d} / ${t}</small>${after ? `<small class="cz-after">${esc(after)}</small>` : ''}</span></div>`; }
+    return `<div class="cz pv${dn ? ' own' : ''}${ready ? ' ready' : ''}${n.ach && isPick('a', n.ach) ? ' sel' : ''}" id="cz-${n.id}" style="${pos}" data-pick="a:${a.id}" tabindex="0" role="button" title="${esc(pIncTip(n, a.n))}">${pIncHtml(n)}<img src="${achImg(a)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="cz-t"><b>${esc(a.n)}</b><small>Succès · ${d} / ${t}</small>${after ? `<small class="cz-after">${esc(after)}</small>` : ''}</span></div>`; }
   if (!SC.quetes[n.q]) return '';
   return `<div class="cz pv${dn ? ' own' : ''}${ready ? ' ready' : ''}${isPick('q', n.q) ? ' sel' : ''}" id="cz-${n.id}" style="${pos}" data-pick="q:${n.q}" tabindex="0" role="button" title="${esc(qName(n.q))}">${qIcon(SC.quetes[n.q], n.q)}<span class="cz-t"><b>${esc(qName(n.q))}</b><small>Quête${dn ? '' : ''}</small>${after ? `<small class="cz-after">${esc(after)}</small>` : ''}</span></div>`;
 }
@@ -100,7 +104,7 @@ function parcoursHtml() {
   const items = [];
   for (const n of PN) {
     const aft = after(n.id).length ? 'après ' + after(n.id).join(', ') : '';
-    if (n.d) { const d = pDofus(n.d); if (d && sdzVisible(d) && rwShown(d)) items.push({ id: n.id, row: n.r, lane: n.lane, span: n.s, build: st => pCard(d, n.id, st, aft, ready(n.id)) }); }
+    if (n.d) { const d = pDofus(n.d); if (d && sdzVisible(d) && rwShown(d)) items.push({ id: n.id, row: n.r, lane: n.lane, span: n.s, build: st => pCard(d, n.id, st, aft, ready(n.id), n) }); }
     else if (pPivot(n, '', '', false)) items.push({ id: n.id, row: n.r, lane: n.lane, span: n.s, build: st => pPivot(n, st, aft, ready(n.id)) });
   }
   const primItems = [];
